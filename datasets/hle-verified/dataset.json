@@ -1,0 +1,25 @@
+{
+  "schema_version": "0.1",
+  "id": "hle-verified",
+  "name": "HLE-Verified",
+  "description": "Verified Humanity's Last Exam revision subset used by the no-tools evaluator.",
+  "huggingface": {
+    "repo_id": "skylenage-ai/HLE-Verified",
+    "revision": "0bc83643672d4f68a5f89998617a639d85e7318b"
+  },
+  "modalities": [
+    "text"
+  ],
+  "formats": [
+    "parquet"
+  ],
+  "splits": {
+    "train": {
+      "num_examples": 2500
+    }
+  },
+  "license": "NOASSERTION",
+  "access": "public",
+  "contains_pii": false,
+  "provenance_url": "https://huggingface.co/datasets/skylenage-ai/HLE-Verified"
+}

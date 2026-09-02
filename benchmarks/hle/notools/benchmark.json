@@ -1,0 +1,31 @@
+{
+  "schema_version": "0.1",
+  "id": "hle-notools",
+  "name": "Humanity's Last Exam no-tools evaluation",
+  "version": "0.1.0",
+  "track": "llm",
+  "description": "Evaluate a chat model on Humanity's Last Exam questions without external tools.",
+  "task_types": [
+    "question-answering",
+    "reasoning"
+  ],
+  "dataset": {
+    "registry_id": "hle-verified",
+    "revision": "0bc83643672d4f68a5f89998617a639d85e7318b"
+  },
+  "evaluator": {
+    "entrypoint": "python benchmarks/hle/notools/evaluator.py --config benchmarks/hle/notools/configs/lite_claude_sonnet5.yaml --data-dir <DATA_DIR>",
+    "container_image": "ghcr.io/haolpku/datalite-rsi-llm:0.1.0"
+  },
+  "metrics": [
+    {
+      "name": "accuracy",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    }
+  ],
+  "license": "NOASSERTION"
+}

@@ -1,0 +1,36 @@
+# Lite evaluation config - Claude Sonnet 5
+task:
+  task: hle_revision_task.py@hle_revision
+  args:
+    graders: [grader]
+
+model:
+  model: openai-api/zcloud/claude-sonnet-5
+  base_url: https://api.zcloudapi.com/v1
+  config:
+    max_tokens: 16000
+    temperature: 1.0
+  args:
+    api_key_var: ZCLOUD_API_KEY
+    client_timeout: 180
+    client_connect_timeout: 30
+    responses_api: false
+
+model_roles:
+  grader:
+    model: openai-api/zcloud/claude-sonnet-5
+    base_url: https://api.zcloudapi.com/v1
+    config:
+      max_tokens: 100
+      temperature: 1.0
+    args:
+      api_key_var: ZCLOUD_API_KEY
+      client_timeout: 180
+      client_connect_timeout: 30
+      responses_api: false
+
+# Execution settings
+max_workers: 4
+max_samples: null  # null = all samples
+checkpoint_interval: 300  # Save checkpoint every 5 minutes
+retry_attempts: 3

@@ -14,7 +14,7 @@ docker run --rm -v "$PWD:/workspace:ro" datalite-rsi-validator /workspace
 Evaluation images should eventually be published using versioned names such as:
 
 ```text
-ghcr.io/haolpku/datalite-rsi-llm:0.1.0
+ghcr.io/haolpku/datalite-rsi-hle-no-tools:0.1.0
 ghcr.io/haolpku/datalite-rsi-multimodal:0.1.0
 ghcr.io/haolpku/datalite-rsi-generative:0.1.0
 ```

@@ -11,7 +11,7 @@ Run from the DataLite-RSI repository root:
 
 ```bash
 docker build -f docker/llm-hle-notools/Dockerfile \
-  -t ghcr.io/haolpku/datalite-rsi-llm:0.1.0 .
+  -t ghcr.io/haolpku/datalite-rsi-hle-no-tools:0.1.0 .
 ```
 
 ## Real API smoke test
@@ -21,7 +21,7 @@ docker run --rm \
   -v "$DATA_DIR:/data:ro" \
   -e ZCLOUD_API_KEY \
   -e JUDGE_API_KEY \
-  ghcr.io/haolpku/datalite-rsi-llm:0.1.0 \
+  ghcr.io/haolpku/datalite-rsi-hle-no-tools:0.1.0 \
   --config /app/configs/lite_claude_sonnet5.yaml \
   --data-dir /data \
   --max-samples 1 \
@@ -40,7 +40,7 @@ After the real API smoke test succeeds, push the versioned image and record
 the resulting digest in any result submission:
 
 ```bash
-docker push ghcr.io/haolpku/datalite-rsi-llm:0.1.0
+docker push ghcr.io/haolpku/datalite-rsi-hle-no-tools:0.1.0
 docker inspect --format='{{index .RepoDigests 0}}' \
-  ghcr.io/haolpku/datalite-rsi-llm:0.1.0
+  ghcr.io/haolpku/datalite-rsi-hle-no-tools:0.1.0
 ```

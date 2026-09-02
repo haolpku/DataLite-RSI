@@ -16,7 +16,7 @@ Run from the repository root:
 
 ```bash
 docker build -f docker/llm-hle-with-tools/Dockerfile \
-  -t ghcr.io/haolpku/datalite-rsi-hle-with-tools:0.1.0 .
+  -t datalite-rsi-hle-with-tools:0.1.0 .
 ```
 
 The image is Linux/amd64-compatible and requires Docker plus outbound network
@@ -39,7 +39,7 @@ docker run --rm \
   -v "$PWD/eval.json:/config/eval.json:ro" \
   -v "$PWD/data:/data:ro" \
   -v "$PWD/output:/output" \
-  ghcr.io/haolpku/datalite-rsi-hle-with-tools:0.1.0 \
+  datalite-rsi-hle-with-tools:0.1.0 \
   --config /config/eval.json --sample-id <sample-id>
 ```
 
@@ -56,7 +56,7 @@ resource snapshots. It accepts an environment file, sample-ID file, runtime
 configuration, mounted data directory, and output root:
 
 ```bash
-IMAGE=ghcr.io/haolpku/datalite-rsi-hle-with-tools:0.1.0 \
+IMAGE=datalite-rsi-hle-with-tools:0.1.0 \
 BATCH_SIZES=1,4,5,10 \
 bash benchmarks/hle/withtools/scripts/run_batches.sh \
   /path/to/provider.env /path/to/sample_ids.txt /path/to/eval.json \
@@ -75,13 +75,5 @@ python benchmarks/hle/withtools/evaluator.py \
   --predictions /path/to/merged-results.jsonl --output /path/to/metrics.json
 ```
 
-## Publish
-
-Publish a versioned image, then use its immutable digest in any result
-submission. Do not use `latest` in a result manifest.
-
-```bash
-docker push ghcr.io/haolpku/datalite-rsi-hle-with-tools:0.1.0
-docker inspect --format='{{index .RepoDigests 0}}' \
-  ghcr.io/haolpku/datalite-rsi-hle-with-tools:0.1.0
-```
+The benchmark manifest leaves `container_image` unset. Build this image locally
+from the reviewed repository commit before running an evaluation.

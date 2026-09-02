@@ -6,10 +6,10 @@ agent uses an OpenAI-compatible chat-completions endpoint and may call
 OpenAI-compatible judge produces the structured correctness decision.
 
 The repository keeps the corresponding source under `src/hle_eval` for review.
-Build the versioned execution image from
-[`docker/llm-hle-with-tools`](../../../docker/llm-hle-with-tools), or pull an
-already published version. Every reported result must pin the published image
-digest.
+Build the execution image locally from
+[`docker/llm-hle-with-tools`](../../../docker/llm-hle-with-tools). This
+contribution does not publish an image; the benchmark manifest leaves
+`container_image` unset.
 
 ## Run one sample
 
@@ -18,7 +18,7 @@ use the Hugging Face provider), then run:
 
 ```bash
 docker build -f docker/llm-hle-with-tools/Dockerfile \
-  -t ghcr.io/haolpku/datalite-rsi-hle-with-tools:0.1.0 .
+  -t datalite-rsi-hle-with-tools:0.1.0 .
 docker run --rm \
   -e MODEL_API_KEY \
   -e JUDGE_API_KEY \
@@ -26,7 +26,7 @@ docker run --rm \
   -v "$PWD/eval.json:/config/eval.json:ro" \
   -v "$PWD/data:/data:ro" \
   -v "$PWD/output:/output" \
-  ghcr.io/haolpku/datalite-rsi-hle-with-tools:0.1.0 \
+  datalite-rsi-hle-with-tools:0.1.0 \
   --config /config/eval.json --sample-id <sample-id>
 ```
 
@@ -55,7 +55,7 @@ denominator.
 Set the required provider variables and run one known sample:
 
 ```bash
-IMAGE=ghcr.io/haolpku/datalite-rsi-hle-with-tools:0.1.0 \
+IMAGE=datalite-rsi-hle-with-tools:0.1.0 \
 CONFIG=/path/to/eval.json \
 SAMPLE_ID=<sample-id> \
 DATA_DIR=/path/to/data \

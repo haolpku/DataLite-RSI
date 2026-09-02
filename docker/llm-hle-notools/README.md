@@ -11,7 +11,7 @@ Run from the DataLite-RSI repository root:
 
 ```bash
 docker build -f docker/llm-hle-notools/Dockerfile \
-  -t ghcr.io/haolpku/datalite-rsi-hle-no-tools:0.1.0 .
+  -t datalite-rsi-hle-no-tools:0.1.0 .
 ```
 
 ## Real API smoke test
@@ -21,7 +21,7 @@ docker run --rm \
   -v "$DATA_DIR:/data:ro" \
   -e ZCLOUD_API_KEY \
   -e JUDGE_API_KEY \
-  ghcr.io/haolpku/datalite-rsi-hle-no-tools:0.1.0 \
+  datalite-rsi-hle-no-tools:0.1.0 \
   --config /app/configs/lite_claude_sonnet5.yaml \
   --data-dir /data \
   --max-samples 1 \
@@ -34,13 +34,5 @@ Use the Qwen config and `LOCAL_API_KEY` when the solver is a local
 OpenAI-compatible service. Do not put credentials in an image, config file,
 or command committed to Git.
 
-## Publish
-
-After the real API smoke test succeeds, push the versioned image and record
-the resulting digest in any result submission:
-
-```bash
-docker push ghcr.io/haolpku/datalite-rsi-hle-no-tools:0.1.0
-docker inspect --format='{{index .RepoDigests 0}}' \
-  ghcr.io/haolpku/datalite-rsi-hle-no-tools:0.1.0
-```
+The benchmark manifest leaves `container_image` unset. Build this image locally
+from the reviewed repository commit before running an evaluation.

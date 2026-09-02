@@ -15,7 +15,7 @@
   },
   "evaluator": {
     "entrypoint": "python benchmarks/hle/notools/evaluator.py --config benchmarks/hle/notools/configs/lite_claude_sonnet5.yaml --data-dir <DATA_DIR>",
-    "container_image": "ghcr.io/haolpku/datalite-rsi-hle-no-tools:0.1.0"
+    "container_image": null
   },
   "metrics": [
     {

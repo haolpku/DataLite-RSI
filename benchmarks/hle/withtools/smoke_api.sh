@@ -5,11 +5,13 @@ set -euo pipefail
 : "${SAMPLE_ID:?Set SAMPLE_ID to one HLE sample ID}"
 : "${DATA_DIR:?Set DATA_DIR to the mounted dataset directory}"
 
-IMAGE="${IMAGE:-ghcr.io/haolpku/datalite-rsi-hle-with-tools:0.1.0}"
+IMAGE="${IMAGE:-datalite-rsi-hle-with-tools:0.1.0}"
 OUTPUT_DIR="${OUTPUT_DIR:-$PWD/output/hle-withtools-smoke}"
 mkdir -p "$OUTPUT_DIR"
 
-docker pull "$IMAGE"
+if [[ "$IMAGE" == ghcr.io/* ]]; then
+  docker pull "$IMAGE"
+fi
 docker run --rm \
   -e MODEL_API_KEY \
   -e JUDGE_API_KEY \

@@ -16,7 +16,7 @@ SAMPLE_FILE=$2
 CONFIG=$3
 DATA_DIR=$4
 OUTPUT_ROOT=$5
-IMAGE=${IMAGE:-ghcr.io/haolpku/datalite-rsi-hle-with-tools:0.1.0}
+IMAGE=${IMAGE:-datalite-rsi-hle-with-tools:0.1.0}
 RUN_ID=${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}
 BATCH_SIZES=${BATCH_SIZES:-1,4,5,10}
 

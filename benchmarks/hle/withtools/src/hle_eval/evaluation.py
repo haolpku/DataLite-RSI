@@ -49,7 +49,6 @@ JUDGE_SCHEMA = {
     "type": "json_schema",
     "json_schema": {
         "name": "ExtractedAnswer",
-        "strict": True,
         "schema": {
             "type": "object",
             "properties": {
@@ -66,6 +65,11 @@ JUDGE_SCHEMA = {
             ],
             "additionalProperties": False,
         },
+        # Match inspect_evals.hle.judge._judge_generate_config exactly.  The
+        # empty description is intentional: some OpenAI-compatible gateways
+        # serialize a missing description as null and then drop the schema.
+        "description": "",
+        "strict": True,
     },
 }
 
@@ -426,10 +430,46 @@ def _parse_json_object(content: str) -> dict[str, Any]:
         stripped = re.sub(
             r"^```(?:json)?\s*|\s*```$", "", stripped, flags=re.IGNORECASE
         )
-    value = json.loads(stripped)
+    try:
+        value = json.loads(stripped)
+    except json.JSONDecodeError as json_error:
+        # Some OpenAI-compatible gateways ignore response_format and return
+        # the same fields as a plain labelled response instead of JSON.
+        value = _parse_labelled_response(stripped)
+        if value is None:
+            raise json_error
     if not isinstance(value, dict):
         raise ValueError("expected a JSON object")
     return value
+
+
+def _parse_labelled_response(content: str) -> dict[str, Any] | None:
+    """Parse the four labelled fields used by the official judge prompt."""
+    matches = list(
+        re.finditer(
+            r"(?im)^\s*(extracted_final_answer|reasoning|correct|confidence)\s*:\s*",
+            content,
+        )
+    )
+    if not matches:
+        return None
+
+    values: dict[str, Any] = {}
+    for index, match in enumerate(matches):
+        key = match.group(1).lower()
+        if key in values:
+            return None
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(content)
+        values[key] = content[match.end() : end].strip()
+
+    required = {"extracted_final_answer", "reasoning", "correct", "confidence"}
+    if set(values) != required:
+        return None
+    confidence = re.fullmatch(r"\s*(\d+)\s*%?\s*", values["confidence"])
+    if confidence is None:
+        return None
+    values["confidence"] = int(confidence.group(1))
+    return values
 
 
 def _completed_ids(path: Path) -> set[str]:

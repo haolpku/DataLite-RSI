@@ -5,9 +5,11 @@ agent uses an OpenAI-compatible chat-completions endpoint and may call
 `web_search`, `web_fetch`, `code_execution`, and `submit`. A separate
 OpenAI-compatible judge produces the structured correctness decision.
 
-The runner is distributed as a prebuilt agent sandbox. The repository keeps
-the corresponding source under `src/hle_eval` for review, while execution uses
-the versioned image documented in `docker/llm-hle-with-tools/`.
+The repository keeps the corresponding source under `src/hle_eval` for review.
+Build the versioned execution image from
+[`docker/llm-hle-with-tools`](../../../docker/llm-hle-with-tools), or pull an
+already published version. Every reported result must pin the published image
+digest.
 
 ## Run one sample
 
@@ -15,7 +17,8 @@ Prepare an `eval.json` whose dataset path is mounted inside the container (or
 use the Hugging Face provider), then run:
 
 ```bash
-docker pull ghcr.io/haolpku/lite-rsi-eval/hle-with-tools:0.1.0
+docker build -f docker/llm-hle-with-tools/Dockerfile \
+  -t ghcr.io/haolpku/datalite-rsi-hle-with-tools:0.1.0 .
 docker run --rm \
   -e MODEL_API_KEY \
   -e JUDGE_API_KEY \
@@ -23,12 +26,13 @@ docker run --rm \
   -v "$PWD/eval.json:/config/eval.json:ro" \
   -v "$PWD/data:/data:ro" \
   -v "$PWD/output:/output" \
-  ghcr.io/haolpku/lite-rsi-eval/hle-with-tools:0.1.0 \
+  ghcr.io/haolpku/datalite-rsi-hle-with-tools:0.1.0 \
   --config /config/eval.json --sample-id <sample-id>
 ```
 
-The image is only an execution sandbox; it is not rebuilt by this benchmark.
-Secrets are supplied at runtime and must not be committed.
+The image is only an execution sandbox. Secrets are supplied at runtime and
+must not be committed. `docker/llm-hle-with-tools/config.example.json` shows
+the expected configuration without embedding any credentials.
 
 ## Offline aggregation
 
@@ -51,7 +55,7 @@ denominator.
 Set the required provider variables and run one known sample:
 
 ```bash
-IMAGE=ghcr.io/haolpku/lite-rsi-eval/hle-with-tools:0.1.0 \
+IMAGE=ghcr.io/haolpku/datalite-rsi-hle-with-tools:0.1.0 \
 CONFIG=/path/to/eval.json \
 SAMPLE_ID=<sample-id> \
 DATA_DIR=/path/to/data \
@@ -60,3 +64,13 @@ bash benchmarks/hle/withtools/smoke_api.sh
 ```
 
 This is intentionally a real API smoke test, not a mock or unit-test suite.
+
+## Batch execution
+
+For one-container-per-sample execution, use
+`benchmarks/hle/withtools/scripts/run_batches.sh`. It accepts an environment
+file, stable sample-ID list, runtime config, mounted data directory, and output
+directory; it records run metadata, container logs, exit codes, and resource
+snapshots. Merge the resulting JSONL files with `scripts/merge_results.py`,
+then run this benchmark's offline evaluator. See the Docker environment README
+for the exact commands and constraints.

@@ -16,7 +16,7 @@
   },
   "evaluator": {
     "entrypoint": "python benchmarks/hle/withtools/evaluator.py --predictions <RESULTS_JSONL> --output <METRICS_JSON>",
-    "container_image": "ghcr.io/haolpku/lite-rsi-eval/hle-with-tools:0.1.0"
+    "container_image": "ghcr.io/haolpku/datalite-rsi-hle-with-tools:0.1.0"
   },
   "metrics": [
     {

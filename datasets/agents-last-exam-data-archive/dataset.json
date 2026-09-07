@@ -1,0 +1,32 @@
+{
+  "schema_version": "0.1",
+  "id": "agents-last-exam-data-archive",
+  "name": "Agents' Last Exam task data archive",
+  "description": "Gated archive of the Agents' Last Exam task inputs, software fixtures, and hidden reference outputs.",
+  "huggingface": {
+    "repo_id": "agents-last-exam/agents-last-exam-data-archive",
+    "revision": "95e419efaae5fd3874b709f7ef63c357aa29379c"
+  },
+  "modalities": [
+    "text",
+    "tabular",
+    "image",
+    "desktop"
+  ],
+  "formats": [
+    "json",
+    "jsonl",
+    "csv",
+    "text",
+    "binary"
+  ],
+  "splits": {
+    "all": {
+      "num_examples": 165
+    }
+  },
+  "license": "CC-BY-4.0",
+  "access": "gated",
+  "contains_pii": false,
+  "provenance_url": "https://huggingface.co/datasets/agents-last-exam/agents-last-exam-data-archive"
+}

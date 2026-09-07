@@ -1,0 +1,48 @@
+{
+  "schema_version": "0.1",
+  "id": "agents-last-exam",
+  "name": "Agents' Last Exam",
+  "version": "0.1.0",
+  "track": "llm",
+  "description": "Long-horizon agent evaluation on economically valuable, verifiable workflows across desktop and command-line sandboxes.",
+  "task_types": [
+    "agentic-computer-use",
+    "long-horizon-workflow",
+    "artifact-generation"
+  ],
+  "dataset": {
+    "registry_id": "agents-last-exam-data-archive",
+    "revision": "95e419efaae5fd3874b709f7ef63c357aa29379c"
+  },
+  "evaluator": {
+    "entrypoint": "python benchmarks/agents-last-exam/evaluator.py",
+    "container_image": null
+  },
+  "metrics": [
+    {
+      "name": "primary_score",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "pass_rate",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "mean_cost_usd",
+      "higher_is_better": false
+    },
+    {
+      "name": "mean_duration_s",
+      "higher_is_better": false
+    }
+  ],
+  "license": "Apache-2.0 (software); CC-BY-4.0 (task data)"
+}

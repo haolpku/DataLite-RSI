@@ -1,0 +1,96 @@
+{
+  "schema_version": "0.1",
+  "id": "math-sft-transfer-suite",
+  "name": "Math SFT transfer suite (Qwen2.5-Math protocol)",
+  "version": "0.1.0",
+  "track": "llm",
+  "description": "Measures how much a small supervised fine-tuning dataset improves a base language model on mathematical reasoning. A method submits an SFT dataset; the suite fine-tunes a fixed base model on it and scores the result on eight held-out math benchmarks under the Qwen2.5-Math chain-of-thought evaluation protocol. The score attributable to the method is the delta over the untrained base model measured under identical generation settings.",
+  "task_types": [
+    "text-generation",
+    "mathematical-reasoning"
+  ],
+  "dataset": {
+    "registry_id": "gsm8k",
+    "revision": "740312add88f781978c0658806c59bc2815b9866",
+    "notes": "The suite evaluates eight test sets, all registered under datasets/: gsm8k, hendrycks-math, aime24, aime25, amc23, minerva-math, olympiadbench, gaokao2024-mix. registry_id names gsm8k as the primary reference because the schema carries one field; see each dataset directory for provenance and HuggingFace mirror information."
+  },
+  "metrics": [
+    {
+      "name": "primary_score",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "gsm8k",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "math",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "minerva_math",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "gaokao2024_mix",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "olympiadbench",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "amc23",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "aime24",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "aime25",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    }
+  ],
+  "evaluator": {
+    "entrypoint": "python benchmarks/math-sft-transfer-suite/evaluator.py --predictions <path> --output <path>",
+    "container_image": null
+  },
+  "license": "MIT"
+}

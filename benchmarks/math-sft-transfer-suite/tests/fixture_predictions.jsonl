@@ -1,0 +1,10 @@
+{"benchmark": "gsm8k", "question_id": "g0", "predicted_answer": "18", "correct_answer": "18", "finish_reason": "stop"}
+{"benchmark": "gsm8k", "question_id": "g1", "predicted_answer": "4", "correct_answer": "7", "finish_reason": "stop"}
+{"benchmark": "gsm8k", "question_id": "g2", "predicted_answer": "1,200", "correct_answer": "1200", "finish_reason": "stop"}
+{"benchmark": "gsm8k", "question_id": "g3", "predicted_answer": null, "correct_answer": "5", "finish_reason": "length"}
+{"benchmark": "math", "question_id": "m0", "predicted_answer": "\\boxed{2}", "correct_answer": "2", "finish_reason": "stop"}
+{"benchmark": "math", "question_id": "m1", "predicted_answer": "$-3$", "correct_answer": "-3", "finish_reason": "stop"}
+{"benchmark": "aime24", "question_id": "a0", "predicted_answer": "601", "correct_answer": "601", "finish_reason": "stop"}
+{"benchmark": "aime24", "question_id": "a0", "predicted_answer": "600", "correct_answer": "601", "finish_reason": "stop"}
+{"benchmark": "aime24", "question_id": "a1", "predicted_answer": "55", "correct_answer": "55", "finish_reason": "stop"}
+{"benchmark": "aime24", "question_id": "a1", "predicted_answer": "55", "correct_answer": "55", "finish_reason": "stop"}

@@ -1,0 +1,28 @@
+{
+  "schema_version": "0.1",
+  "id": "hendrycks-math",
+  "name": "Hendrycks MATH",
+  "description": "Competition mathematics problems across seven subjects and five difficulty levels, with full LaTeX reference solutions. In DataLite-RSI the train split contributes 6,712 rows to the fixed RSI input corpus, and the 5,000-row test split is a primary evaluation target.",
+  "huggingface": {
+    "repo_id": "EleutherAI/hendrycks_math",
+    "revision": "21a5633873b6a120296cce3e2df9d5550074f4a3"
+  },
+  "modalities": [
+    "text"
+  ],
+  "formats": [
+    "parquet"
+  ],
+  "splits": {
+    "train": {
+      "num_examples": 7500
+    },
+    "test": {
+      "num_examples": 5000
+    }
+  },
+  "license": "MIT",
+  "access": "public",
+  "contains_pii": false,
+  "provenance_url": "https://huggingface.co/datasets/EleutherAI/hendrycks_math"
+}

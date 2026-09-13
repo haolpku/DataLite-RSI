@@ -1,0 +1,26 @@
+{
+  "schema_version": "0.1",
+  "id": "olympiadbench",
+  "name": "OlympiadBench",
+  "description": "675 English-language open-ended mathematical olympiad problems. Corresponds to the text-only English math competition subset of Hothan/OlympiadBench, as distributed by the Qwen2.5-Math evaluation harness. Used as an evaluation target in the math SFT transfer suite (accuracy, greedy decoding).",
+  "huggingface": {
+    "repo_id": "Hothan/OlympiadBench",
+    "revision": "91184b52131e7fc9455fef848035173aea8cc01a"
+  },
+  "modalities": [
+    "text"
+  ],
+  "formats": [
+    "jsonl"
+  ],
+  "splits": {
+    "test": {
+      "num_examples": 675
+    }
+  },
+  "license": "NOASSERTION",
+  "access": "public",
+  "contains_pii": false,
+  "provenance_url": "https://github.com/QwenLM/Qwen2.5-Math/tree/a45202bd16f1ec06f433442dc1152d0074773465/evaluation/data",
+  "notes": "Data sourced from the Qwen2.5-Math evaluation harness at https://github.com/QwenLM/Qwen2.5-Math/tree/a45202bd16f1ec06f433442dc1152d0074773465/evaluation/data. The 675-row file corresponds to the OE_TO_maths_en_COMP configuration of Hothan/OlympiadBench after filtering; it is not a verbatim HuggingFace split."
+}

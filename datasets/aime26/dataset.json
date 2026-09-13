@@ -1,0 +1,26 @@
+{
+  "schema_version": "0.1",
+  "id": "aime26",
+  "name": "AIME 2026",
+  "description": "30 problems from the 2026 AIME I competition. Used as an evaluation target in the math SFT transfer suite (avg@4, temperature 0.6). TODO: Add provenance and HuggingFace mirror information once available.",
+  "huggingface": {
+    "repo_id": "TODO",
+    "revision": "TODO"
+  },
+  "modalities": [
+    "text"
+  ],
+  "formats": [
+    "jsonl"
+  ],
+  "splits": {
+    "test": {
+      "num_examples": 30
+    }
+  },
+  "license": "NOASSERTION",
+  "access": "public",
+  "contains_pii": false,
+  "provenance_url": "TODO",
+  "notes": "TODO: Add data sourcing details and validation information."
+}

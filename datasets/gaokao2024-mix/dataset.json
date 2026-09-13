@@ -1,0 +1,26 @@
+{
+  "schema_version": "0.1",
+  "id": "gaokao2024-mix",
+  "name": "Gaokao 2024 Mix",
+  "description": "91 Chinese college entrance examination (Gaokao 2024) mathematics problems mixing multiple-choice and open-ended formats. Used as an evaluation target in the math SFT transfer suite (accuracy, greedy decoding). Distributed with the Qwen2.5-Math evaluation harness; no standalone Hugging Face mirror exists.",
+  "huggingface": {
+    "repo_id": "QwenLM/Qwen2.5-Math",
+    "revision": "a45202bd16f1ec06f433442dc1152d0074773465"
+  },
+  "modalities": [
+    "text"
+  ],
+  "formats": [
+    "jsonl"
+  ],
+  "splits": {
+    "test": {
+      "num_examples": 91
+    }
+  },
+  "license": "NOASSERTION",
+  "access": "public",
+  "contains_pii": false,
+  "provenance_url": "https://github.com/QwenLM/Qwen2.5-Math/tree/a45202bd16f1ec06f433442dc1152d0074773465/evaluation/data",
+  "notes": "Not hosted on Hugging Face. The huggingface block records the actual source: the QwenLM/Qwen2.5-Math GitHub repository at commit a45202bd16f1ec06f433442dc1152d0074773465, directory evaluation/data/gaokao2024_mix/test.jsonl. This is the same commit vendored under evaluation/qwen25_math/ in this repository."
+}

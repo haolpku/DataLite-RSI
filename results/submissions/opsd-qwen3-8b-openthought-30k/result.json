@@ -1,0 +1,199 @@
+{
+  "schema_version": "0.1",
+  "submission_id": "opsd-qwen3-8b-openthought-30k",
+  "status": "unverified",
+  "track": "llm",
+  "benchmark": {
+    "id": "math-sft-transfer-suite",
+    "version": "0.1.0"
+  },
+  "model": {
+    "id": "Qwen/Qwen3-8B",
+    "revision": "TODO",
+    "notes": "Qwen3-8B base (not Instruct)"
+  },
+  "method_id": "opsd",
+  "metrics": {
+    "evaluation_scope": "Full benchmark test sets (gsm8k 1319, math 5000, minerva_math 272, gaokao2024_mix 91, olympiadbench 675, amc23 40, aime24 30, aime25 30, aime26 30). Baseline is untrained Qwen3-8B base; final is the same model fine-tuned on data selected from OpenThought-30k using LCS-based threshold filtering. The 10% diagnostic subset used for LCS threshold calibration is reported separately under diagnostic_subset.",
+    "baseline": {
+      "primary_score": "TODO",
+      "gsm8k": "TODO",
+      "math": "TODO",
+      "minerva_math": "TODO",
+      "gaokao2024_mix": "TODO",
+      "olympiadbench": "TODO",
+      "amc23": "TODO",
+      "aime24": "TODO",
+      "aime25": "TODO",
+      "aime26": "TODO"
+    },
+    "final": {
+      "primary_score": "TODO",
+      "gsm8k": "TODO",
+      "math": "TODO",
+      "minerva_math": "TODO",
+      "gaokao2024_mix": "TODO",
+      "olympiadbench": "TODO",
+      "amc23": "TODO",
+      "aime24": "TODO",
+      "aime25": "TODO",
+      "aime26": "TODO"
+    },
+    "per_iteration": {
+      "iteration_1": {
+        "primary_score": "TODO",
+        "gsm8k": "TODO",
+        "math": "TODO",
+        "minerva_math": "TODO",
+        "gaokao2024_mix": "TODO",
+        "olympiadbench": "TODO",
+        "amc23": "TODO",
+        "aime24": "TODO",
+        "aime25": "TODO",
+        "aime26": "TODO"
+      },
+      "iteration_2": {
+        "primary_score": "TODO",
+        "gsm8k": "TODO",
+        "math": "TODO",
+        "minerva_math": "TODO",
+        "gaokao2024_mix": "TODO",
+        "olympiadbench": "TODO",
+        "amc23": "TODO",
+        "aime24": "TODO",
+        "aime25": "TODO",
+        "aime26": "TODO"
+      },
+      "iteration_3": {
+        "primary_score": "TODO",
+        "gsm8k": "TODO",
+        "math": "TODO",
+        "minerva_math": "TODO",
+        "gaokao2024_mix": "TODO",
+        "olympiadbench": "TODO",
+        "amc23": "TODO",
+        "aime24": "TODO",
+        "aime25": "TODO",
+        "aime26": "TODO"
+      },
+      "iteration_4": {
+        "primary_score": "TODO",
+        "gsm8k": "TODO",
+        "math": "TODO",
+        "minerva_math": "TODO",
+        "gaokao2024_mix": "TODO",
+        "olympiadbench": "TODO",
+        "amc23": "TODO",
+        "aime24": "TODO",
+        "aime25": "TODO",
+        "aime26": "TODO"
+      },
+      "iteration_5": {
+        "primary_score": "TODO",
+        "gsm8k": "TODO",
+        "math": "TODO",
+        "minerva_math": "TODO",
+        "gaokao2024_mix": "TODO",
+        "olympiadbench": "TODO",
+        "amc23": "TODO",
+        "aime24": "TODO",
+        "aime25": "TODO",
+        "aime26": "TODO"
+      },
+      "iteration_6": {
+        "primary_score": "TODO",
+        "gsm8k": "TODO",
+        "math": "TODO",
+        "minerva_math": "TODO",
+        "gaokao2024_mix": "TODO",
+        "olympiadbench": "TODO",
+        "amc23": "TODO",
+        "aime24": "TODO",
+        "aime25": "TODO",
+        "aime26": "TODO"
+      }
+    },
+    "diagnostic_subset": {
+      "note": "10% per-benchmark sample at seed TODO, materialised before iterations. This is the in-loop feedback signal used for LCS threshold calibration, not an evaluation result. Full test sets never entered the optimisation loop.",
+      "baseline": {
+        "primary_score": "TODO"
+      },
+      "iteration_1": {
+        "primary_score": "TODO",
+        "lcs_threshold": "TODO"
+      },
+      "iteration_2": {
+        "primary_score": "TODO",
+        "lcs_threshold": "TODO"
+      },
+      "iteration_3": {
+        "primary_score": "TODO",
+        "lcs_threshold": "TODO"
+      },
+      "iteration_4": {
+        "primary_score": "TODO",
+        "lcs_threshold": "TODO"
+      },
+      "iteration_5": {
+        "primary_score": "TODO",
+        "lcs_threshold": "TODO"
+      },
+      "iteration_6": {
+        "primary_score": "TODO",
+        "lcs_threshold": "TODO"
+      }
+    },
+    "lcs_metric": {
+      "name": "TODO: expand LCS acronym",
+      "description": "Proxy metric for self-teacher confidence on problem-solving capability",
+      "calibration_method": "validation_rollout",
+      "threshold_strategy": "TODO: describe how thresholds are computed from validation LCS scores"
+    }
+  },
+  "settings": {
+    "seeds": [
+      "TODO"
+    ],
+    "seed_details": {
+      "sft_seed": "TODO",
+      "sft_data_seed": "TODO",
+      "diagnostic_subset_seed": "TODO",
+      "benchmark_evaluation_seed": "TODO"
+    },
+    "iterations": 6,
+    "training_data": {
+      "source": "OpenThought-30k",
+      "selection_method": "lcs_threshold",
+      "num_selected_per_iteration": "TODO"
+    },
+    "compute_budget": "TODO: GPU configuration, wall time, token usage",
+    "human_intervention": "none",
+    "models": {
+      "base_model": "Qwen/Qwen3-8B"
+    }
+  },
+  "reproducibility": {
+    "code_revision": "TODO",
+    "dataset_revision": "TODO",
+    "container_image": "TODO",
+    "command": "TODO",
+    "artifacts_url": null,
+    "evaluation_harness": {
+      "name": "Qwen2.5-Math",
+      "url": "https://github.com/QwenLM/Qwen2.5-Math",
+      "revision": "a45202bd16f1ec06f433442dc1152d0074773465",
+      "license": "MIT",
+      "deviations": [
+        "aime26 added to evaluation datasets"
+      ],
+      "vendored_path": "evaluation/qwen25_math",
+      "grading_modified": false
+    },
+    "training_stack": {
+      "trainer": "TODO",
+      "python": "TODO",
+      "torch": "TODO",
+      "transformers": "TODO"
+    }
+  }
+}

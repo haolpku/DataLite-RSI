@@ -1,0 +1,174 @@
+# OPSD Configuration: Qwen3-8B on OpenThought-30k
+# LCS threshold-based data selection with 6-iteration recursive improvement
+
+method: opsd
+version: "1.0"
+
+# Base Model Configuration
+base_model:
+  name: "Qwen/Qwen3-8B"
+  source: "huggingface"
+  # TODO: Add specific model revision/checkpoint
+
+# Training Data Configuration
+training_data:
+  source: "OpenThought-30k"
+  # TODO: Add OpenThought dataset details
+  total_size: 30000
+  selection_strategy: "lcs_threshold"
+  
+# LCS Metric Configuration
+lcs_metric:
+  # TODO: Define LCS computation parameters
+  name: "TODO: expand LCS acronym"
+  description: "Proxy metric for self-teacher confidence on problem-solving"
+  
+  # Threshold calibration
+  calibration:
+    method: "validation_rollout"
+    validation_split_ratio: 0.1  # Use 10% of each benchmark for in-loop feedback
+    
+  # TODO: Add metric-specific hyperparameters
+  parameters:
+    # e.g., window_size, normalization_method, etc.
+    placeholder: "TODO"
+
+# Iteration Configuration
+iterations:
+  num_iterations: 6
+  
+  # Per-iteration workflow
+  iteration_workflow:
+    - step: "validation_rollout"
+      description: "Generate model predictions on validation benchmarks"
+      config:
+        temperature: 0.6
+        n_sampling: 4
+        
+    - step: "lcs_computation"
+      description: "Compute LCS metric for validation examples"
+      # TODO: Add computation details
+      
+    - step: "threshold_calibration"
+      description: "Calibrate LCS threshold based on validation performance"
+      # TODO: Add calibration algorithm details
+      
+    - step: "bad_case_analysis"
+      description: "Analyze validation examples with low accuracy"
+      # TODO: Add analysis criteria
+      
+    - step: "data_selection"
+      description: "Select training data using calibrated threshold"
+      config:
+        selection_size: "TODO"  # Number of examples to select
+        diversity_constraint: "TODO"  # Optional: ensure topic/difficulty diversity
+        
+    - step: "training"
+      description: "Train model on selected data"
+      # Training hyperparameters below
+
+# Training Hyperparameters
+training:
+  # Optimizer
+  optimizer: "adamw"
+  learning_rate: "TODO"
+  weight_decay: "TODO"
+  
+  # Schedule
+  lr_scheduler: "TODO"
+  warmup_ratio: "TODO"
+  
+  # Batch and epochs
+  per_device_train_batch_size: "TODO"
+  gradient_accumulation_steps: "TODO"
+  num_train_epochs: "TODO"
+  
+  # Precision
+  mixed_precision: "TODO"  # e.g., bf16, fp16
+  
+  # Other
+  seed: 42
+  gradient_checkpointing: "TODO"
+
+# Validation Benchmarks (In-Loop Feedback)
+validation_benchmarks:
+  - name: "gsm8k"
+    split: "test"
+    subset_ratio: 0.1  # 10% diagnostic subset
+    
+  - name: "hendrycks-math"
+    split: "test"
+    subset_ratio: 0.1  # 10% diagnostic subset
+
+# Test Benchmarks (Held-Out Evaluation)
+test_benchmarks:
+  - name: "gsm8k"
+    split: "test"
+    subset_ratio: 1.0  # Full test set
+    
+  - name: "hendrycks-math"
+    split: "test"
+    subset_ratio: 1.0
+    
+  - name: "aime24"
+    split: "test"
+    
+  - name: "aime25"
+    split: "test"
+    
+  - name: "aime26"
+    split: "test"
+    
+  - name: "amc23"
+    split: "test"
+    
+  - name: "minerva-math"
+    split: "test"
+    
+  - name: "olympiadbench"
+    split: "test"
+    
+  - name: "gaokao2024-mix"
+    split: "test"
+
+# Evaluation Configuration
+evaluation:
+  harness: "qwen25_math"  # Reuse Qwen2.5-Math evaluation harness
+  metrics:
+    primary: "avg@4"
+    secondary: ["pass@1", "pass@4"]
+  generation:
+    temperature: 0.6
+    n_sampling: 4
+    max_tokens: 2048
+
+# Compute Configuration
+compute:
+  # TODO: Add compute requirements
+  num_gpus: "TODO"
+  gpu_type: "TODO"
+  distributed_strategy: "TODO"
+
+# Reproducibility
+reproducibility:
+  seed: 42
+  deterministic: true
+  # TODO: Add environment details (CUDA version, library versions, etc.)
+
+# Logging and Checkpointing
+logging:
+  log_level: "INFO"
+  log_interval: 10
+  eval_interval: "TODO"
+  
+checkpointing:
+  save_strategy: "epoch"
+  save_total_limit: 2
+  output_dir: "TODO"
+
+# Experiment Tracking
+tracking:
+  # TODO: Add experiment tracking details (wandb, tensorboard, etc.)
+  framework: "TODO"
+  project_name: "opsd-qwen3-openthought"
+  run_name: "TODO"

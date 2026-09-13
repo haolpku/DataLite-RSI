@@ -1,5 +1,5 @@
 # OPSD Configuration: Qwen3-8B on OpenThought-30k
-# LCS threshold-based data selection with 6-iteration recursive improvement
+# LSC ascending low-tail data selection with 6-iteration recursive improvement
 
 method: opsd
 version: "1.0"
@@ -8,30 +8,42 @@ version: "1.0"
 base_model:
   name: "Qwen/Qwen3-8B"
   source: "huggingface"
-  # TODO: Add specific model revision/checkpoint
+  revision: "base"
 
 # Training Data Configuration
 training_data:
   source: "OpenThought-30k"
-  # TODO: Add OpenThought dataset details
-  total_size: 30000
-  selection_strategy: "lcs_threshold"
+  context_rule: "first text-distinct reference rollout per question"
+  candidate_pool: 6400
+  selected_size: 3200
+  selection_strategy: "lsc_ascending"
   
-# LCS Metric Configuration
-lcs_metric:
-  # TODO: Define LCS computation parameters
-  name: "TODO: expand LCS acronym"
-  description: "Proxy metric for self-teacher confidence on problem-solving"
+# LSC Metric Configuration
+lsc_metric:
+  name: "Late Support Collapse"
+  abbreviation: "LSC"
+  description: "J_80 - J_100, the change in top-20 support overlap after revealing the final 20% of reference reasoning"
+  model_context_limit: 8192
+  response_scoring_tokens: 1024
+  top_k: 20
+  levels: [80, 100]
+  ranking: "ascending"
+  selection_fraction: 0.50
+  fields:
+    level_80_mean_support_overlap: "mean per-token Jaccard(student top-20, privileged 80% top-20)"
+    level_100_mean_support_overlap: "mean per-token Jaccard(student top-20, privileged 100% top-20)"
+    mean_support_overlap_late_collapse: "level_80_mean_support_overlap - level_100_mean_support_overlap"
+  truncation: "crop reasoning prefix only; preserve final answer; record truncated=true"
   
   # Threshold calibration
   calibration:
     method: "validation_rollout"
-    validation_split_ratio: 0.1  # Use 10% of each benchmark for in-loop feedback
+    validation_split_ratio: null  # supplied run uses the previous iteration AIME26 evaluation
     
-  # TODO: Add metric-specific hyperparameters
   parameters:
-    # e.g., window_size, normalization_method, etc.
-    placeholder: "TODO"
+    support_distance: "jaccard"
+    common_token_window: true
+    reference_selection: "fixed before labels are read"
 
 # Iteration Configuration
 iterations:
@@ -46,22 +58,30 @@ iterations:
         n_sampling: 4
         
     - step: "lcs_computation"
-      description: "Compute LCS metric for validation examples"
-      # TODO: Add computation details
+      description: "Compute LSC metric for validation examples"
+      config:
+        scoring: "forced scoring of the same student continuation"
+        prompts: "base/student, privileged_80, privileged_100"
+        aggregation: "mean over common scored tokens"
       
     - step: "threshold_calibration"
-      description: "Calibrate LCS threshold based on validation performance"
-      # TODO: Add calibration algorithm details
+      description: "Freeze LSC ranking protocol based on validation performance"
+      config:
+        strategy: "use the previous iteration eval to compute the LSC cut, rank the fixed 6400-row pool ascending, select exactly 3200 rows"
+        default_fraction: 0.50
+        label_usage: "correctness labels are not used to fit the cut; previous-eval LSC is carried into the next iteration"
       
     - step: "bad_case_analysis"
       description: "Analyze validation examples with low accuracy"
-      # TODO: Add analysis criteria
+      config:
+        fields: ["lsc", "rollout_accuracy", "level_80_mean_support_overlap", "level_100_mean_support_overlap"]
+        report: ["Spearman", "all_correct_auc", "precision", "recall", "lift"]
       
     - step: "data_selection"
       description: "Select training data using calibrated threshold"
       config:
-        selection_size: "TODO"  # Number of examples to select
-        diversity_constraint: "TODO"  # Optional: ensure topic/difficulty diversity
+        selection_size: 3200
+        diversity_constraint: "none; preserve fixed rank order"
         
     - step: "training"
       description: "Train model on selected data"
@@ -71,27 +91,28 @@ iterations:
 training:
   # Optimizer
   optimizer: "adamw"
-  learning_rate: "TODO"
-  weight_decay: "TODO"
+  learning_rate: null  # set by the training run; not part of the frozen LSC protocol
+  weight_decay: null
   
   # Schedule
-  lr_scheduler: "TODO"
-  warmup_ratio: "TODO"
+  lr_scheduler: null
+  warmup_ratio: null
   
   # Batch and epochs
-  per_device_train_batch_size: "TODO"
-  gradient_accumulation_steps: "TODO"
-  num_train_epochs: "TODO"
+  per_device_train_batch_size: null
+  gradient_accumulation_steps: null
+  num_train_epochs: null
   
   # Precision
-  mixed_precision: "TODO"  # e.g., bf16, fp16
+  mixed_precision: null
   
   # Other
   seed: 42
-  gradient_checkpointing: "TODO"
+  gradient_checkpointing: null
 
 # Validation Benchmarks (In-Loop Feedback)
 validation_benchmarks:
+  # Optional generic diagnostic datasets; not used in the supplied AIME26 run.
   - name: "gsm8k"
     split: "test"
     subset_ratio: 0.1  # 10% diagnostic subset
@@ -144,31 +165,29 @@ evaluation:
 
 # Compute Configuration
 compute:
-  # TODO: Add compute requirements
-  num_gpus: "TODO"
-  gpu_type: "TODO"
-  distributed_strategy: "TODO"
+  num_gpus: null
+  gpu_type: null
+  distributed_strategy: null
 
 # Reproducibility
 reproducibility:
   seed: 42
   deterministic: true
-  # TODO: Add environment details (CUDA version, library versions, etc.)
+  environment: "record exact CUDA, PyTorch, Transformers, and vLLM versions with each run"
 
 # Logging and Checkpointing
 logging:
   log_level: "INFO"
   log_interval: 10
-  eval_interval: "TODO"
+  eval_interval: "each iteration"
   
 checkpointing:
   save_strategy: "epoch"
   save_total_limit: 2
-  output_dir: "TODO"
+  output_dir: "artifacts/opsd-qwen3-openthought"
 
 # Experiment Tracking
 tracking:
-  # TODO: Add experiment tracking details (wandb, tensorboard, etc.)
-  framework: "TODO"
+  framework: "none"
   project_name: "opsd-qwen3-openthought"
-  run_name: "TODO"
+  run_name: "opsd-lsc-qwen3-8b"

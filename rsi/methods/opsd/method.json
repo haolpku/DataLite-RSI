@@ -2,17 +2,32 @@
   "schema_version": "0.1",
   "id": "opsd",
   "name": "OPSD (Open Problem Self-Discovery)",
-  "description": "A data selection method that uses LCS (self-teacher confidence) proxy metric to analyze bad cases and select high-quality training data from OpenThought-30k. The method computes LCS threshold on validation rollouts, then selects training data based on the threshold.",
-  "type": "data_selection",
+  "version": "1.0.0",
+  "description": "Selects OpenThought-30k candidates with frozen LSC (Late Support Collapse) scores computed from privileged-context top-20 support overlap.",
+  "tracks": ["llm"],
+  "entrypoint": "rsi.methods.opsd.lsc",
+  "modifies": ["training_data_selection"],
+  "feedback_signal": "LSC = level_80_mean_support_overlap - level_100_mean_support_overlap",
+  "stopping_rule": "six iterations; apply the previous-evaluation LSC threshold and select exactly 3200 rows from the fixed 6400-row pool",
+  "human_intervention": "none",
+  "license": "MIT",
   "base_model": "Qwen/Qwen3-8B",
   "training_data": {
     "source": "OpenThought-30k",
-    "selection_method": "lcs_threshold",
-    "num_selected": "TODO"
+    "selection_method": "lsc_ascending",
+    "num_selected": 3200,
+    "candidate_pool_size": 6400,
+    "reference_context": "first text-distinct rollout, fixed before labels are read"
   },
   "hyperparameters": {
     "iterations": 6,
-    "lcs_threshold_strategy": "validation_calibrated"
+    "top_k": 20,
+    "privilege_levels": [80, 100],
+    "model_context_limit": 8192,
+    "response_scoring_tokens": 1024,
+    "selection_fraction": 0.5,
+    "training_steps_per_iteration": 100,
+    "threshold_strategy": "derive cut from previous iteration evaluation, then retain exactly 3200 rows"
   },
   "validation_datasets": [
     "gsm8k_subset",

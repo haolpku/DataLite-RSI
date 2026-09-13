@@ -14,7 +14,7 @@
   },
   "method_id": "opsd",
   "metrics": {
-    "evaluation_scope": "Full benchmark test sets (gsm8k 1319, math 5000, minerva_math 272, gaokao2024_mix 91, olympiadbench 675, amc23 40, aime24 30, aime25 30, aime26 30). Baseline is untrained Qwen3-8B base; final is the same model fine-tuned on data selected from OpenThought-30k using LCS-based threshold filtering. The 10% diagnostic subset used for LCS threshold calibration is reported separately under diagnostic_subset.",
+    "evaluation_scope": "Available result: AIME26 P01-P30, four samples per seed across three evaluation seeds (360 judgments). The first 6400 OpenThought-30k candidates were scored; each iteration selected exactly 3200 rows using a threshold computed from the previous iteration evaluation. Full-suite benchmark values remain unreported.",
     "baseline": {
       "primary_score": "TODO",
       "gsm8k": "TODO",
@@ -25,7 +25,9 @@
       "amc23": "TODO",
       "aime24": "TODO",
       "aime25": "TODO",
-      "aime26": "TODO"
+      "aime26": 0.6777777778,
+      "aime26_correct": 244,
+      "aime26_trials": 360
     },
     "final": {
       "primary_score": "TODO",
@@ -37,7 +39,9 @@
       "amc23": "TODO",
       "aime24": "TODO",
       "aime25": "TODO",
-      "aime26": "TODO"
+      "aime26": 0.7166666667,
+      "aime26_correct": 258,
+      "aime26_trials": 360
     },
     "per_iteration": {
       "iteration_1": {
@@ -50,7 +54,9 @@
         "amc23": "TODO",
         "aime24": "TODO",
         "aime25": "TODO",
-        "aime26": "TODO"
+        "aime26": 0.6833333333,
+        "aime26_correct": 246,
+        "aime26_trials": 360
       },
       "iteration_2": {
         "primary_score": "TODO",
@@ -62,7 +68,9 @@
         "amc23": "TODO",
         "aime24": "TODO",
         "aime25": "TODO",
-        "aime26": "TODO"
+        "aime26": 0.6805555556,
+        "aime26_correct": 245,
+        "aime26_trials": 360
       },
       "iteration_3": {
         "primary_score": "TODO",
@@ -74,7 +82,9 @@
         "amc23": "TODO",
         "aime24": "TODO",
         "aime25": "TODO",
-        "aime26": "TODO"
+        "aime26": 0.7027777778,
+        "aime26_correct": 253,
+        "aime26_trials": 360
       },
       "iteration_4": {
         "primary_score": "TODO",
@@ -86,7 +96,9 @@
         "amc23": "TODO",
         "aime24": "TODO",
         "aime25": "TODO",
-        "aime26": "TODO"
+        "aime26": 0.7000000000,
+        "aime26_correct": 252,
+        "aime26_trials": 360
       },
       "iteration_5": {
         "primary_score": "TODO",
@@ -98,7 +110,9 @@
         "amc23": "TODO",
         "aime24": "TODO",
         "aime25": "TODO",
-        "aime26": "TODO"
+        "aime26": 0.7194444444,
+        "aime26_correct": 259,
+        "aime26_trials": 360
       },
       "iteration_6": {
         "primary_score": "TODO",
@@ -110,61 +124,87 @@
         "amc23": "TODO",
         "aime24": "TODO",
         "aime25": "TODO",
-        "aime26": "TODO"
+        "aime26": 0.7166666667,
+        "aime26_correct": 258,
+        "aime26_trials": 360
       }
     },
     "diagnostic_subset": {
-      "note": "10% per-benchmark sample at seed TODO, materialised before iterations. This is the in-loop feedback signal used for LCS threshold calibration, not an evaluation result. Full test sets never entered the optimisation loop.",
+      "note": "The supplied iteration evaluations are 30 AIME26 problems with 4 samples per seed across 3 seeds. They are the previous-evaluation feedback used to compute the next LSC threshold; no separate 10% diagnostic subset was supplied.",
       "baseline": {
         "primary_score": "TODO"
       },
       "iteration_1": {
         "primary_score": "TODO",
-        "lcs_threshold": "TODO"
+        "lsc_threshold": "computed from base evaluation; numeric cut not supplied"
       },
       "iteration_2": {
         "primary_score": "TODO",
-        "lcs_threshold": "TODO"
+        "lsc_threshold": "computed from iteration 1 evaluation; numeric cut not supplied"
       },
       "iteration_3": {
         "primary_score": "TODO",
-        "lcs_threshold": "TODO"
+        "lsc_threshold": "computed from iteration 2 evaluation; numeric cut not supplied"
       },
       "iteration_4": {
         "primary_score": "TODO",
-        "lcs_threshold": "TODO"
+        "lsc_threshold": "computed from iteration 3 evaluation; numeric cut not supplied"
       },
       "iteration_5": {
         "primary_score": "TODO",
-        "lcs_threshold": "TODO"
+        "lsc_threshold": "computed from iteration 4 evaluation; numeric cut not supplied"
       },
       "iteration_6": {
         "primary_score": "TODO",
-        "lcs_threshold": "TODO"
+        "lsc_threshold": "computed from iteration 5 evaluation; numeric cut not supplied"
       }
     },
-    "lcs_metric": {
-      "name": "TODO: expand LCS acronym",
-      "description": "Proxy metric for self-teacher confidence on problem-solving capability",
+    "lsc_metric": {
+      "name": "Late Support Collapse",
+      "abbreviation": "LSC",
+      "description": "J_80 - J_100, the difference between base/student and privileged top-20 support overlap at 80% and 100% reference reasoning",
       "calibration_method": "validation_rollout",
-      "threshold_strategy": "TODO: describe how thresholds are computed from validation LCS scores"
+      "top_k": 20,
+      "privilege_levels": [80, 100],
+      "model_context_limit": 8192,
+      "response_scoring_tokens": 1024,
+      "threshold_strategy": "compute the next selection threshold from the previous iteration evaluation; apply it to the fixed 6400-row pool and retain exactly 3200 rows",
+      "selection_direction": "ascending (low LSC is higher priority for low-quality triage)",
+      "external_label_use": "post-hoc audit only; the iteration threshold uses previous-eval LSC scores"
+    },
+    "aime26_30_problem_aggregate": {
+      "protocol": "30 problems, 4 samples per seed, 3 seeds, 360 total judgments",
+      "problem_correct_counts": {
+        "base": [12,12,11,12,12,12,12,12,1,5,8,12,11,0,0,12,5,3,12,12,12,12,11,10,7,7,7,2,0,0],
+        "opsd_raw": [12,12,12,12,12,12,11,12,4,3,11,11,10,0,0,12,3,7,11,12,12,12,10,11,8,8,2,6,0,0],
+        "iteration_1": [12,12,11,12,12,12,12,12,1,5,8,12,9,0,0,11,3,8,12,11,12,12,11,12,6,8,3,6,0,1],
+        "iteration_2": [12,11,12,11,12,12,11,12,4,4,10,12,7,1,0,12,3,7,12,12,12,12,8,12,5,9,2,8,0,0],
+        "iteration_3": [12,12,11,12,12,12,12,12,3,5,9,12,9,0,0,12,5,6,12,11,12,11,11,11,8,9,5,6,1,0],
+        "iteration_4_rollback": [12,12,12,12,12,12,12,11,2,3,8,12,6,1,0,12,5,7,12,11,12,12,10,12,9,10,7,4,1,0],
+        "iteration_4": [12,12,11,12,12,12,12,12,1,6,8,12,8,0,0,12,6,5,12,11,12,12,11,12,9,9,3,7,1,0],
+        "iteration_5_rollback": [12,12,11,12,12,12,12,12,1,6,9,12,7,0,0,12,4,3,12,12,12,12,11,12,8,5,6,4,0,0],
+        "iteration_5": [12,12,11,12,12,12,12,12,3,7,11,12,11,0,0,12,1,9,12,12,12,12,12,11,8,10,3,5,1,0],
+        "iteration_6": [12,12,11,11,12,12,12,12,4,5,9,12,10,1,0,12,6,9,12,12,12,12,11,11,9,11,2,4,0,0]
+      },
+      "correct_totals": {"base": 244, "opsd_raw": 248, "iteration_1": 246, "iteration_2": 245, "iteration_3": 253, "iteration_4_rollback": 251, "iteration_4": 252, "iteration_5_rollback": 243, "iteration_5": 259, "iteration_6": 258},
+      "trials": 360
     }
   },
   "settings": {
-    "seeds": [
-      "TODO"
-    ],
+    "seeds": ["three evaluation seeds; numeric IDs not supplied"],
     "seed_details": {
       "sft_seed": "TODO",
       "sft_data_seed": "TODO",
       "diagnostic_subset_seed": "TODO",
-      "benchmark_evaluation_seed": "TODO"
+      "benchmark_evaluation_seed": "three seeds, averaged"
     },
     "iterations": 6,
     "training_data": {
       "source": "OpenThought-30k",
-      "selection_method": "lcs_threshold",
-      "num_selected_per_iteration": "TODO"
+      "selection_method": "lsc_threshold_from_previous_eval",
+      "candidate_pool_size": 6400,
+      "num_selected_per_iteration": 3200,
+      "training_steps_per_iteration": 100
     },
     "compute_budget": "TODO: GPU configuration, wall time, token usage",
     "human_intervention": "none",

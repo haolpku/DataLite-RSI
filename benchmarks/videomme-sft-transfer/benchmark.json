@@ -1,0 +1,30 @@
+{
+  "schema_version": "0.1",
+  "id": "videomme-sft-transfer",
+  "name": "Video-MME SFT transfer",
+  "version": "0.1.0",
+  "track": "multimodal",
+  "description": "Measures change in Video-MME multiple-choice video understanding after supervised fine-tuning. Each result compares a base VLM and its VideoRSI-trained counterpart using the same evaluation taxonomy and reports micro-averaged accuracy plus twelve category accuracies.",
+  "task_types": ["video-question-answering", "multiple-choice", "multimodal-reasoning"],
+  "dataset": {"registry_id": "videomme", "revision": "ead1408f75b618502df9a1d8e0950166bf0a2a0b"},
+  "evaluator": {
+    "entrypoint": "python benchmarks/videomme-sft-transfer/evaluator.py <predictions.jsonl> --output <metrics.json>",
+    "container_image": null
+  },
+  "metrics": [
+    {"name": "primary_score", "higher_is_better": true, "range": [0.0, 1.0]},
+    {"name": "action_reasoning", "higher_is_better": true, "range": [0.0, 1.0]},
+    {"name": "object_recognition", "higher_is_better": true, "range": [0.0, 1.0]},
+    {"name": "counting", "higher_is_better": true, "range": [0.0, 1.0]},
+    {"name": "information_synopsis", "higher_is_better": true, "range": [0.0, 1.0]},
+    {"name": "object_reasoning", "higher_is_better": true, "range": [0.0, 1.0]},
+    {"name": "temporal_perception", "higher_is_better": true, "range": [0.0, 1.0]},
+    {"name": "attribute", "higher_is_better": true, "range": [0.0, 1.0]},
+    {"name": "temporal_reasoning", "higher_is_better": true, "range": [0.0, 1.0]},
+    {"name": "action_recognition", "higher_is_better": true, "range": [0.0, 1.0]},
+    {"name": "ocr", "higher_is_better": true, "range": [0.0, 1.0]},
+    {"name": "spatial_perception", "higher_is_better": true, "range": [0.0, 1.0]},
+    {"name": "spatial_reasoning", "higher_is_better": true, "range": [0.0, 1.0]}
+  ],
+  "license": "NOASSERTION"
+}

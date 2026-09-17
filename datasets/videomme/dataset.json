@@ -1,0 +1,19 @@
+{
+  "schema_version": "0.1",
+  "id": "videomme",
+  "name": "Video-MME",
+  "description": "Public multiple-choice video understanding benchmark. The VideoRSI submission evaluates held-out Video-MME videos and reports micro-averaged accuracy across its twelve task categories. The test split contains 900 videos and 2,700 question instances.",
+  "huggingface": {
+    "repo_id": "lmms-eval/Video-MME",
+    "revision": "ead1408f75b618502df9a1d8e0950166bf0a2a0b"
+  },
+  "modalities": ["video", "text"],
+  "formats": ["parquet", "video"],
+  "splits": {
+    "test": {"num_examples": 900, "question_instances": 2700}
+  },
+  "license": "NOASSERTION",
+  "access": "public",
+  "contains_pii": false,
+  "provenance_url": "https://huggingface.co/datasets/lmms-eval/Video-MME"
+}

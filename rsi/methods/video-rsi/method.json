@@ -1,0 +1,14 @@
+{
+  "schema_version": "0.1",
+  "id": "video-rsi",
+  "name": "VideoRSI",
+  "version": "0.1.0",
+  "description": "Recursive improvement of a video SFT data pipeline.",
+  "tracks": ["multimodal"],
+  "entrypoint": "python -m video_caption_pipeline",
+  "modifies": ["data"],
+  "feedback_signal": "Candidate yield, evidence and schema validation, text-only checks, frozen-target difficulty, duplicate rejection, and accepted frontier-and-novel samples under a fixed budget.",
+  "stopping_rule": "Five pipeline iterations.",
+  "human_intervention": "none",
+  "license": "NOASSERTION"
+}

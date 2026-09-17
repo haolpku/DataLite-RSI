@@ -1,0 +1,47 @@
+# Reference configuration for VideoRSI data-pipeline recursion.
+
+project:
+  workspace_dir: ${VIDEO_RSI_WORKSPACE_DIR}
+  input_manifest: ${VIDEO_RSI_INPUT_MANIFEST}
+  output_dir: ${VIDEO_RSI_OUTPUT_DIR}
+
+evidence:
+  chunk_seconds: 60
+  caption_operator: CaptionOperator
+  entity_operator: EntityExtractionOperator
+  checkpoint_segments: true
+  entity_library: true
+
+task_construction:
+  evidence_index: EvidenceIndexOperator
+  candidate_mining: TaskCandidateMiningOperator
+  grounded_task_builder: GroundedTaskBuilderOperator
+  question_generation: QuestionGenerationOperator
+  question_variants: 1
+  distractor_enhancement: DistractorEnhancementOperator
+  distractor_quality: DistractorQualityOperator
+
+selection:
+  schema_validation: true
+  text_only_filter: TextOnlyFilterOperator
+  frozen_target_filter: FrozenTargetFrontierFilterOperator
+  frozen_target_trials: 4
+  local_deduplication: true
+  global_deduplication: true
+  aggregation: FrontierAndDedupOperator
+
+evolution:
+  iterations: 5
+  feedback:
+    - candidate_yield
+    - evidence_validation
+    - schema_validation
+    - text_only_filter
+    - frozen_target_difficulty
+    - duplicate_rejection
+    - accepted_frontier_and_novel_samples
+  update_surfaces:
+    - task_definition
+    - prompt
+    - operator
+    - pipeline_graph

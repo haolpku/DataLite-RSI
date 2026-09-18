@@ -1,0 +1,178 @@
+# Reference configuration for the math SFT transfer experiment recorded in
+# results/submissions/dataflow-evolver-qwen25-7b-math-3k/.
+#
+# This is the portable form of the run's exact configuration. Absolute paths from
+# the source machine are replaced by ${...} placeholders, and every credential is
+# supplied through the environment -- no key, token, or private endpoint appears
+# here. Set DF_* variables before launching; see ../README.md.
+
+project:
+  workspace_dir: ${DF_WORKSPACE_DIR}
+  # Fixed 14,181-row GSM8K-train + MATH-train mix, 13-gram decontaminated.
+  # sha256 f9bae97ae63e83c917c9b224bec40dedd7354fcd65e8db30a98b40e540ef3eec
+  input_path: ${DF_INPUT_PATH}
+  run_name: ${DF_RUN_NAME}
+
+task:
+  target_schema:
+    instruction: str
+    output: str
+  quality_criteria:
+    - Require a non-empty instruction field that states the source math problem without changing its mathematical meaning.
+    - Require a correct self-contained output that identifies key components, applies relevant theorems or formulas step by step, shows calculations, and verifies important intermediate results.
+    - Require every output to conclude with the final answer explicitly wrapped in LaTeX \boxed{} notation and mathematically consistent with golden_answer.
+    - When teacher-generated solution text is used, preserve its complete clean mathematical solution; if its final answer is not boxed, normalize only the conclusion so it ends in \boxed{answer}.
+    - Exclude truncated responses, answer-only outputs, and unsupported answer changes.
+    - Maintain useful coverage across sources, mathematical problem types, and difficulty levels while minimizing exact and semantic duplication.
+    - Exclude diagnostic or evaluation content, external questions, copied judge commentary, and malformed records.
+
+llm:
+  backend: api
+  # ReviewAgent: scores each candidate dataset.
+  api:
+    api_url: ${DF_API_URL}
+    model_name: ${DF_REVIEW_MODEL}
+    api_key: ${DF_API_KEY}
+    max_workers: 10
+    request_timeout: 600
+    max_retries: 3
+  # Teacher model called from inside the generated pipeline. Distinct from both
+  # the ReviewAgent and the pipeline-authoring agent.
+  pipeline_llm:
+    generation:
+      api_url: ${DF_PIPELINE_API_URL}
+      model_name: ${DF_PIPELINE_MODEL}
+      api_key: ${DF_PIPELINE_API_KEY}
+      max_workers: 50
+      serving_kwargs:
+        temperature: 0.6
+        top_p: 0.95
+        max_tokens: 16384
+        enable_thinking: omit
+        stream: true
+        stream_options:
+          include_usage: true
+        connect_timeout: 10
+        read_timeout: 1800
+        max_retries: 3
+
+# Pipeline-authoring agent: writes the operator code for each challenger.
+agent:
+  backend: codex
+  api_key_env: DF_AGENT_API_KEY
+  base_url: ${DF_AGENT_BASE_URL}
+  setting_sources: [project]
+  max_turns: 50
+  pipeline_filename: pipeline.py
+  max_retries: 4
+  retry_base_delay: 10
+  run_timeout_sec: 3600
+  resume_on_retry: true
+  codex:
+    binary: ${CODEX_BIN}
+    model: ${CODEX_MODEL}
+    effort: xhigh
+    base_url: ${CODEX_BASE_URL}
+    mcp_timeout_ms: 30000
+    bypass_sandbox: true
+
+loop:
+  max_iterations: 5
+  compile_timeout_sec: 120
+  execution_timeout_sec: 43200
+  # Additional agent repair attempts after a validation, compile, execution, or
+  # output-validation failure.
+  execution_repairs: 2
+  python_exe: ${DF_AGENT_PYTHON}
+
+# Periodic real SFT + evaluation. Results feed the next proposal prompt as
+# diagnostics and are deliberately excluded from review_score.
+#
+# The command is external on purpose: DataFlow-Evolver installs and imports no
+# training, CUDA, model, or evaluation dependency. The reference implementation
+# runs full-parameter SFT with LLaMA-Factory 0.9.3 (DeepSpeed ZeRO-2) and scores
+# with the Qwen2.5-Math harness committed under evaluation/qwen25_math/ (upstream
+# commit a45202bd16f1ec06f433442dc1152d0074773465). It evaluates a FIXED
+# diagnostic subset -- a 10% per-benchmark sample at seed 42, materialised before
+# evolution -- rather than the full test sets, so benchmark content cannot steer
+# the optimisation. See configs/downstream_math_runtime.* in the upstream
+# repository for the SFT and evaluation settings this command consumes.
+downstream_eval:
+  enabled: true
+  interval: 2
+  command:
+    - ${DF_DOWNSTREAM_PYTHON}
+    - ${DF_DOWNSTREAM_SCRIPT}
+    - --config
+    - ${DF_DOWNSTREAM_CONFIG}
+  benchmarks: [gsm8k, math, amc23, aime24, aime25, minerva_math, gaokao2024_mix, olympiadbench]
+  baseline:
+    enabled: true
+  bad_cases_per_benchmark: 2
+  timeout_sec: 345600
+
+review:
+  sample_size: 80
+  sample_seed: 42
+  # Hard gates. A violation zeroes review_score.
+  correctness_threshold: 0.6
+  schema_threshold: 0.6
+  relevance_threshold: 0.6
+  null_threshold: 0.5
+  hard_metrics: true
+  weights:
+    correctness: 0.40
+    relevance: 0.25
+    difficulty: 0.15
+    schema: 0.20
+  # Exact normalised 13-gram overlap against every benchmark test file.
+  decontamination:
+    reference_files:
+      - ${DF_BENCHMARK_DATA_DIR}/gsm8k/test.jsonl
+      - ${DF_BENCHMARK_DATA_DIR}/math/test.jsonl
+      - ${DF_BENCHMARK_DATA_DIR}/amc23/test.jsonl
+      - ${DF_BENCHMARK_DATA_DIR}/aime24/test.jsonl
+      - ${DF_BENCHMARK_DATA_DIR}/aime25/test.jsonl
+      - ${DF_BENCHMARK_DATA_DIR}/minerva_math/test.jsonl
+      - ${DF_BENCHMARK_DATA_DIR}/gaokao2024_mix/test.jsonl
+      - ${DF_BENCHMARK_DATA_DIR}/olympiadbench/test.jsonl
+    ngram: 13
+    max_rate: 0.01
+    fields:
+      - question
+      - problem
+    candidate_fields:
+      - instruction
+  # Dataset-level embedding signals, contributing 0.25 of review_score.
+  dataset_quality:
+    enabled: true
+    score_weight: 0.25
+    score_weights:
+      das: 0.40
+      vendi: 0.30
+      nearest_neighbor: 0.30
+    sample_size: 3000
+    sample_seed: 42
+    require_full_sample: false
+    rbf_sigma: 1.0
+    biased: true
+    normalize_embeddings: true
+    max_embedding_fail_rate: 0.02
+    cache_dir: ${DF_DAS_CACHE_DIR}
+    candidate:
+      user_field: instruction
+      assistant_field: output
+    proxy:
+      source: local
+      path: ${DF_DAS_PROXY_PATH}
+      split: train
+      user_field: question
+      assistant_field: response
+    embedding:
+      model_name: ${DF_DAS_EMBEDDING_MODEL}
+      base_url: ${DF_DAS_EMBEDDING_URL}
+      api_key: ${DF_DAS_EMBEDDING_API_KEY}
+      max_concurrent_requests: 64
+      max_retries: 3
+      truncate_prompt_tokens: 40960
+      truncation_side: right

@@ -1,0 +1,26 @@
+{
+  "schema_version": "0.1",
+  "id": "minerva-math",
+  "name": "Minerva Math",
+  "description": "272 science and mathematics problems drawn from MIT course materials, requiring multi-step quantitative reasoning. Used as an evaluation target in the math SFT transfer suite (accuracy, greedy decoding). Content verified identical to math-ai/minervamath (problem text matches exactly).",
+  "huggingface": {
+    "repo_id": "math-ai/minervamath",
+    "revision": "ee46ddc498933b1977577953250ca5c66be64f96"
+  },
+  "modalities": [
+    "text"
+  ],
+  "formats": [
+    "jsonl"
+  ],
+  "splits": {
+    "test": {
+      "num_examples": 272
+    }
+  },
+  "license": "NOASSERTION",
+  "access": "public",
+  "contains_pii": false,
+  "provenance_url": "https://github.com/QwenLM/Qwen2.5-Math/tree/a45202bd16f1ec06f433442dc1152d0074773465/evaluation/data",
+  "notes": "Data sourced from the Qwen2.5-Math evaluation harness at https://github.com/QwenLM/Qwen2.5-Math/tree/a45202bd16f1ec06f433442dc1152d0074773465/evaluation/data. Problem text verified identical to math-ai/minervamath (field named 'question' there vs 'problem' locally)."
+}

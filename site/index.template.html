@@ -75,7 +75,7 @@
             ><a class="rs-button" href="#rs-access">Join the effort</a>
           </div>
           <p class="rs-release">
-            Initial explorations · Author-reported results, awaiting verification
+            Explore the experiments · Help shape what comes next
           </p>
         </div>
       </header>
@@ -90,7 +90,7 @@
             ><small>Language · Image · Video</small>
           </div>
           <div class="rs-stat rs-featured">
-            <b>{{result_count}}</b><span>Reported results</span
+            <b>{{result_count}}</b><span>Experiment results</span
             ><small>With explicit baselines</small>
           </div>
           <div class="rs-stat">
@@ -442,7 +442,7 @@
                 </aside>
               </div>
               <details class="rs-protocol">
-                <summary>Protocol, compute & evidence status</summary>
+                <summary>Protocol & compute details</summary>
                 <p id="rs-math-protocol">{{opsd_protocol}}</p>
               </details>
             </div>
@@ -453,8 +453,7 @@
               hidden
             >
               <p class="rs-chart-sub">
-                1,000 accepted training pairs per arm · Matched LoRA recipe ·
-                Author-reported
+                1,000 accepted training pairs per arm · Matched LoRA recipe
               </p>
               <div class="rs-chart-grid" id="rs-image-charts"></div>
               <details class="rs-protocol">
@@ -493,8 +492,7 @@
               hidden
             >
               <p class="rs-chart-sub">
-                Video-MME overall accuracy · 4,541 video SFT examples ·
-                Author-reported
+                Video-MME overall accuracy · 4,541 video SFT examples
               </p>
               <div class="rs-legend">
                 <span><i class="rs-dot"></i>Base</span
@@ -507,7 +505,7 @@
               </div>
               <p class="rs-chart-label">Video-MME overall accuracy (%)</p>
               <details class="rs-protocol">
-                <summary>Protocol & evidence status</summary>
+                <summary>Evaluation details</summary>
                 <p>
                   Five pipeline-search iterations are described before final
                   SFT. All five models improve overall; some categories regress.
@@ -531,8 +529,7 @@
               hidden
             >
               <p class="rs-chart-sub">
-                {{result_count}} submissions · Different protocols are not
-                ranked together · Status shown in source records
+                {{result_count}} experiment records · Models, metrics and source details
               </p>
               <table class="rs-metric-table">
                 <thead>
@@ -688,9 +685,9 @@
               </article>
             </div>
             <p class="rs-result-note">
-              Full reruns depend on the code and artifacts available for each
-              method. Evaluator fixtures test software behavior; they do not
-              verify the reported experiments.
+              Start with a research question, explore the code, or contribute an
+              experiment. Together, we can discover where better data decisions
+              make the next improvement possible.
             </p>
           </div>
         </section>

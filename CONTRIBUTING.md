@@ -5,6 +5,13 @@ self-improvement. Contributions can be small and focused: a new benchmark,
 dataset registration, result submission, evaluator fix, or RSI method is useful
 on its own.
 
+This is an open research initiative around **Less is More for RSI**. The current
+experiments are initial explorations, and we invite the community to shape what
+comes next. Research questions, new tasks, reproductions, matched-budget controls,
+and negative findings are welcome alongside code. You can start with an
+[issue](https://github.com/haolpku/DataLite-RSI/issues) before having a complete
+implementation or experiment.
+
 For a Chinese version, see [docs/CONTRIBUTING_zh.md](docs/CONTRIBUTING_zh.md).
 
 ## Before opening a pull request

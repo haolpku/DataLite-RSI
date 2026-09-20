@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="400" viewBox="0 0 1280 400" role="img" aria-labelledby="title desc">
+  <title id="title">DataLite-RSI — Less is More for Recursive Self-Improvement</title>
+  <desc id="desc">An open research initiative inviting the community to explore data-efficient recursive self-improvement.</desc>
+  <defs>
+    <linearGradient id="base" x2="1" y2="1"><stop stop-color="#292b68"/><stop offset=".58" stop-color="#242b50"/><stop offset="1" stop-color="#153f4e"/></linearGradient>
+    <radialGradient id="violet" cx="0" cy="0" r="1"><stop stop-color="#6268df" stop-opacity=".7"/><stop offset="1" stop-color="#6268df" stop-opacity="0"/></radialGradient>
+    <radialGradient id="pink" cx="1" cy="0" r="1"><stop stop-color="#ba648f" stop-opacity=".45"/><stop offset="1" stop-color="#ba648f" stop-opacity="0"/></radialGradient>
+    <linearGradient id="warm"><stop stop-color="#ffe0b1"/><stop offset=".55" stop-color="#ffbfd9"/><stop offset="1" stop-color="#d6dfff"/></linearGradient>
+    <linearGradient id="accent"><stop stop-color="#9b9fff"/><stop offset="1" stop-color="#6cdbdf"/></linearGradient>
+    <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#fff" opacity=".08"/></pattern>
+  </defs>
+  <rect width="1280" height="400" rx="20" fill="url(#base)"/>
+  <rect width="1280" height="400" rx="20" fill="url(#violet)"/>
+  <rect width="1280" height="400" rx="20" fill="url(#pink)"/>
+  <rect width="1280" height="400" rx="20" fill="url(#dots)"/>
+  <g font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif">
+    <text x="64" y="65" fill="#d6dbfa" font-size="15" font-weight="600" letter-spacing="2.7">DATA-CENTRIC RECURSIVE SELF-IMPROVEMENT</text>
+    <text x="60" y="151" fill="#fff" font-size="76" font-weight="800" letter-spacing="-3">DataLite-RSI</text>
+    <text x="64" y="215" fill="url(#warm)" font-size="42" font-weight="700" letter-spacing="-1">Less is More.</text>
+    <text x="64" y="259" fill="#e1e5f5" font-size="21">An open research initiative. Built with the community.</text>
+    <g font-size="15" font-weight="500" fill="#e5e9fa">
+      <rect x="64" y="306" width="156" height="38" rx="19" fill="#ffffff0d" stroke="#ffffff36"/>
+      <text x="142" y="331" text-anchor="middle">Explore ideas</text>
+      <rect x="232" y="306" width="154" height="38" rx="19" fill="#ffffff0d" stroke="#ffffff36"/>
+      <text x="309" y="331" text-anchor="middle">Build methods</text>
+      <rect x="398" y="306" width="151" height="38" rx="19" fill="#ffffff0d" stroke="#ffffff36"/>
+      <text x="473" y="331" text-anchor="middle">Share evidence</text>
+    </g>
+    <g transform="translate(910 180)">
+      <circle r="124" fill="none" stroke="#d1dbff" stroke-opacity=".16"/>
+      <circle r="92" fill="none" stroke="#d1dbff" stroke-opacity=".10"/>
+      <path d="M-94-24A97 97 0 0 1 62-74M94 24A97 97 0 0 1-62 74" fill="none" stroke="url(#accent)" stroke-width="3" stroke-linecap="round"/>
+      <path d="m56-85 9 14-16 2m-105 154-9-14 16-2" fill="none" stroke="url(#accent)" stroke-width="3" stroke-linejoin="round"/>
+      <rect x="-65" y="-44" width="130" height="88" rx="16" fill="#ffffff0a" stroke="#c4d2ff" stroke-opacity=".4"/>
+      <g fill="url(#accent)"><rect x="-39" y="-21" width="78" height="8" rx="4"/><rect x="-39" y="-4" width="57" height="8" rx="4"/><rect x="-39" y="13" width="34" height="8" rx="4"/></g>
+      <circle cx="-120" cy="-31" r="5" fill="#b6adff"/><circle cx="95" cy="79" r="5" fill="#72d8e0"/>
+    </g>
+    <text x="910" y="341" fill="#cbd6eb" font-size="14" letter-spacing="2" text-anchor="middle">COMPACT DATA · RECURSIVE FEEDBACK</text>
+  </g>
+</svg>

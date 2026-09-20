@@ -1,0 +1,72 @@
+{
+  "schema_version": "0.1",
+  "id": "opsd-math-competition-suite",
+  "name": "OPSD math competition suite (Qwen3 thinking / TTPO protocol)",
+  "version": "0.1.0",
+  "track": "llm",
+  "description": "Measures competition-math accuracy for models trained with OPSD / OPSD-data-lite under the TTPO Qwen3-thinking evaluation protocol. A method reports avg@n on five held-out contests; the score attributable to the method is the delta over the untrained base model under identical generation settings, averaged across seeds.",
+  "task_types": [
+    "text-generation",
+    "mathematical-reasoning"
+  ],
+  "dataset": {
+    "registry_id": "aime25",
+    "revision": "c94da77eb22bbd6439e62a323bec18493a421302",
+    "notes": "The suite evaluates five test sets, all registered under datasets/: aime25, hmmt25, aime26, hmmt26, brumo25. registry_id names aime25 as the primary reference because the schema carries one field; see each dataset directory for provenance and HuggingFace revision pins."
+  },
+  "metrics": [
+    {
+      "name": "primary_score",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "aime25",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "hmmt25",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "aime26",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "hmmt26",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "brumo25",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    }
+  ],
+  "evaluator": {
+    "entrypoint": "python benchmarks/opsd-math-competition-suite/evaluator.py --predictions <path> --output <path>",
+    "container_image": null
+  },
+  "license": "NOASSERTION"
+}

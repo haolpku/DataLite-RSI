@@ -1,0 +1,19 @@
+{
+  "schema_version": "0.1",
+  "id": "opsd-data-lite",
+  "name": "OPSD-data-lite",
+  "version": "0.1.0",
+  "description": "Selects a teachable subset of a fixed On-Policy Self-Distillation (OPSD) training pool and spends a short update budget on that subset rather than the whole set. The student samples on-policy answers from the problem alone; a frozen self-teacher, initialized from the same weights and conditioned on privileged context such as a reference solution, provides dense token-level supervision on those trajectories. A selector scores each candidate for sample-level teachability -- whether the privileged teacher targets a gap the question-only student can still internalize -- ranks the pool, trains on the selected subset with the standard OPSD objective, re-scores the same pool after the short round, and uses the before/after comparison to construct the next subset. Problems, privileged context, the OPSD objective, and the raw 9,600-example candidate pool stay fixed; teacher weights stay frozen at the initial student weights for a training run.",
+  "tracks": [
+    "llm"
+  ],
+  "entrypoint": "python -m opsd_lite.main --config rsi/methods/opsd-data-lite/configs/opsd-data-lite.yaml --log-level INFO",
+  "modifies": [
+    "data",
+    "weights"
+  ],
+  "feedback_signal": "Sample-level teachability over a fixed 9,600-example candidate pool. A useful example is one where the question-only student is uncertain or wrong while the privileged teacher still produces a transferable, internalizable signal; examples the student already solves, or whose teacher depends on context unavailable at inference, are treated as low value. Initial selection ranks the pool by this signal and trains on a smaller subset (2,400 examples in the reported first iteration). After a short OPSD round the same pool is re-scored; the per-sample before/after comparison filters the next subset (1,600 examples in the reported second iteration). A later aggressive pass continues the same filter down to 32 examples. Every reported data-lite iteration trains for 100 optimizer steps. The exact scoring and filter rule are withheld until publication. Benchmark outcomes are not used to choose subsets or checkpoints.",
+  "stopping_rule": "No convergence or early-stopping criterion. Every data-lite iteration uses a fixed 100-step OPSD budget; only the selected subset changes: 2,400 examples, then 1,600, then an aggressive 32-example setting. Each data-lite row is compared against the 100-step full-pool OPSD control. Approximate two-cycle cost on four GPUs is 8-14 GPU-hours, dominated by full-pool scoring rather than the OPSD updates.",
+  "human_intervention": "none",
+  "license": "NOASSERTION"
+}

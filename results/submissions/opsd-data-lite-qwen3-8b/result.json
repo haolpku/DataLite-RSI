@@ -1,0 +1,146 @@
+{
+  "schema_version": "0.1",
+  "submission_id": "opsd-data-lite-qwen3-8b",
+  "status": "unverified",
+  "track": "llm",
+  "benchmark": {
+    "id": "opsd-math-competition-suite",
+    "version": "0.1.0"
+  },
+  "model": {
+    "id": "Qwen/Qwen3-8B",
+    "revision": "unknown"
+  },
+  "method_id": "opsd-data-lite",
+  "metrics": {
+    "baseline": {
+      "primary_score": 0.587,
+      "aime25": 0.667,
+      "hmmt25": 0.442,
+      "aime26": 0.678,
+      "hmmt26": 0.455,
+      "brumo25": 0.692
+    },
+    "final": {
+      "primary_score": 0.621,
+      "aime25": 0.714,
+      "hmmt25": 0.467,
+      "aime26": 0.725,
+      "hmmt26": 0.472,
+      "brumo25": 0.727
+    },
+    "per_iteration": {
+      "iteration_1": {
+        "update_steps": 100,
+        "selected_samples": 2400,
+        "primary_score": 0.607,
+        "aime25": 0.714,
+        "hmmt25": 0.456,
+        "aime26": 0.703,
+        "hmmt26": 0.455,
+        "brumo25": 0.706
+      },
+      "iteration_2": {
+        "update_steps": 100,
+        "selected_samples": 1600,
+        "primary_score": 0.619,
+        "aime25": 0.717,
+        "hmmt25": 0.464,
+        "aime26": 0.719,
+        "hmmt26": 0.472,
+        "brumo25": 0.725
+      },
+      "iteration_3": {
+        "update_steps": 100,
+        "selected_samples": 32,
+        "primary_score": 0.621,
+        "aime25": 0.714,
+        "hmmt25": 0.467,
+        "aime26": 0.725,
+        "hmmt26": 0.472,
+        "brumo25": 0.727,
+        "note": "Aggressive selection: 32 examples. All data-lite iterations use 100 optimizer steps."
+      }
+    },
+    "controls": {
+      "opsd_50_steps": {
+        "primary_score": 0.606,
+        "aime25": 0.697,
+        "hmmt25": 0.461,
+        "aime26": 0.694,
+        "hmmt26": 0.464,
+        "brumo25": 0.714
+      },
+      "opsd_75_steps": {
+        "primary_score": 0.595,
+        "aime25": 0.681,
+        "hmmt25": 0.447,
+        "aime26": 0.686,
+        "hmmt26": 0.46,
+        "brumo25": 0.703
+      },
+      "opsd_100_steps": {
+        "primary_score": 0.603,
+        "aime25": 0.692,
+        "hmmt25": 0.456,
+        "aime26": 0.689,
+        "hmmt26": 0.465,
+        "brumo25": 0.714
+      }
+    }
+  },
+  "settings": {
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "seed_count": 3,
+    "seed_note": "Three evaluation seeds were reported",
+    "iterations": 3,
+    "compute_budget": "4 A100 GPUs and approximately 8-14 GPU-hours for the first two cycles, including full-pool scoring, plus a third aggressive round of 100 optimizer steps on 32 selected examples. Every data-lite iteration trains for 100 optimizer steps; only the selected subset size changes.",
+    "human_intervention": "none",
+    "training_pool_size": 9600,
+    "selected_samples": [
+      2400,
+      1600,
+      32
+    ],
+    "update_steps": [
+      100,
+      100,
+      100
+    ],
+    "evaluation": {
+      "thinking": true,
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": -1,
+      "val_n": 12,
+      "aggregation": "mean over three seeds per dataset, then unweighted mean over five datasets"
+    }
+  },
+  "reproducibility": {
+    "code_revision": "ae7d2519e94920c4eb6206c0c26de46d9c50abae",
+    "code_revision_note": "Pinned commit of https://github.com/siyan-zhao/OPSD used for training. The DataLite-RSI method source is not in this repository.",
+    "dataset_revision": "c94da77eb22bbd6439e62a323bec18493a421302",
+    "dataset_revision_note": "Top-level dataset_revision is aime25. Per-benchmark Hugging Face commits are listed in dataset_revisions.",
+    "dataset_revisions": {
+      "aime25": "c94da77eb22bbd6439e62a323bec18493a421302",
+      "hmmt25": "6fdc4277120810ff75aa22d2d5489b91f7a262a1",
+      "aime26": "d2de22f3c656b4f56cf8981212186377d1e23bc3",
+      "hmmt26": "02fba4f74d8e68e73e66a02d540fd979c05c274c",
+      "brumo25": "6de9bc0987f5710c6376ee980e1483dbeb55cfda"
+    },
+    "container_image": "unknown",
+    "command": "python -m opsd_lite.main --config rsi/methods/opsd-data-lite/configs/opsd-data-lite.yaml --log-level INFO",
+    "artifacts_url": null,
+    "evaluation_harness": {
+      "name": "TTPO math evaluator",
+      "url": "https://github.com/ZJU-REAL/TTPO",
+      "revision": "36326ed5b04517e272a90244188b83a8bc17150c",
+      "vendored_path": "evaluation/ttpo_math",
+      "grading_modified": false
+    }
+  }
+}

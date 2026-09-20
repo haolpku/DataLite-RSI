@@ -1,0 +1,25 @@
+{
+  "schema_version": "0.1",
+  "id": "brumo25",
+  "name": "BRUMO 2025",
+  "description": "30 problems from BRUMO 2025. Used as an evaluation target in the OPSD math competition suite (avg@12, temperature 1.0, Qwen3 thinking).",
+  "huggingface": {
+    "repo_id": "MathArena/brumo_2025",
+    "revision": "6de9bc0987f5710c6376ee980e1483dbeb55cfda"
+  },
+  "modalities": [
+    "text"
+  ],
+  "formats": [
+    "parquet"
+  ],
+  "splits": {
+    "train": {
+      "num_examples": 30
+    }
+  },
+  "license": "NOASSERTION",
+  "access": "public",
+  "contains_pii": false,
+  "provenance_url": "https://huggingface.co/datasets/MathArena/brumo_2025"
+}

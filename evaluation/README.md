@@ -28,9 +28,15 @@ than inferred.
 | Directory | Harness | Used by |
 | --- | --- | --- |
 | [`qwen25_math/`](qwen25_math/) | [Qwen2.5-Math](https://github.com/QwenLM/Qwen2.5-Math) @ `a45202bd` (MIT) | [`math-sft-transfer-suite`](../benchmarks/math-sft-transfer-suite/) |
+| [`ttpo_math/`](ttpo_math/) | [TTPO](https://github.com/ZJU-REAL/TTPO) @ `36326ed5` | [`opsd-math-competition-suite`](../benchmarks/opsd-math-competition-suite/) |
 
-Each directory preserves the upstream `LICENSE` unchanged, and adds an
-`UPSTREAM.md` written by us: the upstream URL and exact commit, a per-file
-statement of what was and was not modified, and a command to diff the copy
-against upstream. Vendor only what grading and generation need — not upstream
-datasets, generated parsers, caches, or outputs.
+[`image-edit-transfer-suite`](../benchmarks/image-edit-transfer-suite/) is graded
+by a hosted VLM judge, so there is no vendored harness. The suite evaluator
+re-aggregates saved per-sample scores without calling the judge.
+
+Each directory adds an `UPSTREAM.md` with the upstream URL and exact commit, a
+per-file statement of what was and was not modified, the upstream license
+status, and a command to diff the copy against upstream. Preserve an upstream
+`LICENSE` unchanged when one is published; otherwise use `NOASSERTION` until
+the redistribution terms are confirmed. Vendor only what grading and generation
+need — not upstream datasets, generated parsers, caches, or outputs.

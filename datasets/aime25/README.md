@@ -11,4 +11,7 @@ differences (e.g. `\operatorname{if}` vs `	ext{if}`).
 These differences do not affect scoring because `math_equal` uses symbolic
 comparison, not string matching on problem text.
 
-**Metric:** avg@4, temperature 0.6, n_sampling 4.
+**Metrics:** The dataset is shared by two benchmark protocols:
+
+- `math-sft-transfer-suite`: avg@4, temperature 0.6, four samples per problem;
+- `opsd-math-competition-suite`: avg@12, temperature 1.0, Qwen3 thinking.

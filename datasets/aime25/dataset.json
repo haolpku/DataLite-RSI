@@ -2,7 +2,7 @@
   "schema_version": "0.1",
   "id": "aime25",
   "name": "AIME 2025",
-  "description": "30 problems from the 2025 AIME I competition. Used as an evaluation target in the math SFT transfer suite (avg@4, temperature 0.6). A HuggingFace mirror exists at MathArena/aime_2025: all 30 answers are identical but problem LaTeX formatting differs (e.g. \\operatorname{if} vs \text{if}). Grading is unaffected because math_equal uses symbolic comparison, not string matching on problem text.",
+  "description": "30 problems from the 2025 AIME I competition. Used by the math SFT transfer suite (avg@4, temperature 0.6) and the OPSD math competition suite (avg@12, temperature 1.0, Qwen3 thinking). A HuggingFace mirror exists at MathArena/aime_2025: all 30 answers are identical but problem LaTeX formatting differs (e.g. \\operatorname{if} vs \\text{if}). Grading is unaffected because math_equal uses symbolic comparison, not string matching on problem text.",
   "huggingface": {
     "repo_id": "MathArena/aime_2025",
     "revision": "c94da77eb22bbd6439e62a323bec18493a421302"

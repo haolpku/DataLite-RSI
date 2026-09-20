@@ -1,0 +1,190 @@
+{
+  "schema_version": "0.1",
+  "submission_id": "dataflow-self-improver-qwen3-8b-math-6k",
+  "status": "unverified",
+  "track": "llm",
+  "benchmark": {
+    "id": "math-sft-transfer-suite",
+    "version": "0.1.0"
+  },
+  "model": {
+    "id": "Qwen/Qwen3-8B-Base",
+    "revision": "unknown",
+    "notes": "Qwen3-8B-Base (not Instruct). Evaluated under the math SFT transfer protocol: greedy for GSM8K, MATH-500, Minerva, Gaokao, and OlympiadBench; avg@4 for AMC23, AIME24, AIME25, and AIME26. Baseline is the untrained base model. Every reported score is the mean over three seeds 42, 42, and 44."
+  },
+  "method_id": "dataflow-self-improver",
+  "metrics": {
+    "evaluation_scope": "Every reported cell is the mean over three seeds (42, 42, 44). Headline primary_score is the unweighted mean over the seven held-out sets that never entered the rollback rule: gsm8k, minerva_math, gaokao2024_mix, olympiadbench, amc23, aime24, aime25. MATH-500 and AIME26 are the two frozen in-loop validation sets used for bad-case attribution; they are reported under in_loop_validation and under primary_score_including_validation, and are not the headline metric.",
+    "baseline": {
+      "primary_score": 0.3711,
+      "gsm8k": 0.907,
+      "minerva_math": 0.2904,
+      "gaokao2024_mix": 0.3791,
+      "olympiadbench": 0.4148,
+      "amc23": 0.4438,
+      "aime24": 0.0709,
+      "aime25": 0.0917
+    },
+    "final": {
+      "primary_score": 0.4145,
+      "gsm8k": 0.9314,
+      "minerva_math": 0.3676,
+      "gaokao2024_mix": 0.4615,
+      "olympiadbench": 0.3911,
+      "amc23": 0.5,
+      "aime24": 0.1333,
+      "aime25": 0.1167,
+      "note": "Iteration 4, 6,000-row combined subset after capability-phase refine/filter."
+    },
+    "primary_score_including_validation": {
+      "note": "Unweighted mean over the seven held-out sets plus in-loop MATH-500 and AIME26. Diagnostic only; not the headline metric.",
+      "baseline": 0.3766,
+      "iteration_1": 0.3967,
+      "iteration_2": 0.4028,
+      "iteration_3": 0.4101,
+      "iteration_4": 0.4218
+    },
+    "in_loop_validation": {
+      "note": "Frozen MATH-500 and AIME26. These scores enter bad-case attribution and the rollback rule.",
+      "baseline": {
+        "math500": 0.7248,
+        "aime26": 0.0667
+      },
+      "iteration_1": {
+        "math500": 0.7082,
+        "aime26": 0.0667
+      },
+      "iteration_2": {
+        "math500": 0.748,
+        "aime26": 0.1333
+      },
+      "iteration_3": {
+        "math500": 0.7614,
+        "aime26": 0.0833
+      },
+      "iteration_4": {
+        "math500": 0.7614,
+        "aime26": 0.1333
+      }
+    },
+    "per_iteration": {
+      "iteration_1": {
+        "phase": "format_alignment",
+        "dataset": "math500_subset",
+        "selected_samples": 1800,
+        "primary_score": 0.3994,
+        "gsm8k": 0.906,
+        "minerva_math": 0.3566,
+        "gaokao2024_mix": 0.4835,
+        "olympiadbench": 0.3911,
+        "amc23": 0.5,
+        "aime24": 0.0917,
+        "aime25": 0.0667,
+        "math500": 0.7082,
+        "aime26": 0.0667
+      },
+      "iteration_2": {
+        "phase": "capability_completion",
+        "dataset": "aime26_subset",
+        "selected_samples": 5200,
+        "primary_score": 0.392,
+        "gsm8k": 0.9325,
+        "minerva_math": 0.2794,
+        "gaokao2024_mix": 0.4176,
+        "olympiadbench": 0.4148,
+        "amc23": 0.475,
+        "aime24": 0.1083,
+        "aime25": 0.1167,
+        "math500": 0.748,
+        "aime26": 0.1333
+      },
+      "iteration_3": {
+        "phase": "capability_completion",
+        "dataset": "combined_subset",
+        "selected_samples": 7000,
+        "primary_score": 0.4066,
+        "gsm8k": 0.9348,
+        "minerva_math": 0.3419,
+        "gaokao2024_mix": 0.4615,
+        "olympiadbench": 0.3807,
+        "amc23": 0.4688,
+        "aime24": 0.1417,
+        "aime25": 0.1167,
+        "math500": 0.7614,
+        "aime26": 0.0833,
+        "note": "Combined merge temporarily exceeded the 6,000-row capability cap."
+      },
+      "iteration_4": {
+        "phase": "capability_completion",
+        "dataset": "combined_subset_refined",
+        "selected_samples": 6000,
+        "primary_score": 0.4145,
+        "gsm8k": 0.9314,
+        "minerva_math": 0.3676,
+        "gaokao2024_mix": 0.4615,
+        "olympiadbench": 0.3911,
+        "amc23": 0.5,
+        "aime24": 0.1333,
+        "aime25": 0.1167,
+        "math500": 0.7614,
+        "aime26": 0.1333,
+        "note": "Selected incumbent. Capability-phase refine/filter of the locked subset back to 6,000 rows."
+      }
+    }
+  },
+  "settings": {
+    "seeds": [
+      42,
+      42,
+      44
+    ],
+    "seed_count": 3,
+    "seed_details": {
+      "reported_seeds": [42, 42, 44],
+      "aggregation": "unweighted mean over the three seeds",
+      "note": "Every baseline, per-iteration, and final score in this submission is the mean over three runs with seeds 42, 42, and 44."
+    },
+    "iterations": 4,
+    "compute_budget": "Four SFT-plus-evaluation iterations on 1,800, 5,200, 7,000, then 6,000 rows. Format-alignment cap 2,000; capability-completion cap 6,000 with later iterations locked to that subset. Wall-clock, GPU count, and token usage were not recorded in this submission.",
+    "human_intervention": "none",
+    "phase_caps": {
+      "format_alignment_max_rows": 2000,
+      "capability_completion_max_rows": 6000
+    },
+    "rollback": {
+      "mean_validation_accuracy_drop_pp": 3.0,
+      "format_rate_drop_vs_alignment_pp": 5.0
+    },
+    "selected_samples": [
+      1800,
+      5200,
+      7000,
+      6000
+    ],
+    "evaluation": {
+      "harness": "Qwen2.5-Math",
+      "greedy_group": "gsm8k, math500, minerva_math, gaokao2024_mix, olympiadbench",
+      "sampled_group": "amc23, aime24, aime25, aime26 avg@4",
+      "aggregation": "mean over three seeds 42, 42, 44"
+    }
+  },
+  "reproducibility": {
+    "code_revision": "unknown",
+    "dataset_revision": "740312add88f781978c0658806c59bc2815b9866",
+    "container_image": "ghcr.io/haolpku/datalite-rsi-eval:0.1.0",
+    "command": "python -m dataflow_self_improver.main --config rsi/methods/dataflow-self-improver/configs/math-badcase.yaml --log-level INFO",
+    "artifacts_url": null,
+    "evaluation_harness": {
+      "name": "Qwen2.5-Math",
+      "url": "https://github.com/QwenLM/Qwen2.5-Math",
+      "revision": "a45202bd16f1ec06f433442dc1152d0074773465",
+      "license": "MIT",
+      "vendored_path": "evaluation/qwen25_math",
+      "grading_modified": false
+    },
+    "in_loop_validation_sets": {
+      "math500": "HuggingFaceH4/MATH-500",
+      "aime26": "MathArena/aime_2026 @ d2de22f3c656b4f56cf8981212186377d1e23bc3"
+    }
+  }
+}

@@ -3,12 +3,18 @@
   "id": "video-rsi",
   "name": "VideoRSI",
   "version": "0.1.0",
-  "description": "Recursive improvement of a video SFT data pipeline.",
-  "tracks": ["multimodal"],
+  "description": "Recursively improves a video SFT data pipeline rather than model weights. Source videos are split into chronological 60-second chunks, captioned, and turned into a timestamped evidence store of entities and events. Grounded multiple-choice tasks are mined from that store, refined, and filtered by schema validity, text-only solvability, frozen-target difficulty, and deduplication. After each iteration, candidate yield, validation failures, and accepted frontier-and-novel counts are used to update task definitions, prompts, operators, and pipeline routing. The target model is not trained during pipeline search. The reported run used five iterations and synthesised a 4.5k video SFT set.",
+  "tracks": [
+    "multimodal"
+  ],
   "entrypoint": "python -m video_caption_pipeline",
-  "modifies": ["data"],
-  "feedback_signal": "Candidate yield, evidence and schema validation, text-only checks, frozen-target difficulty, duplicate rejection, and accepted frontier-and-novel samples under a fixed budget.",
-  "stopping_rule": "Five pipeline iterations.",
+  "modifies": [
+    "data",
+    "prompt",
+    "code"
+  ],
+  "feedback_signal": "Pipeline-search diagnostics collected each iteration: candidate yield, evidence and schema validation, text-only checks, frozen-target difficulty, duplicate rejection, and accepted frontier-and-novel samples under a fixed budget. These signals update task definitions, prompts, operators, and routing. The target model is not repeatedly trained during the search, and Video-MME scores are reported after the fact rather than used as the in-loop acceptance rule.",
+  "stopping_rule": "Fixed budget of five pipeline iterations. No convergence or early-stopping criterion. The final best pipeline synthesises the SFT set; the target model is trained only after pipeline search ends.",
   "human_intervention": "none",
   "license": "NOASSERTION"
 }

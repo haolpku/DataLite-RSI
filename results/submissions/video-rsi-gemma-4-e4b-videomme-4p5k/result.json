@@ -1,1 +1,60 @@
-{"schema_version":"0.1","submission_id":"video-rsi-gemma-4-e4b-videomme-4p5k","status":"unverified","track":"multimodal","benchmark":{"id":"videomme-sft-transfer","version":"0.1.0"},"model":{"id":"local/gemma-4-E4B-it","revision":"unknown"},"method_id":"video-rsi","metrics":{"baseline":{"primary_score":0.4774,"action_reasoning":0.3789,"object_recognition":0.4859,"counting":0.347,"information_synopsis":0.6502,"object_reasoning":0.4692,"temporal_perception":0.4727,"attribute":0.5405,"temporal_reasoning":0.4011,"action_recognition":0.4633,"ocr":0.4964,"spatial_perception":0.5185,"spatial_reasoning":0.6071},"final":{"primary_score":0.4837,"action_reasoning":0.3895,"object_recognition":0.4944,"counting":0.3396,"information_synopsis":0.6594,"object_reasoning":0.4692,"temporal_perception":0.4727,"attribute":0.5676,"temporal_reasoning":0.4011,"action_recognition":0.4505,"ocr":0.5396,"spatial_perception":0.5,"spatial_reasoning":0.6607}},"settings":{"seeds":[],"iterations":1,"compute_budget":"unknown","human_intervention":"unknown"},"reproducibility":{"code_revision":"unknown","dataset_revision":"ead1408f75b618502df9a1d8e0950166bf0a2a0b","container_image":"unknown","command":"unknown","artifacts_url":null}}
+{
+  "schema_version": "0.1",
+  "submission_id": "video-rsi-gemma-4-e4b-videomme-4p5k",
+  "status": "unverified",
+  "track": "multimodal",
+  "benchmark": {
+    "id": "videomme-sft-transfer",
+    "version": "0.1.0"
+  },
+  "model": {
+    "id": "local/gemma-4-E4B-it",
+    "revision": "unknown"
+  },
+  "method_id": "video-rsi",
+  "metrics": {
+    "baseline": {
+      "primary_score": 0.4774,
+      "action_reasoning": 0.3789,
+      "object_recognition": 0.4859,
+      "counting": 0.347,
+      "information_synopsis": 0.6502,
+      "object_reasoning": 0.4692,
+      "temporal_perception": 0.4727,
+      "attribute": 0.5405,
+      "temporal_reasoning": 0.4011,
+      "action_recognition": 0.4633,
+      "ocr": 0.4964,
+      "spatial_perception": 0.5185,
+      "spatial_reasoning": 0.6071
+    },
+    "final": {
+      "primary_score": 0.4837,
+      "action_reasoning": 0.3895,
+      "object_recognition": 0.4944,
+      "counting": 0.3396,
+      "information_synopsis": 0.6594,
+      "object_reasoning": 0.4692,
+      "temporal_perception": 0.4727,
+      "attribute": 0.5676,
+      "temporal_reasoning": 0.4011,
+      "action_recognition": 0.4505,
+      "ocr": 0.5396,
+      "spatial_perception": 0.5,
+      "spatial_reasoning": 0.6607
+    }
+  },
+  "settings": {
+    "seeds": [],
+    "iterations": 1,
+    "compute_budget": "unknown",
+    "human_intervention": "none"
+  },
+  "reproducibility": {
+    "code_revision": "unknown",
+    "dataset_revision": "ead1408f75b618502df9a1d8e0950166bf0a2a0b",
+    "container_image": "unknown",
+    "command": "unknown",
+    "artifacts_url": null
+  }
+}

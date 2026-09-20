@@ -1,0 +1,12 @@
+{"benchmark": "aime25", "question_id": "a", "predicted_answer": "1", "correct_answer": "1"}
+{"benchmark": "aime25", "question_id": "a", "predicted_answer": "9", "correct_answer": "1"}
+{"benchmark": "aime25", "question_id": "b", "predicted_answer": "2", "correct_answer": "2"}
+{"benchmark": "aime25", "question_id": "b", "predicted_answer": "2", "correct_answer": "2"}
+{"benchmark": "hmmt25", "question_id": "0", "predicted_answer": "\\boxed{7}", "correct_answer": "7"}
+{"benchmark": "hmmt25", "question_id": "1", "predicted_answer": "8", "correct_answer": "9"}
+{"benchmark": "aime26", "question_id": "0", "predicted_answer": "277", "correct_answer": "277"}
+{"benchmark": "aime26", "question_id": "1", "predicted_answer": null, "correct_answer": "62"}
+{"benchmark": "hmmt26", "question_id": "0", "predicted_answer": "3", "correct_answer": "3", "finish_reason": "stop"}
+{"benchmark": "hmmt26", "question_id": "1", "predicted_answer": "4", "correct_answer": "5", "finish_reason": "length"}
+{"benchmark": "brumo25", "question_id": "0", "predicted_answer": "10", "correct_answer": "10"}
+{"benchmark": "brumo25", "question_id": "1", "predicted_answer": "11", "correct_answer": "11"}

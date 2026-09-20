@@ -1,0 +1,71 @@
+{
+  "schema_version": "0.1",
+  "submission_id": "policy-evolving-edit-synthesis-flux2-klein-9b",
+  "status": "unverified",
+  "track": "generative",
+  "benchmark": {
+    "id": "image-edit-transfer-suite",
+    "version": "0.1.0"
+  },
+  "model": {
+    "id": "black-forest-labs/FLUX.2-klein-base-9B",
+    "revision": "unknown",
+    "notes": "Frozen FLUX.2 klein 9B base backbone (gated, non-commercial licence). LoRA-trained on 1,000 accepted pairs from Policy-Evolving Edit Synthesis. Baseline is the untrained backbone under the same judge."
+  },
+  "method_id": "policy-evolving-edit-synthesis",
+  "metrics": {
+    "evaluation_scope": "primary_score is 0.5 * (gedit_bench / 10 + imgedit_bench / 5). Raw judge means are reported on native scales (GEdit-Bench 0-10, ImgEdit-Bench 0-5). In-loop acceptance and destination entropy are synthesis diagnostics and are not the headline metric.",
+    "baseline": {
+      "primary_score": 0.79375,
+      "gedit_bench": 7.653,
+      "imgedit_bench": 4.111
+    },
+    "final": {
+      "primary_score": 0.824,
+      "gedit_bench": 7.92,
+      "imgedit_bench": 4.28
+    },
+    "controls": {
+      "stratified_pipeline": {
+        "primary_score": 0.811,
+        "gedit_bench": 7.844,
+        "imgedit_bench": 4.188,
+        "note": "Same 1,000-pair budget and LoRA recipe, without policy evolution."
+      }
+    },
+    "in_loop_synthesis": {
+      "note": "Shared across backbones: 1,000 accepted pairs, 23 edit types. Acceptance uses the frozen if_vc_vq rubric, not GEdit/ImgEdit.",
+      "acceptance_rate": {
+        "stratified": 0.792,
+        "policy_evolving": 0.878
+      },
+      "destination_entropy": {
+        "stratified": 0.853,
+        "policy_evolving": 0.894,
+        "note": "Normalised Shannon entropy, mean excluding H3 and O9 as in the method README."
+      }
+    }
+  },
+  "settings": {
+    "seeds": [],
+    "seed_note": "Per-run seeds were not recorded in the upstream pull request.",
+    "iterations": 1,
+    "compute_budget": "Reference environment: 8x H20 in docker/generative-image-edit. One LoRA run per arm on 1,000 accepted pairs. Inner synthesis uses a fixed batch budget of ten scenes per batch per edit type. FLUX.2-klein-base-9B is gated; accept the Hub licence before download.",
+    "human_intervention": "none",
+    "accepted_pairs": 1000,
+    "edit_types": 23
+  },
+  "reproducibility": {
+    "code_revision": "9b0a02284925f7629187879ab6be51ab25f23c19",
+    "dataset_revision": "50766778e2a737474c7e9bdf84cdce82c3ea3f4f",
+    "container_image": "ghcr.io/haolpku/datalite-rsi-generative:0.1.0",
+    "command": "construct harness.AgenticLoop from a CampaignSpec with setting_id 'policy-evolving', then LoRA-train black-forest-labs/FLUX.2-klein-base-9B on the 1,000 accepted pairs and score GEdit-Bench and ImgEdit-Bench in docker/generative-image-edit",
+    "artifacts_url": null,
+    "evaluation_harness": {
+      "name": "VLM judge (GEdit VIEScore overall, ImgEdit Bench judge)",
+      "vendored_path": null,
+      "grading_modified": false,
+      "note": "The judge is a hosted VLM and is not vendored. Offline verification re-aggregates saved per-sample scores with benchmarks/image-edit-transfer-suite/evaluator.py."
+    }
+  }
+}

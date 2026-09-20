@@ -79,3 +79,56 @@ families and evaluated on Video-MME.
 | InternVL3-2B-hf | 34.85 | 55.22 | +20.37 |
 
 VideoRSI improves the Video-MME overall score for every evaluated model family.
+
+## What recurses
+
+| Component | Recursively modified? |
+| --- | --- |
+| Pipeline operators, prompts, and routing | **Yes** — updated from per-iteration diagnostics |
+| Output SFT dataset | **Yes** — as a consequence of running the improved pipeline |
+| Source video corpus | No — fixed for the whole run |
+| Frozen target used for difficulty filtering | No — not trained during pipeline search |
+| Video-MME test labels | No — reported after the fact |
+
+## Scope of this contribution
+
+This directory contains the method manifest, documentation, and the portable
+reference configuration:
+
+```text
+rsi/methods/video-rsi/
+|-- method.json
+|-- README.md
+`-- configs/video-rsi-reference.yaml
+```
+
+The full pipeline implementation is not in this repository. The configuration
+and recorded transfer numbers are auditable here; a full end-to-end rerun is
+not yet possible from this repository alone.
+
+## External services
+
+Captioning, entity extraction, question generation, and distractor refinement
+need a vision-language serving endpoint. Frozen-target difficulty filtering
+needs a local copy of the target video-language model. The reported SFT
+transfer uses the [Video-MME evaluator](../../../evaluation/videomme/) under
+the [Video-MME SFT transfer protocol](../../../benchmarks/videomme-sft-transfer/).
+
+## Safety, rollback, and budget
+
+- **Pipeline search does not train the target.** Weights change only in the
+  post-search SFT used to report transfer.
+- **Text-only and schema filters** drop questions that are ungrounded or
+  solvable without the video.
+- **Budget** is a fixed five iterations. There is no convergence criterion.
+- **Human intervention** is reported as none.
+
+## Known limitations
+
+- **Upstream code is not in this repository**, so pipeline execution cannot be
+  audited from GitHub alone.
+- **Video-MME is an after-the-fact transfer metric.** It is not the in-loop
+  acceptance rule; pipeline updates use yield and filter diagnostics.
+- **Seeds, compute budget, container image, and code revision** are not pinned
+  in the current result manifests.
+- **No smoke test** ships with this method contribution.

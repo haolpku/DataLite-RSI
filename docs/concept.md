@@ -1,6 +1,10 @@
 # Less is More for RSI
 
-DataLite-RSI studies a practical question: can recursive feedback improve the
+DataLite-RSI is an open research initiative inviting the community to explore
+**Less is More for Recursive Self-Improvement**. Our current experiments are
+initial explorations; new methods, tasks and evidence will shape the project.
+
+One starting question is: can recursive feedback improve the
 **choice and construction of training data**, allowing a compact final dataset
 to produce useful model improvements?
 

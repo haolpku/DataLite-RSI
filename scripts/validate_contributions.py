@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import sys
 from dataclasses import dataclass
@@ -147,7 +148,7 @@ def _check_common(data: dict[str, Any], spec: ManifestSpec, errors: list[str]) -
 
 
 def _check_track(track: Any, field: str, errors: list[str]) -> None:
-    if track not in TRACKS:
+    if not isinstance(track, str) or track not in TRACKS:
         errors.append(f"{field}: expected one of {sorted(TRACKS)}, got {track!r}")
 
 
@@ -197,7 +198,7 @@ def _check_dataset(data: dict[str, Any], errors: list[str]) -> None:
             errors.append(f"{field}: expected a non-empty array")
     if not isinstance(data.get("splits"), dict) or not data.get("splits"):
         errors.append("splits: expected a non-empty object")
-    if data.get("access") not in {"public", "gated", "private"}:
+    if data.get("access") not in ("public", "gated", "private"):
         errors.append("access: expected public, gated, or private")
     if not isinstance(data.get("contains_pii"), bool):
         errors.append("contains_pii: expected a boolean")
@@ -205,24 +206,42 @@ def _check_dataset(data: dict[str, Any], errors: list[str]) -> None:
 
 def _check_result(data: dict[str, Any], errors: list[str]) -> None:
     _check_track(data.get("track"), "track", errors)
-    if data.get("status") not in {"unverified", "verified", "rejected"}:
+    if data.get("status") not in ("unverified", "verified", "rejected"):
         errors.append("status: expected unverified, verified, or rejected")
 
     benchmark = _require_mapping(data, "benchmark", ("id", "version"), errors)
     if benchmark and not SEMVER.fullmatch(str(benchmark.get("version", ""))):
         errors.append("benchmark.version: expected semantic version")
-    _require_mapping(data, "model", ("id", "revision"), errors)
+    if benchmark and not _is_nonempty_string(benchmark.get("id")):
+        errors.append("benchmark.id: expected a non-empty string")
+    model = _require_mapping(data, "model", ("id", "revision"), errors)
+    for field in ("id", "revision"):
+        if model and not _is_nonempty_string(model.get(field)):
+            errors.append(f"model.{field}: expected a non-empty string")
+    if not _is_nonempty_string(data.get("method_id")):
+        errors.append("method_id: expected a non-empty string")
     metrics = _require_mapping(data, "metrics", ("baseline", "final"), errors)
     if metrics:
         for phase in ("baseline", "final"):
             if not isinstance(metrics.get(phase), dict) or not metrics.get(phase):
                 errors.append(f"metrics.{phase}: expected a non-empty object")
-    _require_mapping(
+            else:
+                score = metrics[phase].get("primary_score")
+                if type(score) not in (int, float) or not math.isfinite(score):
+                    errors.append(f"metrics.{phase}.primary_score: expected a finite number")
+    settings = _require_mapping(
         data,
         "settings",
         ("seeds", "iterations", "compute_budget", "human_intervention"),
         errors,
     )
+    if settings:
+        seeds = settings.get("seeds")
+        if not isinstance(seeds, list) or any(type(seed) is not int for seed in seeds):
+            errors.append("settings.seeds: expected an array of integers (empty allowed)")
+        iterations = settings.get("iterations")
+        if type(iterations) is not int or iterations < 1:
+            errors.append("settings.iterations: expected a positive integer")
     reproducibility = _require_mapping(
         data,
         "reproducibility",
@@ -311,7 +330,7 @@ def validate_repository(root: Path) -> list[str]:
     for benchmark_id, benchmark in manifests["benchmark"].items():
         dataset = benchmark.get("dataset")
         registry_id = dataset.get("registry_id") if isinstance(dataset, dict) else None
-        if registry_id not in dataset_ids:
+        if not isinstance(registry_id, str) or registry_id not in dataset_ids:
             errors.append(
                 f"benchmark {benchmark_id!r}: dataset registry ID {registry_id!r} "
                 "is not registered under datasets/"
@@ -322,15 +341,25 @@ def validate_repository(root: Path) -> list[str]:
     for submission_id, result in manifests["result"].items():
         benchmark = result.get("benchmark")
         benchmark_id = benchmark.get("id") if isinstance(benchmark, dict) else None
-        if benchmark_id not in benchmark_ids:
+        if not isinstance(benchmark_id, str) or benchmark_id not in benchmark_ids:
             errors.append(
                 f"result {submission_id!r}: benchmark ID {benchmark_id!r} is not registered"
             )
+        else:
+            registered = manifests["benchmark"][benchmark_id]
+            if benchmark.get("version") != registered.get("version"):
+                errors.append(f"result {submission_id!r}: benchmark version does not match registry")
+            if result.get("track") != registered.get("track"):
+                errors.append(f"result {submission_id!r}: track does not match benchmark")
         method_id = result.get("method_id")
-        if method_id not in method_ids:
+        if not isinstance(method_id, str) or method_id not in method_ids:
             errors.append(
                 f"result {submission_id!r}: method ID {method_id!r} is not registered"
             )
+        else:
+            tracks = manifests["method"][method_id].get("tracks")
+            if isinstance(tracks, list) and result.get("track") not in tracks:
+                errors.append(f"result {submission_id!r}: track is not supported by method")
 
     return errors
 

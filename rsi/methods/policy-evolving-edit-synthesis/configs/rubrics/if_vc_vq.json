@@ -1,0 +1,54 @@
+{
+  "rubric_id": "if_vc_vq",
+  "description": "Three-axis rubric for instruction-guided image edits: an environment-validity precheck, then instruction following, visual consistency, and visual quality. A pair is accepted only if every axis clears its own minimum and the equal-weight mean clears 3.5. The must-preserve list is optional on the planner's side; when it is absent the judge derives the licensed scope from the instruction alone.",
+  "judge_model": "gpt-5.5",
+  "scale": "1-5 Likert",
+  "environment_check": [
+    "The BEFORE image contains the target object, text, or attribute the instruction refers to",
+    "The BEFORE image does not already satisfy the end state the instruction asks for",
+    "The instruction has an unambiguous, observable target that a single-image edit model can act on",
+    "The BEFORE image itself contains no structural conflict that would make the instruction undefinable"
+  ],
+  "axes": [
+    {
+      "axis_id": "instruction_following",
+      "name_zh": "指令遵循",
+      "name_en": "Instruction Following",
+      "description": "Whether the target object, the requested change, and any exact text, numbers, counts, or relations were completed correctly and completely, and whether any unrequested change was introduced.",
+      "evidence_requirements": [
+        "State explicitly whether each requirement in the instruction was met",
+        "Check text and numbers character by character or against the exact value",
+        "Point out anything unfinished, partially finished, or edited beyond the request"
+      ],
+      "weight": 1.0,
+      "minimum_score": 4.0
+    },
+    {
+      "axis_id": "visual_consistency",
+      "name_zh": "视觉一致性",
+      "name_en": "Visual Consistency",
+      "description": "Establish which object, region, and attributes were licensed to change, then check whether any non-target region, identity, structure, or semantics changed unintentionally. Use the must-preserve list when one is supplied; when it is marked as not supplied, derive the licensed scope from the instruction alone and treat everything the instruction did not license as required to stay unchanged.",
+      "evidence_requirements": [
+        "State the scope that was licensed to change, and where you established it from",
+        "Check non-target objects and the background",
+        "Check identity, structure, layout, and attributes that were not requested to change"
+      ],
+      "weight": 1.0,
+      "minimum_score": 3.0
+    },
+    {
+      "axis_id": "visual_quality",
+      "name_zh": "视觉质量与合理性",
+      "name_en": "Visual Quality and Plausibility",
+      "description": "Judge realism and naturalness: artifacts, blur, seams, melting, human anatomy, physics, lighting, shadows, reflections, and perspective, plus text rendering quality.",
+      "evidence_requirements": [
+        "Point out local visual artifacts and boundary problems",
+        "Check human anatomy and physical plausibility",
+        "Check lighting, shadows, reflections, and perspective"
+      ],
+      "weight": 1.0,
+      "minimum_score": 3.0
+    }
+  ],
+  "minimum_average": 3.5
+}

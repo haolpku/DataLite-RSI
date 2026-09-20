@@ -1,0 +1,26 @@
+{
+  "schema_version": "0.1",
+  "id": "amc23",
+  "name": "AMC 2023",
+  "description": "40 problems from the 2023 AMC 10A/12A competitions. Used as an evaluation target in the math SFT transfer suite (avg@4, temperature 0.6). Content verified identical to zwhe99/amc23 (question text and answers match exactly per id).",
+  "huggingface": {
+    "repo_id": "zwhe99/amc23",
+    "revision": "f9810c0439cd3c670ec885d328a2f06a87f3694a"
+  },
+  "modalities": [
+    "text"
+  ],
+  "formats": [
+    "jsonl"
+  ],
+  "splits": {
+    "test": {
+      "num_examples": 40
+    }
+  },
+  "license": "NOASSERTION",
+  "access": "public",
+  "contains_pii": false,
+  "provenance_url": "https://github.com/QwenLM/Qwen2.5-Math/tree/a45202bd16f1ec06f433442dc1152d0074773465/evaluation/data",
+  "notes": "Data sourced from the Qwen2.5-Math evaluation harness at https://github.com/QwenLM/Qwen2.5-Math/tree/a45202bd16f1ec06f433442dc1152d0074773465/evaluation/data. Question text and answers verified identical to zwhe99/amc23."
+}

@@ -1,0 +1,48 @@
+{
+  "schema_version": "0.1",
+  "id": "image-edit-transfer-suite",
+  "name": "Image-edit transfer suite (GEdit-Bench + ImgEdit-Bench)",
+  "version": "0.1.0",
+  "track": "generative",
+  "description": "Measures how much a small synthesised image-editing SFT set improves a frozen diffusion editing backbone. A method submits accepted (source, instruction, edited) pairs; the suite LoRA-trains a fixed backbone on them and scores the result on GEdit-Bench and ImgEdit-Bench under a VLM judge. The score attributable to the method is the delta over the untrained backbone under identical generation and judging settings. primary_score is the unweighted mean of the two benches after mapping GEdit-Bench from 0-10 and ImgEdit-Bench from 0-5 onto [0, 1].",
+  "task_types": [
+    "image-editing",
+    "instruction-guided-generation"
+  ],
+  "dataset": {
+    "registry_id": "gedit-bench",
+    "revision": "50766778e2a737474c7e9bdf84cdce82c3ea3f4f",
+    "notes": "The suite evaluates two test sets, both registered under datasets/: gedit-bench and imgedit-bench. registry_id names gedit-bench as the primary reference because the schema carries one field."
+  },
+  "metrics": [
+    {
+      "name": "primary_score",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "gedit_bench",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        10.0
+      ]
+    },
+    {
+      "name": "imgedit_bench",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        5.0
+      ]
+    }
+  ],
+  "evaluator": {
+    "entrypoint": "python benchmarks/image-edit-transfer-suite/evaluator.py --predictions <path> --output <path>",
+    "container_image": null
+  },
+  "license": "MIT"
+}

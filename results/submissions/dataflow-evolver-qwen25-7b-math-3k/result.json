@@ -1,0 +1,187 @@
+{
+  "schema_version": "0.1",
+  "submission_id": "dataflow-evolver-qwen25-7b-math-3k",
+  "status": "unverified",
+  "track": "llm",
+  "benchmark": {
+    "id": "math-sft-transfer-suite",
+    "version": "0.1.0"
+  },
+  "model": {
+    "id": "Qwen/Qwen2.5-7B",
+    "revision": "d149729398750b98c0af14eb82c78cfe92750796",
+    "notes": "Qwen2.5-7B base (not Instruct); the Hugging Face repository Qwen/Qwen2.5-7B is the base model."
+  },
+  "method_id": "dataflow-evolver",
+  "metrics": {
+    "evaluation_scope": "Full benchmark test sets (gsm8k 1319, math 5000, minerva_math 272, gaokao2024_mix 91, olympiadbench 675, amc23 40, aime24 30, aime25 30). Baseline is untrained Qwen2.5-7B base; final is the same model fine-tuned on the 3,000-row dataset selected by DataFlow-Evolver. Both measured under identical generation settings. The 10% diagnostic subset used for in-loop feedback is reported separately under diagnostic_subset and is not the headline metric.",
+    "baseline": {
+      "primary_score": 0.306688,
+      "gsm8k": 0.6566,
+      "math": 0.6206,
+      "minerva_math": 0.1581,
+      "gaokao2024_mix": 0.2088,
+      "olympiadbench": 0.3156,
+      "amc23": 0.3438,
+      "aime24": 0.0917,
+      "aime25": 0.0583
+    },
+    "final": {
+      "primary_score": 0.379312,
+      "gsm8k": 0.8916,
+      "math": 0.6944,
+      "minerva_math": 0.3199,
+      "gaokao2024_mix": 0.2857,
+      "olympiadbench": 0.32,
+      "amc23": 0.4313,
+      "aime24": 0.0583,
+      "aime25": 0.0333
+    },
+    "reference_systems": {
+      "note": "Comparable systems evaluated under the same protocol. math3k_original and math3k_gpt4o_rewrite are 3,000-row math SFT datasets from DataFlow-Instruct-10K, trained and evaluated identically; qwen25_7b_instruct is the released instruct model shown as an external reference, not a controlled comparison.",
+      "dataflow_instruct_math3k_original": {
+        "primary_score": 0.4082,
+        "gsm8k": 0.8787,
+        "math": 0.7236,
+        "minerva_math": 0.3419,
+        "gaokao2024_mix": 0.4066,
+        "olympiadbench": 0.3689,
+        "amc23": 0.3875,
+        "aime24": 0.0917,
+        "aime25": 0.0667
+      },
+      "dataflow_instruct_math3k_gpt4o_rewrite": {
+        "primary_score": 0.368463,
+        "gsm8k": 0.881,
+        "math": 0.6996,
+        "minerva_math": 0.2831,
+        "gaokao2024_mix": 0.2418,
+        "olympiadbench": 0.3422,
+        "amc23": 0.375,
+        "aime24": 0.0583,
+        "aime25": 0.0667
+      },
+      "qwen25_7b_instruct": {
+        "primary_score": 0.4609,
+        "gsm8k": 0.9265,
+        "math": 0.7518,
+        "minerva_math": 0.364,
+        "gaokao2024_mix": 0.5165,
+        "olympiadbench": 0.3867,
+        "amc23": 0.525,
+        "aime24": 0.1167,
+        "aime25": 0.1
+      }
+    },
+    "diagnostic_subset": {
+      "note": "10% per-benchmark sample at seed 42, materialised before evolution. This is the in-loop feedback signal the method optimised against, not an evaluation result. Full test sets never entered the optimisation loop.",
+      "baseline": {
+        "primary_score": 0.31126
+      },
+      "incumbent_after_iteration_1": {
+        "primary_score": 0.369568
+      },
+      "incumbent_after_iteration_4": {
+        "primary_score": 0.403037
+      }
+    }
+  },
+  "settings": {
+    "seeds": [
+      0,
+      42,
+      43
+    ],
+    "seed_details": {
+      "sft_seed": 42,
+      "sft_data_seed": 42,
+      "diagnostic_subset_seed": 42,
+      "embedding_sample_seed": 42,
+      "benchmark_evaluation_seed": 0,
+      "review_agent_sample_seed_configured": 42,
+      "review_agent_sample_seed_observed": 43,
+      "run_name_seed": null
+    },
+    "iterations": 5,
+    "compute_budget": "8x A100-80GB SXM (driver 535.129.03), GPU 7 reserved for the embedding service. Pipeline evolution 12,717s (3.53h) across 5 iterations; each downstream checkpoint added ~1,030-1,110s for SFT plus diagnostic-subset evaluation; embedding review 577s total. ~30h end-to-end including post-hoc full-test-set evaluation. Tokens: 88.36M pipeline teacher (gpt-4o, 87,315 requests), 9.25M pipeline agent (Codex + gpt-5.6-sol effort xhigh, 73% cached input), 8.82M embedding (Qwen3-Embedding-8B, 15,000 requests), 0.22M ReviewAgent (gpt-5.6-sol, 7 requests); 106.65M total.",
+    "human_intervention": "none",
+    "models": {
+      "pipeline_agent": "Codex CLI + gpt-5.6-sol (effort xhigh)",
+      "review_agent": "gpt-5.6-sol",
+      "pipeline_teacher": "gpt-4o",
+      "embedding": "Qwen3-Embedding-8B"
+    },
+    "wall_time_seconds": {
+      "pipeline_evolution": 12716.7,
+      "per_iteration": [
+        1933.4,
+        3319.5,
+        1510.1,
+        2198.9,
+        3754.9
+      ],
+      "downstream_checkpoints": [
+        1031.3,
+        1112.3
+      ],
+      "embedding_review": 576.6
+    },
+    "tokens": {
+      "pipeline_teacher": {
+        "total": 88357806,
+        "input": 51041128,
+        "output": 37316678,
+        "cached_input": 529408,
+        "requests": 87315
+      },
+      "pipeline_agent": {
+        "total": 9246565,
+        "input": 9126353,
+        "output": 120212,
+        "cached_input": 6706918,
+        "reasoning": 20190
+      },
+      "embedding": {
+        "total": 8824058,
+        "input": 8824058,
+        "requests": 15000
+      },
+      "review_agent": {
+        "total": 223580,
+        "input": 214278,
+        "output": 9302,
+        "cached_input": 15744,
+        "requests": 7
+      },
+      "total": 106652009
+    }
+  },
+  "reproducibility": {
+    "code_revision": "7b788746b24c2b9d6713709cb64d8c37602a2fbb",
+    "dataset_revision": "740312add88f781978c0658806c59bc2815b9866",
+    "container_image": "ghcr.io/haolpku/datalite-rsi-eval:0.1.0",
+    "command": "python -m dataflow_evolver.main --config rsi/methods/dataflow-evolver/configs/math-periodic.yaml --task task_math_mix_v3.txt --log-level INFO",
+    "artifacts_url": null,
+    "evaluation_harness": {
+      "name": "Qwen2.5-Math",
+      "url": "https://github.com/QwenLM/Qwen2.5-Math",
+      "revision": "a45202bd16f1ec06f433442dc1152d0074773465",
+      "license": "MIT",
+      "deviations": [
+        "math_eval.py: data-parallel sharding flags; --max_model_len; --seed forwarded to vllm.LLM; stop token IDs resolved from the tokenizer instead of hard-coded; per-sample finish_reason and output token counts recorded; empty-shard handling; qwen25-math-cot rejected with --apply_chat_template",
+        "parser.py: aime25 added to the ground-truth extraction branch shared with aime24",
+        "grader.py and evaluate.py: grading logic unchanged (grader.py byte-identical)"
+      ],
+      "vendored_path": "evaluation/qwen25_math",
+      "grading_modified": false
+    },
+    "training_stack": {
+      "trainer": "LLaMA-Factory 0.9.3 (tag v0.9.3, commit ca75f1e)",
+      "python": "3.11.15",
+      "torch": "2.7.0+cu126",
+      "deepspeed": "0.16.9",
+      "vllm": "0.9.2",
+      "transformers": "4.52.4"
+    }
+  }
+}

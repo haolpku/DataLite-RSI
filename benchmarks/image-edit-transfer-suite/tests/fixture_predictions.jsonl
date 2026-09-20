@@ -1,0 +1,6 @@
+{"benchmark": "gedit_bench", "sample_id": "g0", "score": 8.0}
+{"benchmark": "gedit_bench", "sample_id": "g1", "score": 10.0}
+{"benchmark": "gedit_bench", "sample_id": "g2", "score": null}
+{"benchmark": "imgedit_bench", "sample_id": "i0", "score": 4.0}
+{"benchmark": "imgedit_bench", "sample_id": "i1", "score": 5.0}
+{"benchmark": "imgedit_bench", "sample_id": "i2", "score": 9.0}

@@ -1,0 +1,60 @@
+{
+  "schema_version": "0.1",
+  "submission_id": "video-rsi-qwen25-vl-3b-videomme-4p5k",
+  "status": "unverified",
+  "track": "multimodal",
+  "benchmark": {
+    "id": "videomme-sft-transfer",
+    "version": "0.1.0"
+  },
+  "model": {
+    "id": "Qwen/Qwen2.5-VL-3B-Instruct",
+    "revision": "unknown"
+  },
+  "method_id": "video-rsi",
+  "metrics": {
+    "baseline": {
+      "primary_score": 0.4244,
+      "action_reasoning": 0.414,
+      "object_recognition": 0.4576,
+      "counting": 0.2537,
+      "information_synopsis": 0.5882,
+      "object_reasoning": 0.3767,
+      "temporal_perception": 0.4364,
+      "attribute": 0.5045,
+      "temporal_reasoning": 0.322,
+      "action_recognition": 0.4185,
+      "ocr": 0.4101,
+      "spatial_perception": 0.4074,
+      "spatial_reasoning": 0.6071
+    },
+    "final": {
+      "primary_score": 0.5904,
+      "action_reasoning": 0.5018,
+      "object_recognition": 0.661,
+      "counting": 0.3806,
+      "information_synopsis": 0.7554,
+      "object_reasoning": 0.5595,
+      "temporal_perception": 0.5636,
+      "attribute": 0.7432,
+      "temporal_reasoning": 0.3785,
+      "action_recognition": 0.5879,
+      "ocr": 0.6691,
+      "spatial_perception": 0.5926,
+      "spatial_reasoning": 0.8036
+    }
+  },
+  "settings": {
+    "seeds": [],
+    "iterations": 1,
+    "compute_budget": "unknown",
+    "human_intervention": "none"
+  },
+  "reproducibility": {
+    "code_revision": "unknown",
+    "dataset_revision": "ead1408f75b618502df9a1d8e0950166bf0a2a0b",
+    "container_image": "unknown",
+    "command": "unknown",
+    "artifacts_url": null
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "schema_version": "0.1",
+  "id": "policy-evolving-edit-synthesis",
+  "name": "Policy-Evolving Edit Synthesis",
+  "version": "0.1.0",
+  "description": "Recursively evolves the instruction-writing policy used to synthesise image-editing training pairs, not the pipeline and not the model. A run covers one edit type and consumes its scene list in fixed order. Every batch of ten samples, a vision-language planner writes an edit instruction per scene, an image model applies it, and a frozen three-axis judge accepts or rejects the pair; an analyst LLM then reads the decided batch and proposes, revises, or withdraws claims about what makes an instruction succeed. A claim becomes an active policy, appended to the instruction planner's prompt, only after being supported in two distinct batches, and is retired when consecutive batches cannot decide it. A standing constraint on the analyst forbids any policy that raises the pass rate by degrading the edit, the typical case being a request for a tiny, barely visible change; that constraint accepts no verdicts and no policy may override it. The instruction prompt, the acceptance rubric, and the scene schedule are otherwise identical to the arm without the constraint, so a difference in yield is attributable to the evolved policies.",
+  "tracks": [
+    "generative"
+  ],
+  "entrypoint": "construct harness.AgenticLoop from a CampaignSpec with setting_id 'policy-evolving' plus image-generation, VLM, and LLM serving adapters, then call run(); the source repository additionally wraps this in 'python -m deltasynth.tools.ds_cli harness --campaign <campaign.yml> --only-edits <EDIT_CODE> --out <output_dir>'",
+  "modifies": [
+    "prompt",
+    "data"
+  ],
+  "feedback_signal": "Per-sample acceptance from a frozen three-axis vision-language judge (rubric if_vc_vq, committed under configs/rubrics/). An edit pair is a GoodCase only if the before image passes an environment-validity precheck and the axes clear both their individual minimums and an aggregate: instruction_following >= 4.0, visual_consistency >= 3.0, visual_quality >= 3.0, and the equal-weight mean of the three >= 3.5. Any axis below its minimum fails the sample regardless of the mean, so a high score on one axis cannot buy a violation on another. Per batch of ten decided samples, an analyst LLM receives the sample cards (judgment, per-axis scores, failure tags, instruction text), the running destination-category counts, and the cumulative statistics, and emits edits to a ledger of claims rather than a rewritten strategy. The judge never sees the policies and the analyst never sees the images, so neither can argue with the other.",
+  "stopping_rule": "A fixed batch budget (max_batches x batch_size), configurable per run, with a hard cap on total API calls that ends a run which overruns. target_goodcase may be left unset so the run always spends its whole batch budget rather than stopping early on an accepted-sample count. There is no convergence criterion. The final batch runs no reflection, since no later batch could use the result. Independently of the run's budget, the policy library has its own stopping behaviour: a claim needs support from two distinct batches to be promoted, is refused promotion while contradicted at least as often as supported, is retired after two consecutive batches in which no sample could decide it, and at the active-policy ceiling the gate stops promoting instead of silently evicting an existing policy.",
+  "human_intervention": "none",
+  "license": "NOASSERTION"
+}

@@ -1,0 +1,25 @@
+{
+  "schema_version": "0.1",
+  "id": "hmmt26",
+  "name": "HMMT February 2026",
+  "description": "33 problems from HMMT February 2026. Used as an evaluation target in the OPSD math competition suite (avg@12, temperature 1.0, Qwen3 thinking).",
+  "huggingface": {
+    "repo_id": "MathArena/hmmt_feb_2026",
+    "revision": "02fba4f74d8e68e73e66a02d540fd979c05c274c"
+  },
+  "modalities": [
+    "text"
+  ],
+  "formats": [
+    "parquet"
+  ],
+  "splits": {
+    "train": {
+      "num_examples": 33
+    }
+  },
+  "license": "NOASSERTION",
+  "access": "public",
+  "contains_pii": false,
+  "provenance_url": "https://huggingface.co/datasets/MathArena/hmmt_feb_2026"
+}

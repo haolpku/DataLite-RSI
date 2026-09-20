@@ -1,0 +1,28 @@
+{
+  "schema_version": "0.1",
+  "id": "gsm8k",
+  "name": "GSM8K",
+  "description": "Grade-school math word problems with human-written step-by-step solutions. In DataLite-RSI this registration serves two roles: the train split contributes 7,469 rows to the fixed RSI input corpus, and the 1,319-row test split is a primary evaluation target.",
+  "huggingface": {
+    "repo_id": "openai/gsm8k",
+    "revision": "740312add88f781978c0658806c59bc2815b9866"
+  },
+  "modalities": [
+    "text"
+  ],
+  "formats": [
+    "parquet"
+  ],
+  "splits": {
+    "train": {
+      "num_examples": 7473
+    },
+    "test": {
+      "num_examples": 1319
+    }
+  },
+  "license": "MIT",
+  "access": "public",
+  "contains_pii": false,
+  "provenance_url": "https://huggingface.co/datasets/openai/gsm8k"
+}

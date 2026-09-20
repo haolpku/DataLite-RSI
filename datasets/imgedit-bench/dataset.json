@@ -1,0 +1,29 @@
+{
+  "schema_version": "0.1",
+  "id": "imgedit-bench",
+  "name": "ImgEdit-Bench",
+  "description": "Held-out image-editing benchmark shipped with ImgEdit (sysuyy/ImgEdit). Evaluates instruction adherence, editing quality, and detail preservation across a basic suite, a challenging single-turn suite, and a multi-turn suite. The parent Hub repository also contains the 1.2M training corpus; only the Benchmark.tar split is the evaluation target here.",
+  "huggingface": {
+    "repo_id": "sysuyy/ImgEdit",
+    "revision": "f8de753484a2b6bd37f135fd20d308b66b09a523"
+  },
+  "modalities": [
+    "image",
+    "text"
+  ],
+  "formats": [
+    "tar",
+    "parquet"
+  ],
+  "splits": {
+    "benchmark": {
+      "num_examples": 811,
+      "notes": "734 basic-edit cases plus challenging and multi-turn suites, as reported in arXiv:2505.20275. The Hub repo also contains the 1.2M training set, which is not the evaluation split."
+    }
+  },
+  "license": "Apache-2.0",
+  "access": "public",
+  "contains_pii": false,
+  "provenance_url": "https://huggingface.co/datasets/sysuyy/ImgEdit",
+  "notes": "Paper: arXiv:2505.20275. Code: https://github.com/PKU-YuanGroup/ImgEdit. Headline scores on this suite use a VLM judge on a 0-5 scale."
+}

@@ -1,0 +1,19 @@
+{
+  "schema_version": "0.1",
+  "id": "dataflow-self-improver",
+  "name": "DataFlow-Self-Improver",
+  "version": "0.1.0",
+  "description": "Recursively improves a DataFlow DAG from bad-case attribution on two fixed validation sets. An analyzer attributes errors on MATH-500 and AIME26; a coding agent then chooses a phase objective (format alignment or capability completion), retrieves or generates matching data, rewrites pipeline operators to ingest that data, and refines or filters the incumbent corpus. Format-alignment iterations stay below 2,000 rows. Capability-completion iterations stay below 6,000 rows, and later capability iterations only refine, filter, or supplement the 6,000-row subset produced in the second phase. A challenger is rolled back if mean validation accuracy falls by more than 3 percentage points, or if the format-success rate drops by more than 5 percentage points relative to the alignment-phase incumbent.",
+  "tracks": [
+    "llm"
+  ],
+  "entrypoint": "python -m dataflow_self_improver.main --config <config.yaml>",
+  "modifies": [
+    "data",
+    "code"
+  ],
+  "feedback_signal": "Bad-case attribution on two fixed validation sets, MATH-500 and AIME26, that never change during the run. Each iteration the analyzer scores the current SFT checkpoint on both sets, clusters failures into format errors versus capability gaps, and that diagnosis selects the phase objective and the next data-acquisition target. A candidate dataset is kept only if mean validation accuracy does not fall by more than 3 percentage points and the format-success rate does not drop by more than 5 percentage points versus the alignment-phase incumbent. Held-out transfer benchmarks (GSM8K, Minerva, Gaokao, OlympiadBench, AMC23, AIME24, AIME25) are reported after the fact and are not the rollback signal.",
+  "stopping_rule": "Two-phase budget rather than a fixed iteration count or a convergence test. Phase 1 (format alignment) may emit at most 2,000 rows. Phase 2 (capability completion) may emit at most 6,000 rows; every later capability iteration is restricted to refining, filtering, or supplementing that 6,000-row subset and must not grow a new corpus from scratch. The loop rolls back a challenger that violates the accuracy or format-rate thresholds above and otherwise continues until the configured iteration budget is spent. The reported run used four iterations and selected the final 6,000-row incumbent.",
+  "human_intervention": "none",
+  "license": "NOASSERTION"
+}

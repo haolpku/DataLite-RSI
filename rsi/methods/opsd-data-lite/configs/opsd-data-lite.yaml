@@ -1,0 +1,154 @@
+method: opsd-data-lite
+version: 0.1.0
+status: unverified 
+model:
+  id: Qwen/Qwen3-8B
+  weights: official_release    
+  revision: b968826              
+
+teacher:
+  source: initial_student
+  implementation: lora_adapter_disabled   
+  frozen_within_training_run: true
+  frozen_across_cycles: true     
+  thinking: true
+  privileged_context: reference_solution
+  reference_solution_origin: dataset_provided
+  prompt_template: official_opsd_data_collator   
+student:
+  thinking: false                
+  prompt_template: "{problem}\n\nPlease reason step by step, and put your final answer within \\boxed{}."
+
+training_pool:
+  dataset: siyanzhao/Openthoughts_math_30k_opsd
+  split: train
+  revision: unknown             
+  subset_rule: first_9600_rows
+  candidate_count: 9600
+  rewrite_examples: false
+  decontamination:
+    upstream: claimed_by_dataset
+    own_check: performed
+    matches_found: 0
+
+selection:
+  signal: withheld_until_publication
+  rule: withheld_until_publication
+  score_scope: full_candidate_pool
+  cycles:
+    - iteration: 1
+      scorer: initial_student
+      selected_samples: 2400
+      update_steps: 100
+      student_init: initial_student
+      role: scorer_for_iteration_2   
+    - iteration: 2
+      scorer: iteration_1_checkpoint
+      selected_samples: 1600
+      update_steps: 100
+      student_init: initial_student 
+      reselection_allowed: true
+      overlap_with_iteration_1:
+        fraction_of_iteration_1: 0.47
+    - iteration: 3
+      selected_samples: 32
+      update_steps: 100
+      student_init: initial_student
+      reselection_allowed: true
+      role: aggressive_filter
+  reported_checkpoint: iteration_3_final
+
+training:
+  objective: standard_opsd
+  code:
+    repo: https://github.com/siyan-zhao/OPSD
+    commit: ae7d2519e94920c4eb6206c0c26de46d9c50abae
+    launch_script_reference: scripts/run_opsd_8b.sh
+  implementation: withheld_until_publication
+  stack: {torch: 2.8.0, transformers: 4.57.1, trl: 0.26.0, deepspeed: 0.18.2, peft: 0.17.1, vllm: 0.11.0}
+  loss:
+    divergence: full_vocab_jsd
+    beta: 0                    
+    lmbda: 1                    
+    jsd_token_clip: 0.06
+  optimizer: adamw_hf_default   
+  learning_rate: 5.0e-6
+  lr_schedule: linear
+  max_grad_norm: 0.1
+  peft: {method: lora, r: 64, alpha: 128, target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]}
+  precision: bf16
+  distributed: deepspeed_zero2_cpu_optimizer_offload
+  effective_batch_size: 32
+  batch_decomposition: {gpus: 4, per_device_train_batch_size: 2, gradient_accumulation_steps: 4}
+  epochs_per_cycle: 1
+  rollout:
+    temperature: 1.1
+    top_p: 0.95
+    top_k: 20
+    max_completion_length: 1024
+  max_length: 20000
+  seed: 42
+
+evaluation:
+  benchmark: {id: opsd-math-competition-suite, version: 0.1.0}
+  harness:
+    repo: https://github.com/ZJU-REAL/TTPO
+    commit: 36326ed5b04517e272a90244188b83a8bc17150c
+    script: TTPO/eval/evaluate_math.py
+    local_modifications:
+      grading_modified: false
+      documented_in: evaluation/ttpo_math/UPSTREAM.md
+      patches:
+        - five_eval_sets
+        - dataset_path_local_jsonl_parquet
+        - vllm_max_num_seqs_seed_stop_token_ids
+        - lora_checkpoint_tokenizer_pickup
+        - richer_json_summary
+        - FORCE_EMPTY_THINK
+  datasets:
+    aime25: MathArena/aime_2025
+    hmmt25: MathArena/hmmt_feb_2025
+    aime26: MathArena/aime_2026
+    hmmt26: MathArena/hmmt_feb_2026
+    brumo25: MathArena/brumo_2025
+  thinking: true
+  temperature: 1.0
+  top_p: 0.95
+  top_k: -1
+  min_p: 0.0
+  presence_penalty: 0.0
+  max_new_tokens: 38912
+  max_model_len: 40960
+  answer_extraction: last_boxed
+  grading: math_verify_with_string_fallback
+  val_n: 12
+  seed_ids: [42, 43, 44]
+  aggregation: avg_at_12_per_seed_then_mean_over_seeds_then_unweighted_mean_across_datasets
+
+compute:
+  gpus: 4
+  gpu_type: A100-80GB
+  two_cycle_gpu_hours: 8-14     
+
+results:
+  submission: results/submissions/opsd-data-lite-qwen3-8b
+
+  primary_score:
+    baseline: 0.587
+    iteration_1: 0.607
+    iteration_2: 0.619
+    iteration_3: 0.621
+  controls:
+    opsd_50_steps: 0.606
+    opsd_75_steps: 0.595
+    opsd_100_steps: 0.603
+  per_dataset:
+    baseline: {aime25: 0.667, hmmt25: 0.442, aime26: 0.678, hmmt26: 0.455, brumo25: 0.692}
+    iteration_1: {aime25: 0.714, hmmt25: 0.456, aime26: 0.703, hmmt26: 0.455, brumo25: 0.706}
+    iteration_2: {aime25: 0.717, hmmt25: 0.464, aime26: 0.719, hmmt26: 0.472, brumo25: 0.725}
+    iteration_3: {aime25: 0.714, hmmt25: 0.467, aime26: 0.725, hmmt26: 0.472, brumo25: 0.727}
+
+artifacts:
+  selected_subsets: withheld_until_publication
+  checkpoints: withheld_until_publication
+  per_seed_predictions: withheld_until_publication

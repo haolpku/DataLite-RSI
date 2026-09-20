@@ -1,0 +1,28 @@
+{
+  "schema_version": "0.1",
+  "id": "gedit-bench",
+  "name": "GEdit-Bench",
+  "description": "Genuine-edit image-editing benchmark from Step1X-Edit. 606 real-user editing cases across 11 categories, with paired English and Chinese instructions (1,212 rows). Used here as a held-out transfer target after LoRA training on synthesised edit pairs.",
+  "huggingface": {
+    "repo_id": "stepfun-ai/GEdit-Bench",
+    "revision": "50766778e2a737474c7e9bdf84cdce82c3ea3f4f"
+  },
+  "modalities": [
+    "image",
+    "text"
+  ],
+  "formats": [
+    "arrow"
+  ],
+  "splits": {
+    "test": {
+      "num_examples": 606,
+      "rows_en_zh": 1212
+    }
+  },
+  "license": "MIT",
+  "access": "public",
+  "contains_pii": false,
+  "provenance_url": "https://huggingface.co/datasets/stepfun-ai/GEdit-Bench",
+  "notes": "Paper: arXiv:2504.17761. The English Full set is the usual scoring split. Headline scores on this suite use a VLM judge (VIEScore overall, 0-10)."
+}

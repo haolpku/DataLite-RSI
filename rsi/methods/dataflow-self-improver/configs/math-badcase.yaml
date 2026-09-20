@@ -1,0 +1,148 @@
+# Reference configuration for the math SFT transfer experiment recorded in
+# results/submissions/dataflow-self-improver-qwen3-8b-math-6k/.
+#
+# Portable form: absolute paths are ${...} placeholders. Credentials come
+# from the environment. No key, token, or private endpoint belongs here.
+
+project:
+  workspace_dir: ${DF_WORKSPACE_DIR}
+  input_path: ${DF_INPUT_PATH}
+  run_name: ${DF_RUN_NAME}
+
+task:
+  target_schema:
+    instruction: str
+    output: str
+  quality_criteria:
+    - Require a non-empty instruction field that states the source math problem without changing its mathematical meaning.
+    - Require a correct self-contained output that identifies key components, applies relevant theorems or formulas step by step, shows calculations, and verifies important intermediate results.
+    - Require every output to conclude with the final answer explicitly wrapped in LaTeX \boxed{} notation and mathematically consistent with golden_answer.
+    - During format alignment, prioritise schema conformance, boxed-answer coverage, and parseable conclusions over adding new problem types.
+    - During capability completion, add coverage for the error modes attributed on the fixed validation sets without dropping below the alignment-phase format-success rate by more than 5 percentage points.
+    - Exclude truncated responses, answer-only outputs, and unsupported answer changes.
+    - Exclude diagnostic or evaluation content copied from MATH-500 or AIME26, external judge commentary, and malformed records.
+
+# Two frozen validation sets. Their contents are the in-loop diagnosis
+# signal and must not be rewritten, subsampled, or replaced mid-run.
+validation:
+  sets:
+    - id: math500
+      path: ${DF_MATH500_PATH}
+      role: format_and_capability_probe
+      metric: accuracy
+    - id: aime26
+      path: ${DF_AIME26_PATH}
+      role: contest_capability_probe
+      metric: avg_at_4
+  mean_accuracy_drop_pp: 3.0
+  format_rate_drop_pp: 5.0
+  format_rate_reference: alignment_phase_incumbent
+
+phases:
+  - name: format_alignment
+    objective: Close format and schema failures attributed on the validation sets.
+    max_rows: 2000
+    allowed_actions:
+      - retrieve_matching_data
+      - rewrite_pipeline_operators
+      - refine_incumbent
+      - filter_incumbent
+  - name: capability_completion
+    objective: Close capability gaps attributed on the validation sets.
+    max_rows: 6000
+    # Later capability iterations may only edit this subset.
+    lock_subset_after: first_capability_incumbent
+    allowed_actions:
+      - retrieve_matching_data
+      - rewrite_pipeline_operators
+      - refine_locked_subset
+      - filter_locked_subset
+      - supplement_locked_subset
+
+llm:
+  backend: api
+  analyzer:
+    api_url: ${DF_API_URL}
+    model_name: ${DF_ANALYZER_MODEL}
+    api_key: ${DF_API_KEY}
+    max_workers: 10
+    request_timeout: 600
+    max_retries: 3
+  pipeline_llm:
+    generation:
+      api_url: ${DF_PIPELINE_API_URL}
+      model_name: ${DF_PIPELINE_MODEL}
+      api_key: ${DF_PIPELINE_API_KEY}
+      max_workers: 50
+      serving_kwargs:
+        temperature: 0.6
+        top_p: 0.95
+        max_tokens: 16384
+        enable_thinking: omit
+        stream: true
+        stream_options:
+          include_usage: true
+        connect_timeout: 10
+        read_timeout: 1800
+        max_retries: 3
+
+agent:
+  backend: codex
+  api_key_env: DF_AGENT_API_KEY
+  base_url: ${DF_AGENT_BASE_URL}
+  setting_sources: [project]
+  max_turns: 50
+  pipeline_filename: pipeline.py
+  max_retries: 4
+  retry_base_delay: 10
+  run_timeout_sec: 3600
+  resume_on_retry: true
+  codex:
+    binary: ${CODEX_BIN}
+    model: ${CODEX_MODEL}
+    effort: xhigh
+    base_url: ${CODEX_BASE_URL}
+    mcp_timeout_ms: 30000
+    bypass_sandbox: true
+
+loop:
+  max_iterations: 4
+  compile_timeout_sec: 120
+  execution_timeout_sec: 43200
+  execution_repairs: 2
+  python_exe: ${DF_AGENT_PYTHON}
+
+downstream_eval:
+  enabled: true
+  every_iteration: true
+  command:
+    - ${DF_DOWNSTREAM_PYTHON}
+    - ${DF_DOWNSTREAM_SCRIPT}
+    - --config
+    - ${DF_DOWNSTREAM_CONFIG}
+  in_loop_benchmarks: [math500, aime26]
+  held_out_benchmarks: [gsm8k, minerva_math, gaokao2024_mix, olympiadbench, amc23, aime24, aime25]
+  seeds: [42, 42, 44]
+  aggregation: mean_over_seeds
+  timeout_sec: 345600
+
+review:
+  decontamination:
+    reference_files:
+      - ${DF_BENCHMARK_DATA_DIR}/gsm8k/test.jsonl
+      - ${DF_BENCHMARK_DATA_DIR}/math/test.jsonl
+      - ${DF_BENCHMARK_DATA_DIR}/math500/test.jsonl
+      - ${DF_BENCHMARK_DATA_DIR}/amc23/test.jsonl
+      - ${DF_BENCHMARK_DATA_DIR}/aime24/test.jsonl
+      - ${DF_BENCHMARK_DATA_DIR}/aime25/test.jsonl
+      - ${DF_BENCHMARK_DATA_DIR}/aime26/test.jsonl
+      - ${DF_BENCHMARK_DATA_DIR}/minerva_math/test.jsonl
+      - ${DF_BENCHMARK_DATA_DIR}/gaokao2024_mix/test.jsonl
+      - ${DF_BENCHMARK_DATA_DIR}/olympiadbench/test.jsonl
+    ngram: 13
+    max_rate: 0.01
+    fields:
+      - question
+      - problem
+    candidate_fields:
+      - instruction

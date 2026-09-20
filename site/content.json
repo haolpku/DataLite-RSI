@@ -6,7 +6,7 @@
       "label": "Compared with the full-pool control",
       "explanation": "The final 32-example setting scores above the 100-step full-pool OPSD control.",
       "context": "The search scores a fixed pool of 9,600 candidates. Every round starts from the initial student in the reference configuration; earlier checkpoints inform subsequent selection.",
-      "protocol": "Author-reported. All displayed trained settings report 100 optimizer steps. Selection and prior rounds add compute: the first two cycles report approximately 8–14 GPU-hours, excluding the final aggressive round. The selector and artifacts are withheld; step/epoch semantics require clarification. Scores average three evaluation seeds, not three independent training runs.",
+      "protocol": "All displayed trained settings report 100 optimizer steps. Selection and prior rounds add compute: the first two cycles report approximately 8–14 GPU-hours, excluding the final aggressive round. The selector and artifacts are withheld; step/epoch semantics require clarification. Scores average three evaluation seeds, not three independent training runs.",
       "source": "results/submissions/opsd-data-lite-qwen3-8b/result.json"
     },
     "evolver": {
@@ -15,7 +15,7 @@
       "label": "Compared with original Math-3K",
       "explanation": "A mixed result: the evolved dataset improves over base, but scores below the original Math-3K reference.",
       "context": "A coding agent updates the data-processing program over five iterations. Reviews select the incumbent, while downstream diagnostics inform later proposals.",
-      "protocol": "Author-reported, one SFT seed per candidate dataset. A 10% diagnostic subset was drawn from the full test files; the final full-test score includes that subset and is not fully untouched evaluation. Pipeline evolution reports 3.53 hours; total node occupancy including evaluation is approximately 30 hours. Full upstream method source and original run artifacts are not publicly linked.",
+      "protocol": "One SFT seed per candidate dataset. A 10% diagnostic subset was drawn from the full test files; the final full-test score includes that subset and is not fully untouched evaluation. Pipeline evolution reports 3.53 hours; total node occupancy including evaluation is approximately 30 hours. Full upstream method source and original run artifacts are not publicly linked.",
       "source": "results/submissions/dataflow-evolver-qwen25-7b-math-3k/result.json"
     },
     "self": {
@@ -24,7 +24,7 @@
       "label": "Compared with the base model",
       "explanation": "The final refined corpus improves the reported transfer mean, with a non-monotonic trajectory.",
       "context": "Validation failures guide changes to the pipeline and corpus. The final set contains 6,000 rows; a preceding merge reached 7,000.",
-      "protocol": "Author-reported. MATH-500 and AIME26 are described as in-loop probes and excluded from the seven-set headline. Seed records are 42,42,44; run identities and actual rollback evidence require clarification. Compute and original artifacts are pending. This seven-set mean is not directly comparable to the Evolver eight-set mean.",
+      "protocol": "MATH-500 and AIME26 are described as in-loop probes and excluded from the seven-set headline. Seed records are 42,42,44; run identities and actual rollback evidence require clarification. Compute and original artifacts are pending. This seven-set mean is not directly comparable to the Evolver eight-set mean.",
       "source": "results/submissions/dataflow-self-improver-qwen3-8b-math-6k/result.json"
     }
   },

@@ -6,7 +6,7 @@
 
 <br>
 
-[![Project website](https://img.shields.io/badge/Explore-Project_Website-6264DC?style=flat-square)](https://haolpku.github.io/DataLite-RSI/) [![Repository checks](https://github.com/haolpku/DataLite-RSI/actions/workflows/validate-contributions.yml/badge.svg)](https://github.com/haolpku/DataLite-RSI/actions/workflows/validate-contributions.yml) [![Evidence status](https://img.shields.io/badge/Results-Author--reported-69818C?style=flat-square)](docs/protocol.md)
+[![Project website](https://img.shields.io/badge/Explore-Project_Website-6264DC?style=flat-square)](https://haolpku.github.io/DataLite-RSI/) [![Repository checks](https://github.com/haolpku/DataLite-RSI/actions/workflows/validate-contributions.yml/badge.svg)](https://github.com/haolpku/DataLite-RSI/actions/workflows/validate-contributions.yml) [![Contributions welcome](https://img.shields.io/badge/Community-Contributions_welcome-298D8D?style=flat-square)](#join-the-effort)
 
 **An open research initiative for Less is More in RSI.**
 
@@ -81,39 +81,41 @@ and [DataFlow-Self-Improver](rsi/methods/dataflow-self-improver/) extend these
 perspectives. Evolver improves over base but falls below original Math-3K; their
 eight-set and seven-set evaluation means are not ranked together.
 
-## Reported results
+<a id="reported-results"></a>
+
+## Experimental results
 
 **[Explore interactive comparisons ↗](https://haolpku.github.io/DataLite-RSI/#rs-results)**
 
-All current submissions are **author-reported and unverified**. Each row links
-to its original record. Math/video scores are percentages; image scores are
-normalized composites. See the [protocol guide](docs/protocol.md) for comparators,
-feedback sets and aggregation rules.
+Explore our initial experiments in data-efficient RSI. Each result links to its
+experiment record, with model settings and evaluation details. Math/video scores
+are percentages; image scores are normalized composites. See the
+[protocol guide](docs/protocol.md) for comparators and aggregation rules.
 
 <details>
-<summary><strong>View the complete result table</strong> — models, protocols, scores and status</summary>
+<summary><strong>View the complete result table</strong> — models, protocols and scores</summary>
 
 <!-- results:start -->
 
-| Method / model | Protocol / metric | Base → final | Status |
-| --- | --- | --- | --- |
-| [OPSD · Qwen3-8B](results/submissions/opsd-data-lite-qwen3-8b/result.json) | 5-set math (%) | 58.70 → 62.10 | unverified |
-| [Evolver · Qwen2.5-7B](results/submissions/dataflow-evolver-qwen25-7b-math-3k/result.json) | 8-set math (%) | 30.67 → 37.93 | unverified |
-| [Self-Improver · Qwen3-8B-Base](results/submissions/dataflow-self-improver-qwen3-8b-math-6k/result.json) | 7-set math (%) | 37.11 → 41.45 | unverified |
-| [Policy synthesis · FLUX](results/submissions/policy-evolving-edit-synthesis-flux2-klein-9b/result.json) | Composite (0–1) | 0.79375 → 0.82400 | unverified |
-| [Policy synthesis · Qwen Image](results/submissions/policy-evolving-edit-synthesis-qwen-image-edit-2511/result.json) | Composite (0–1) | 0.85010 → 0.86835 | unverified |
-| [VideoRSI · Qwen3-VL-8B](results/submissions/video-rsi-qwen3-vl-8b-videomme-4p5k/result.json) | Video-MME (%) | 56.56 → 58.89 | unverified |
-| [VideoRSI · LLaVA-OneVision-7B](results/submissions/video-rsi-llava-onevision-7b-videomme-4p5k/result.json) | Video-MME (%) | 58.52 → 59.48 | unverified |
-| [VideoRSI · Qwen2.5-VL-3B](results/submissions/video-rsi-qwen25-vl-3b-videomme-4p5k/result.json) | Video-MME (%) | 42.44 → 59.04 | unverified |
-| [VideoRSI · Gemma-4-E4B](results/submissions/video-rsi-gemma-4-e4b-videomme-4p5k/result.json) | Video-MME (%) | 47.74 → 48.37 | unverified |
-| [VideoRSI · InternVL3-2B](results/submissions/video-rsi-internvl3-2b-videomme-4p5k/result.json) | Video-MME (%) | 34.85 → 55.22 | unverified |
+| Method / model | Protocol / metric | Base → final |
+| --- | --- | --- |
+| [OPSD · Qwen3-8B](results/submissions/opsd-data-lite-qwen3-8b/result.json) | 5-set math (%) | 58.70 → 62.10 |
+| [Evolver · Qwen2.5-7B](results/submissions/dataflow-evolver-qwen25-7b-math-3k/result.json) | 8-set math (%) | 30.67 → 37.93 |
+| [Self-Improver · Qwen3-8B-Base](results/submissions/dataflow-self-improver-qwen3-8b-math-6k/result.json) | 7-set math (%) | 37.11 → 41.45 |
+| [Policy synthesis · FLUX](results/submissions/policy-evolving-edit-synthesis-flux2-klein-9b/result.json) | Composite (0–1) | 0.79375 → 0.82400 |
+| [Policy synthesis · Qwen Image](results/submissions/policy-evolving-edit-synthesis-qwen-image-edit-2511/result.json) | Composite (0–1) | 0.85010 → 0.86835 |
+| [VideoRSI · Qwen3-VL-8B](results/submissions/video-rsi-qwen3-vl-8b-videomme-4p5k/result.json) | Video-MME (%) | 56.56 → 58.89 |
+| [VideoRSI · LLaVA-OneVision-7B](results/submissions/video-rsi-llava-onevision-7b-videomme-4p5k/result.json) | Video-MME (%) | 58.52 → 59.48 |
+| [VideoRSI · Qwen2.5-VL-3B](results/submissions/video-rsi-qwen25-vl-3b-videomme-4p5k/result.json) | Video-MME (%) | 42.44 → 59.04 |
+| [VideoRSI · Gemma-4-E4B](results/submissions/video-rsi-gemma-4-e4b-videomme-4p5k/result.json) | Video-MME (%) | 47.74 → 48.37 |
+| [VideoRSI · InternVL3-2B](results/submissions/video-rsi-internvl3-2b-videomme-4p5k/result.json) | Video-MME (%) | 34.85 → 55.22 |
 
 <!-- results:end -->
 
 </details>
 
-The [verified leaderboard](results/leaderboard.json) is maintained separately.
-Fixture tests validate software behavior; they do not verify these experiments.
+Have a method, a new task, or a comparison to add?
+[Contribute an experiment](results/README.md) and help extend the research.
 
 ## Methods and available materials
 
@@ -178,7 +180,7 @@ DataLite-RSI/
 ├── site/         Project homepage source
 ├── docs/         Concept, protocols, reproduction and release notes
 ├── rsi/methods/  Method packages and configurations
-├── results/      Original submissions and verified leaderboard
+├── results/      Experiment records and result summaries
 ├── benchmarks/  Suite definitions, evaluators and fixtures
 ├── datasets/    Dataset metadata and pinned references
 ├── evaluation/  Shared and vendored evaluation harnesses

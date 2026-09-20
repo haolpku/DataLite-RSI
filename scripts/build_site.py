@@ -83,12 +83,12 @@ def make_data(root=ROOT):
 
 
 def result_table(items):
-    lines = ['| Method / model | Protocol / metric | Base → final | Status |', '| --- | --- | --- | --- |']
+    lines = ['| Method / model | Protocol / metric | Base → final |', '| --- | --- | --- |']
     for item in items:
         r = item['record']
         factor, digits = (1, 5) if r['track'] == 'generative' else (100, 2)
         values = [r['metrics'][phase]['primary_score'] * factor for phase in ('baseline', 'final')]
-        lines.append(f"| [{item['label']}]({item['path']}) | {item['metric']} | {values[0]:.{digits}f} → {values[1]:.{digits}f} | {r['status']} |")
+        lines.append(f"| [{item['label']}]({item['path']}) | {item['metric']} | {values[0]:.{digits}f} → {values[1]:.{digits}f} |")
     return '\n'.join(lines)
 
 

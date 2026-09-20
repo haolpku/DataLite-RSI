@@ -40,9 +40,6 @@ def main() -> int:
         print(text, end="")
     return 0
 
-
-if __name__ == "__main__":
-    raise SystemExit(main())
 CATEGORY_KEYS = {
     "Action Reasoning": "action_reasoning",
     "Object Recognition": "object_recognition",
@@ -57,3 +54,7 @@ CATEGORY_KEYS = {
     "Spatial Perception": "spatial_perception",
     "Spatial Reasoning": "spatial_reasoning",
 }
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

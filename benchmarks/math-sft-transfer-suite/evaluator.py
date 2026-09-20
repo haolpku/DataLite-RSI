@@ -74,12 +74,14 @@ def score_benchmark(records: list[dict[str, Any]]) -> dict[str, Any]:
         for s in samples:
             pred = normalise_answer(s.get("predicted_answer"))
             ref = normalise_answer(s.get("correct_answer"))
-            if s.get("finish_reason", "stop") != "stop":
+            runaway = s.get("finish_reason", "stop") != "stop"
+            if runaway:
                 runaways += 1
             if pred is None:
                 parse_failures += 1
             elif pred == ref:
-                correct += 1
+                if not runaway:
+                    correct += 1
             else:
                 wrong += 1
 

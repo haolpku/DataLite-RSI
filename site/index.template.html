@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DataLite-RSI — Less is More for Recursive Self-Improvement</title>
+    <meta
+      name="description"
+      content="Data-centric recursive self-improvement through compact training sets. Explore methods, reported results, and reproducibility across math, image editing, and video."
+    />
+    <meta name="theme-color" content="#252945" />
+    <link rel="canonical" href="https://haolpku.github.io/DataLite-RSI/" />
+    <meta property="og:title" content="DataLite-RSI · Less is More for RSI" />
+    <meta
+      property="og:description"
+      content="Better data decisions through recursive feedback. Five methods across mathematical reasoning, image editing, and video understanding."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://haolpku.github.io/DataLite-RSI/" />
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/site.css" />
+    <script src="data.js" defer></script>
+    <script src="assets/site.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <noscript
+      ><style>
+        .rs-result-tabs,
+        .rs-select-row,
+        .rs-method-list,
+        .rs-text-button {
+          display: none !important;
+        }
+        #rs-panel-math {
+          display: none;
+        }
+        #rsi-academic #rs-panel-all[hidden] {
+          display: block !important;
+        }
+      </style></noscript
+    >
+    <div id="rsi-academic" aria-label="DataLite-RSI research collection">
+      <header class="rs-hero">
+        <div class="rs-wrap">
+          <div class="rs-chips">
+            <span class="rs-chip">Data-Centric AI</span
+            ><span class="rs-chip">Recursive Improvement</span
+            ><span class="rs-chip">Research Collection</span>
+          </div>
+          <h1 id="rs-hero-title">DataLite-RSI</h1>
+          <p class="rs-subtitle" id="rs-hero-subtitle">
+            <strong>Less is More</strong> for Recursive Self-Improvement
+          </p>
+          <p class="rs-lead">
+            Evolving how data is selected, synthesized, and refined.<br />Exploring
+            the potential of compact training sets across mathematical
+            reasoning, image editing, and video understanding.
+          </p>
+          <div class="rs-actions">
+            <a
+              class="rs-button rs-solid"
+              href="https://github.com/haolpku/DataLite-RSI"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Code</a
+            ><a class="rs-button rs-solid" href="#rs-results">Results</a
+            ><a class="rs-button rs-solid" href="#rs-methods">Methods</a
+            ><a class="rs-button" href="#rs-access">Reproduce</a>
+          </div>
+          <p class="rs-release">
+            Research collection · Author-reported results, awaiting verification
+          </p>
+        </div>
+      </header>
+      <div class="rs-wrap">
+        <div class="rs-stats">
+          <div class="rs-stat">
+            <b>{{method_count}}</b><span>RSI methods</span
+            ><small>Selection · Synthesis · Refinement</small>
+          </div>
+          <div class="rs-stat">
+            <b>3</b><span>Research tracks</span
+            ><small>Language · Image · Video</small>
+          </div>
+          <div class="rs-stat rs-featured">
+            <b>{{result_count}}</b><span>Reported results</span
+            ><small>With explicit baselines</small>
+          </div>
+          <div class="rs-stat">
+            <b>{{benchmark_count}}</b><span>Evaluation suites</span
+            ><small>Task-specific protocols</small>
+          </div>
+          <div class="rs-stat">
+            <b>{{dataset_count}}</b><span>Dataset references</span
+            ><small>Registered evaluation data</small>
+          </div>
+        </div>
+      </div>
+      <main id="main-content">
+        <section class="rs-section" id="rs-overview">
+          <div class="rs-wrap">
+            <h2 class="rs-section-title"><span>01</span>Overview</h2>
+            <div class="rs-overview">
+              <div>
+                <p class="rs-prose">
+                  What if the next improvement comes from
+                  <strong>better data decisions</strong>? DataLite-RSI studies
+                  how recursive feedback can improve the selection, synthesis,
+                  and refinement of compact training sets.
+                </p>
+                <ul class="rs-features">
+                  <li>
+                    <span class="rs-icon"
+                      ><svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M4 6h16M7 12h10M10 18h4" /></svg></span
+                    ><span
+                      ><strong>Choose what matters.</strong> Select useful
+                      examples from a fixed pool using model feedback.</span
+                    >
+                  </li>
+                  <li>
+                    <span class="rs-icon"
+                      ><svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="m5 19 11-11 3 3L8 22zM5 3v4M3 5h4M17 2v4M15 4h4"
+                        /></svg></span
+                    ><span
+                      ><strong>Learn how to generate.</strong> Evolve synthesis
+                      policies from accepted examples and failure cases.</span
+                    >
+                  </li>
+                  <li>
+                    <span class="rs-icon"
+                      ><svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M6 5v10a4 4 0 0 0 4 4h8M6 9h8a4 4 0 0 0 4-4" />
+                        <circle cx="6" cy="4" r="2" />
+                        <circle cx="18" cy="4" r="2" />
+                        <circle cx="18" cy="19" r="2" /></svg></span
+                    ><span
+                      ><strong>Improve the process.</strong> Refine the program
+                      that turns source data into a training set.</span
+                    >
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <div
+                  class="rs-loop"
+                  role="img"
+                  aria-label="Recursive data loop: candidate pool, data decisions, feedback, and updated strategy; compact dataset used for training and evaluation"
+                >
+                  <p class="rs-figure-head">
+                    Candidate pool → recursive data decisions
+                  </p>
+                  <div class="rs-loop-grid">
+                    <div class="rs-loop-node rs-loop-primary">
+                      Data decisions<small>Select · Synthesize · Refine</small>
+                    </div>
+                    <span class="rs-arrow">→</span>
+                    <div class="rs-loop-node">
+                      Compact dataset<small>Selected training examples</small>
+                    </div>
+                    <span class="rs-arrow">↑</span><span></span
+                    ><span class="rs-arrow">↓</span>
+                    <div class="rs-loop-node">
+                      Update strategy<small>Code · Policy · Selection</small>
+                    </div>
+                    <span class="rs-arrow">←</span>
+                    <div class="rs-loop-node rs-loop-feedback">
+                      Evaluate & reflect<small
+                        >Quality · Failures · Response</small
+                      >
+                    </div>
+                  </div>
+                  <div class="rs-output">
+                    <span>Compact dataset</span><span>→</span
+                    ><strong>Train & evaluate</strong>
+                  </div>
+                </div>
+                <p class="rs-caption">
+                  Training happens within the loop or after search, depending on
+                  the method.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="rs-section rs-alt" id="rs-perspectives">
+          <div class="rs-wrap">
+            <h2 class="rs-section-title">
+              <span>02</span>Three Perspectives on “Less”
+            </h2>
+            <p class="rs-section-intro">
+              Smaller selected sets, better synthesis at a fixed budget, and
+              transfer from compact datasets.
+            </p>
+            <div class="rs-perspectives">
+              <article class="rs-perspective">
+                <span class="rs-icon"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M18 4H6l7 8-7 8h12" /></svg></span
+                ><span class="rs-overline">Mathematical reasoning</span>
+                <h3>OPSD-Data-Lite</h3>
+                <div class="rs-card-number">{{opsd_samples}} examples</div>
+                <div class="rs-card-unit">
+                  Selected for the final training round
+                </div>
+                <p>
+                  <strong>{{opsd_comparison}}</strong> on the five-set math
+                  suite, compared with full-pool OPSD at 100 optimizer steps.
+                </p>
+                <button
+                  type="button"
+                  class="rs-text-button"
+                  data-show-track="math"
+                >
+                  Explore the comparison
+                </button>
+              </article>
+              <article class="rs-perspective">
+                <span
+                  class="rs-icon"
+                  style="color: var(--rs-pink); background: var(--rs-pink-wash)"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="3" />
+                    <circle cx="8" cy="8" r="2" />
+                    <path d="m3 17 5-5 4 4 4-7 5 8" /></svg></span
+                ><span class="rs-overline">Image editing</span>
+                <h3>Policy-Evolving Synthesis</h3>
+                <div class="rs-card-number">{{image_pairs}} pairs</div>
+                <div class="rs-card-unit">
+                  The same final-data budget in both arms
+                </div>
+                <p>
+                  <strong>{{image_comparison}}</strong> normalized transfer
+                  score on FLUX, comparing fixed and evolving synthesis
+                  policies.
+                </p>
+                <button
+                  type="button"
+                  class="rs-text-button"
+                  data-show-track="image"
+                >
+                  Explore both backbones
+                </button>
+              </article>
+              <article class="rs-perspective">
+                <span
+                  class="rs-icon"
+                  style="color: var(--rs-teal); background: var(--rs-teal-wash)"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <rect x="3" y="5" width="12" height="14" rx="3" />
+                    <path d="m15 10 6-3v10l-6-3" /></svg></span
+                ><span class="rs-overline">Video understanding</span>
+                <h3>VideoRSI</h3>
+                <div class="rs-card-number">4,541 examples</div>
+                <div class="rs-card-unit">
+                  One video SFT set, five model families
+                </div>
+                <p>
+                  <strong>{{video_gain_range}}</strong> in Video-MME overall
+                  accuracy over the five respective base models.
+                </p>
+                <button
+                  type="button"
+                  class="rs-text-button"
+                  data-show-track="video"
+                >
+                  Explore all five models
+                </button>
+              </article>
+            </div>
+            <p class="rs-result-note">
+              Data budget refers to the final training set. Search and
+              generation costs are reported separately where available.
+            </p>
+          </div>
+        </section>
+        <section class="rs-section" id="rs-results">
+          <div class="rs-wrap">
+            <h2 class="rs-section-title">
+              <span>03</span>Experimental Results
+            </h2>
+            <p class="rs-section-intro">
+              Read each result alongside its model, comparator, and evaluation
+              protocol.
+            </p>
+            <div
+              class="rs-result-tabs"
+              role="tablist"
+              aria-label="Result tracks"
+            >
+              <button
+                class="rs-tab"
+                id="rs-tab-math"
+                role="tab"
+                aria-controls="rs-panel-math"
+                aria-selected="true"
+                type="button"
+                data-track="math"
+              >
+                Mathematics</button
+              ><button
+                class="rs-tab"
+                id="rs-tab-image"
+                role="tab"
+                aria-controls="rs-panel-image"
+                aria-selected="false"
+                type="button"
+                data-track="image"
+              >
+                Image editing</button
+              ><button
+                class="rs-tab"
+                id="rs-tab-video"
+                role="tab"
+                aria-controls="rs-panel-video"
+                aria-selected="false"
+                type="button"
+                data-track="video"
+              >
+                Video</button
+              ><button
+                class="rs-tab"
+                id="rs-tab-all"
+                role="tab"
+                aria-controls="rs-panel-all"
+                aria-selected="false"
+                type="button"
+                data-track="all"
+              >
+                All results
+              </button>
+            </div>
+            <div
+              id="rs-panel-math"
+              role="tabpanel"
+              aria-labelledby="rs-tab-math"
+            >
+              <div class="rs-select-row">
+                <label for="rs-math-selector">Method</label
+                ><select id="rs-math-selector">
+                  <option value="opsd">OPSD-Data-Lite</option>
+                  <option value="evolver">DataFlow-Evolver</option>
+                  <option value="self">DataFlow-Self-Improver</option>
+                </select>
+              </div>
+              <div class="rs-chart-grid">
+                <div class="rs-chart-panel">
+                  <h3 id="rs-math-model">Qwen3-8B</h3>
+                  <p class="rs-chart-sub" id="rs-math-metric">
+                    Five-set competition-math mean · Avg@12
+                  </p>
+                  <div id="rs-math-bars">{{math_bars}}</div>
+                  <div class="rs-chart-axis">
+                    <span>0</span><span>25</span><span>50</span><span>75</span
+                    ><span>100</span>
+                  </div>
+                  <p class="rs-chart-label">Reported suite score (%)</p>
+                </div>
+                <aside class="rs-insight">
+                  <p class="rs-mini-label" id="rs-math-gain-label">
+                    Compared with the full-pool control
+                  </p>
+                  <div class="rs-gain" id="rs-math-gain">{{opsd_gain}}</div>
+                  <p id="rs-math-explanation">
+                    The final 32-example setting scores above the 100-step
+                    full-pool OPSD control.
+                  </p>
+                  <hr />
+                  <p id="rs-math-context">
+                    The search scores a fixed pool of 9,600 candidates. Every
+                    round starts from the initial student in the reference
+                    configuration; earlier checkpoints inform subsequent
+                    selection.
+                  </p>
+                  <a
+                    class="rs-source-link"
+                    id="rs-math-source"
+                    href="{{opsd_source}}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >Result & configuration ↗</a
+                  >
+                </aside>
+              </div>
+              <details class="rs-protocol">
+                <summary>Protocol, compute & evidence status</summary>
+                <p id="rs-math-protocol">{{opsd_protocol}}</p>
+              </details>
+            </div>
+            <div
+              id="rs-panel-image"
+              role="tabpanel"
+              aria-labelledby="rs-tab-image"
+              hidden
+            >
+              <p class="rs-chart-sub">
+                1,000 accepted training pairs per arm · Matched LoRA recipe ·
+                Author-reported
+              </p>
+              <div class="rs-chart-grid" id="rs-image-charts"></div>
+              <details class="rs-protocol">
+                <summary>Native metrics & evaluation details</summary>
+                <table class="rs-metric-table">
+                  <thead>
+                    <tr>
+                      <th>Backbone / arm</th>
+                      <th>GEdit / 10</th>
+                      <th>ImgEdit / 5</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{native_rows}}
+                  </tbody>
+                </table>
+                <p>
+                  The composite averages GEdit/10 and ImgEdit/5. It is not
+                  accuracy. Both arms use the same final training-pair budget;
+                  total synthesis compute is not established as equal. Seeds and
+                  per-sample judge artifacts are pending.
+                </p>
+                <a
+                  class="rs-source-link"
+                  href="https://github.com/haolpku/DataLite-RSI/tree/{{revision}}/rsi/methods/policy-evolving-edit-synthesis"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Method, code & reported results ↗</a
+                >
+              </details>
+            </div>
+            <div
+              id="rs-panel-video"
+              role="tabpanel"
+              aria-labelledby="rs-tab-video"
+              hidden
+            >
+              <p class="rs-chart-sub">
+                Video-MME overall accuracy · 4,541 video SFT examples ·
+                Author-reported
+              </p>
+              <div class="rs-legend">
+                <span><i class="rs-dot"></i>Base</span
+                ><span><i class="rs-dot rs-colored"></i>VideoRSI SFT</span>
+              </div>
+              <div id="rs-video-charts"></div>
+              <div class="rs-chart-axis">
+                <span>0</span><span>25</span><span>50</span><span>75</span
+                ><span>100</span>
+              </div>
+              <p class="rs-chart-label">Video-MME overall accuracy (%)</p>
+              <details class="rs-protocol">
+                <summary>Protocol & evidence status</summary>
+                <p>
+                  Five pipeline-search iterations are described before final
+                  SFT. All five models improve overall; some categories regress.
+                  Matched-data controls, seeds, complete training settings and
+                  original predictions are pending. Model labels follow the
+                  submissions.
+                </p>
+                <a
+                  class="rs-source-link"
+                  href="https://github.com/haolpku/DataLite-RSI/tree/{{revision}}/rsi/methods/video-rsi"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Method & all five reported results ↗</a
+                >
+              </details>
+            </div>
+            <div
+              id="rs-panel-all"
+              role="tabpanel"
+              aria-labelledby="rs-tab-all"
+              hidden
+            >
+              <p class="rs-chart-sub">
+                {{result_count}} submissions · Different protocols are not
+                ranked together · Status shown in source records
+              </p>
+              <table class="rs-metric-table">
+                <thead>
+                  <tr>
+                    <th>Method / model</th>
+                    <th>Metric</th>
+                    <th>Base → final</th>
+                  </tr>
+                </thead>
+                <tbody id="rs-all-rows">
+                  {{all_rows}}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+        <section class="rs-section rs-alt" id="rs-methods">
+          <div class="rs-wrap">
+            <h2 class="rs-section-title"><span>04</span>What Evolves?</h2>
+            <p class="rs-section-intro">
+              Five methods, with different choices of recursive state and
+              feedback.
+            </p>
+            <div class="rs-method-layout">
+              <div class="rs-method-list" aria-label="Select a method">
+                <button
+                  class="rs-method-button"
+                  type="button"
+                  aria-pressed="true"
+                  data-method="opsd"
+                >
+                  OPSD-Data-Lite<small>Training subset</small></button
+                ><button
+                  class="rs-method-button"
+                  type="button"
+                  aria-pressed="false"
+                  data-method="image"
+                >
+                  Policy-Evolving Synthesis<small
+                    >Instruction policies</small
+                  ></button
+                ><button
+                  class="rs-method-button"
+                  type="button"
+                  aria-pressed="false"
+                  data-method="video"
+                >
+                  VideoRSI<small>Video data pipeline</small></button
+                ><button
+                  class="rs-method-button"
+                  type="button"
+                  aria-pressed="false"
+                  data-method="evolver"
+                >
+                  DataFlow-Evolver<small>Data-processing program</small></button
+                ><button
+                  class="rs-method-button"
+                  type="button"
+                  aria-pressed="false"
+                  data-method="self"
+                >
+                  DataFlow-Self-Improver<small>Data pipeline & corpus</small>
+                </button>
+              </div>
+              <article class="rs-method-detail" aria-live="polite">
+                <h3 id="rs-method-title">{{method_title}}</h3>
+                <p id="rs-method-description">{{method_description}}</p>
+                <dl>
+                  <dt>Feedback</dt>
+                  <dd id="rs-method-feedback">{{method_feedback}}</dd>
+                  <dt>Final dataset</dt>
+                  <dd id="rs-method-budget">{{method_budget}}</dd>
+                  <dt>Available</dt>
+                  <dd id="rs-method-available">{{method_available}}</dd>
+                </dl>
+                <a
+                  class="rs-source-link"
+                  id="rs-method-source"
+                  href="{{method_source}}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Read the method ↗</a
+                >
+              </article>
+            </div>
+          </div>
+        </section>
+        <section class="rs-section" id="rs-access">
+          <div class="rs-wrap">
+            <h2 class="rs-section-title">
+              <span>05</span>Reproduce & Contribute
+            </h2>
+            <div class="rs-access-grid">
+              <article class="rs-access">
+                <span class="rs-icon"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m4 6 6 6-6 6M13 18h7" /></svg
+                ></span>
+                <div>
+                  <h3>Follow the evidence</h3>
+                  <p>
+                    Inspect protocols, reference configurations, evaluation
+                    code, and the source records behind each result.
+                  </p>
+                  <a
+                    href="https://github.com/haolpku/DataLite-RSI/blob/{{revision}}/docs/reproduction.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >Reproduction guide ↗</a
+                  >
+                </div>
+              </article>
+              <article class="rs-access">
+                <span class="rs-icon"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="6" cy="5" r="2" />
+                    <circle cx="6" cy="19" r="2" />
+                    <circle cx="18" cy="19" r="2" />
+                    <path
+                      d="M6 7v10M18 17V9a4 4 0 0 0-4-4h-2m3-3-3 3 3 3"
+                    /></svg
+                ></span>
+                <div>
+                  <h3>Extend the collection</h3>
+                  <p>
+                    Contribute a method, reproduce a result, or share a
+                    comparison that reveals where data-centric RSI helps—and
+                    where it does not.
+                  </p>
+                  <a
+                    href="https://github.com/haolpku/DataLite-RSI/blob/{{revision}}/CONTRIBUTING.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >Contribution guide ↗</a
+                  >
+                </div>
+              </article>
+            </div>
+            <p class="rs-result-note">
+              Full reruns depend on the code and artifacts available for each
+              method. Evaluator fixtures test software behavior; they do not
+              verify the reported experiments.
+            </p>
+          </div>
+        </section>
+      </main>
+      <footer class="rs-footer">
+        <div class="rs-wrap">
+          <span><b>DataLite-RSI</b> · Less is More for RSI</span
+          ><span>Research collection · Source {{short_revision}}</span>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

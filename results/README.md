@@ -1,5 +1,10 @@
 # Result submissions
 
+Browse the [reported research results](../README.md#reported-results) or the
+[interactive homepage](https://haolpku.github.io/DataLite-RSI/#rs-results).
+The research collection includes unverified submissions; the verified leaderboard
+remains a separate view. Read [protocols](../docs/protocol.md) before comparing scores.
+
 Each submission lives in `results/submissions/<submission-id>/` and contains a
 `result.json` copied from [`../templates/result.json`](../templates/result.json).
 

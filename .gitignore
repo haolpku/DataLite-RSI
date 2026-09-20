@@ -39,3 +39,5 @@ wandb/
 *.tar.gz
 *.zip
 
+# Generated static website
+_site/

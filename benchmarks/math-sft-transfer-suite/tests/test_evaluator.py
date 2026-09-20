@@ -58,6 +58,14 @@ class ScoreBenchmarkTest(unittest.TestCase):
         self.assertEqual(r["metric"], "avg@2")
         self.assertEqual(r["score"], 0.75)
 
+    def test_truncated_matching_answer_is_incorrect(self) -> None:
+        result = evaluator.score_benchmark([
+            {"question_id": "a", "predicted_answer": "1", "correct_answer": "1", "finish_reason": "length"},
+        ])
+        self.assertEqual(result["score"], 0)
+        self.assertEqual(result["runaway_count"], 1)
+        self.assertEqual(result["incorrect_count"], 1)
+
     def test_parse_failure_and_runaway_reported_separately(self) -> None:
         records = [
             {"benchmark": "math", "question_id": "a", "predicted_answer": None, "correct_answer": "1"},

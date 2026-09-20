@@ -1,0 +1,125 @@
+{
+  "math": {
+    "opsd": {
+      "model": "Qwen3-8B",
+      "metric": "Five-set competition-math mean · Avg@12",
+      "label": "Compared with the full-pool control",
+      "explanation": "The final 32-example setting scores above the 100-step full-pool OPSD control.",
+      "context": "The search scores a fixed pool of 9,600 candidates. Every round starts from the initial student in the reference configuration; earlier checkpoints inform subsequent selection.",
+      "protocol": "Author-reported. All displayed trained settings report 100 optimizer steps. Selection and prior rounds add compute: the first two cycles report approximately 8–14 GPU-hours, excluding the final aggressive round. The selector and artifacts are withheld; step/epoch semantics require clarification. Scores average three evaluation seeds, not three independent training runs.",
+      "source": "results/submissions/opsd-data-lite-qwen3-8b/result.json"
+    },
+    "evolver": {
+      "model": "Qwen2.5-7B",
+      "metric": "Eight-set full-test mean · 3,000 training rows per trained arm",
+      "label": "Compared with original Math-3K",
+      "explanation": "A mixed result: the evolved dataset improves over base, but scores below the original Math-3K reference.",
+      "context": "A coding agent updates the data-processing program over five iterations. Reviews select the incumbent, while downstream diagnostics inform later proposals.",
+      "protocol": "Author-reported, one SFT seed per candidate dataset. A 10% diagnostic subset was drawn from the full test files; the final full-test score includes that subset and is not fully untouched evaluation. Pipeline evolution reports 3.53 hours; total node occupancy including evaluation is approximately 30 hours. Full upstream method source and original run artifacts are not publicly linked.",
+      "source": "results/submissions/dataflow-evolver-qwen25-7b-math-3k/result.json"
+    },
+    "self": {
+      "model": "Qwen3-8B-Base",
+      "metric": "Seven-set transfer mean · Final corpus: 6,000 rows",
+      "label": "Compared with the base model",
+      "explanation": "The final refined corpus improves the reported transfer mean, with a non-monotonic trajectory.",
+      "context": "Validation failures guide changes to the pipeline and corpus. The final set contains 6,000 rows; a preceding merge reached 7,000.",
+      "protocol": "Author-reported. MATH-500 and AIME26 are described as in-loop probes and excluded from the seven-set headline. Seed records are 42,42,44; run identities and actual rollback evidence require clarification. Compute and original artifacts are pending. This seven-set mean is not directly comparable to the Evolver eight-set mean.",
+      "source": "results/submissions/dataflow-self-improver-qwen3-8b-math-6k/result.json"
+    }
+  },
+  "methods": {
+    "opsd": {
+      "title": "OPSD-Data-Lite",
+      "description": "Use the response to a short training round to choose a more useful subset for the next one.",
+      "feedback": "Student–teacher teachability signals across a fixed candidate pool.",
+      "budget": "32 selected examples in the final round; 9,600 candidates considered.",
+      "available": "Method description, configuration and evaluation harness. Selector and run artifacts pending.",
+      "path": "rsi/methods/opsd-data-lite/README.md"
+    },
+    "image": {
+      "title": "Policy-Evolving Edit Synthesis",
+      "description": "Turn batch-level successes and failures into policies for writing better image-edit instructions.",
+      "feedback": "Fixed-rubric acceptance, axis scores and failure records; policy promotion requires support from two batches.",
+      "budget": "1,000 accepted image-edit pairs per training arm.",
+      "available": "Core loop source, rubric tests and environment definition. Serving adapters, scene snapshots and judge outputs pending.",
+      "path": "rsi/methods/policy-evolving-edit-synthesis/README.md"
+    },
+    "video": {
+      "title": "VideoRSI",
+      "description": "Improve the pipeline that grounds video questions in temporal evidence, before final model training.",
+      "feedback": "Grounding, schema validity, text-only solvability, frozen-target difficulty and deduplication.",
+      "budget": "4,541 SFT examples after five described pipeline iterations.",
+      "available": "Method description, configuration and Video-MME evaluation source. Full pipeline and experiment artifacts pending.",
+      "path": "rsi/methods/video-rsi/README.md"
+    },
+    "evolver": {
+      "title": "DataFlow-Evolver",
+      "description": "A coding agent proposes new data-processing programs; an independent review selects the incumbent.",
+      "feedback": "Dataset review and embedding diagnostics, plus periodic downstream failure analysis.",
+      "budget": "3,000 SFT rows from a fixed 14,181-row source corpus.",
+      "available": "Reference configuration, detailed experiment report and grading harness. Full upstream implementation described as non-public.",
+      "path": "rsi/methods/dataflow-evolver/README.md"
+    },
+    "self": {
+      "title": "DataFlow-Self-Improver",
+      "description": "Diagnose validation failures, then refine a data pipeline and corpus through format alignment and capability completion.",
+      "feedback": "Fixed validation probes and bad-case attribution; rollback behavior requires reconciliation with the run report.",
+      "budget": "6,000 final SFT rows; intermediate sizes vary.",
+      "available": "Method description, configuration and aggregate iteration metrics. Source revision and run artifacts pending.",
+      "path": "rsi/methods/dataflow-self-improver/README.md"
+    }
+  },
+  "results": [
+    {
+      "label": "OPSD · Qwen3-8B",
+      "metric": "5-set math (%)",
+      "id": "opsd-data-lite-qwen3-8b"
+    },
+    {
+      "label": "Evolver · Qwen2.5-7B",
+      "metric": "8-set math (%)",
+      "id": "dataflow-evolver-qwen25-7b-math-3k"
+    },
+    {
+      "label": "Self-Improver · Qwen3-8B-Base",
+      "metric": "7-set math (%)",
+      "id": "dataflow-self-improver-qwen3-8b-math-6k"
+    },
+    {
+      "label": "Policy synthesis · FLUX",
+      "metric": "Composite (0–1)",
+      "id": "policy-evolving-edit-synthesis-flux2-klein-9b"
+    },
+    {
+      "label": "Policy synthesis · Qwen Image",
+      "metric": "Composite (0–1)",
+      "id": "policy-evolving-edit-synthesis-qwen-image-edit-2511"
+    },
+    {
+      "label": "VideoRSI · Qwen3-VL-8B",
+      "metric": "Video-MME (%)",
+      "id": "video-rsi-qwen3-vl-8b-videomme-4p5k"
+    },
+    {
+      "label": "VideoRSI · LLaVA-OneVision-7B",
+      "metric": "Video-MME (%)",
+      "id": "video-rsi-llava-onevision-7b-videomme-4p5k"
+    },
+    {
+      "label": "VideoRSI · Qwen2.5-VL-3B",
+      "metric": "Video-MME (%)",
+      "id": "video-rsi-qwen25-vl-3b-videomme-4p5k"
+    },
+    {
+      "label": "VideoRSI · Gemma-4-E4B",
+      "metric": "Video-MME (%)",
+      "id": "video-rsi-gemma-4-e4b-videomme-4p5k"
+    },
+    {
+      "label": "VideoRSI · InternVL3-2B",
+      "metric": "Video-MME (%)",
+      "id": "video-rsi-internvl3-2b-videomme-4p5k"
+    }
+  ]
+}

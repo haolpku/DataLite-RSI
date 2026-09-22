@@ -94,9 +94,10 @@ loop:
 # with the Qwen2.5-Math harness committed under evaluation/qwen25_math/ (upstream
 # commit a45202bd16f1ec06f433442dc1152d0074773465). It evaluates a FIXED
 # diagnostic subset -- a 10% per-benchmark sample at seed 42, materialised before
-# evolution -- rather than the full test sets, so benchmark content cannot steer
-# the optimisation. See configs/downstream_math_runtime.* in the upstream
-# repository for the SFT and evaluation settings this command consumes.
+# evolution -- rather than complete test files, so benchmark exposure is bounded
+# while the remaining test examples stay out of the optimisation loop. The final
+# full-test score includes this diagnostic subset. See configs/downstream_math_runtime.*
+# in the upstream repository for the SFT and evaluation settings this command consumes.
 downstream_eval:
   enabled: true
   interval: 2

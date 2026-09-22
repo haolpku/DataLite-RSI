@@ -78,8 +78,9 @@ with their respective base models.
 
 **Program and corpus refinement.** [DataFlow-Evolver](rsi/methods/dataflow-evolver/)
 and [DataFlow-Self-Improver](rsi/methods/dataflow-self-improver/) extend these
-perspectives. Evolver improves over base but falls below original Math-3K; their
-eight-set and seven-set evaluation means are not ranked together.
+perspectives. Evolver improves over base but falls below DataFlow's
+expert-authored Math-3K reference; their eight-set and seven-set evaluation means
+are not ranked together.
 
 <a id="reported-results"></a>
 

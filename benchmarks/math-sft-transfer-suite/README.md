@@ -113,9 +113,11 @@ All six sourced from the harness use the commit vendored at
 ### Diagnostic subset for in-loop feedback
 
 A method that uses an evaluation signal inside its optimisation loop should feed
-it a fixed diagnostic subset, not these full test sets — full benchmark content
-reaching the loop is a leakage channel. The reference subset is a 10% sample per
-benchmark drawn at seed 42 and materialised before evolution begins:
+it a fixed diagnostic subset rather than the complete test files — full benchmark
+content reaching the loop is a leakage channel. The reference subset is a 10%
+sample per benchmark drawn at seed 42 and materialised before evolution begins.
+For the DataFlow-Evolver report, the final full-test score includes this subset
+and is therefore not a fully untouched evaluation:
 
 | Benchmark | Full | Diagnostic |
 | --- | ---: | ---: |

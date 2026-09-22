@@ -32,7 +32,8 @@ accepted data, training exposures, and total compute separately.
 
 The current collection does not demonstrate that less data always wins, that
 recursion always beats one-shot selection, or that total compute is lower.
-Evolver improves over the base model but loses to original Math-3K under its
+Evolver improves over the base model but loses to DataFlow's expert-authored
+Math-3K reference under its
 reported protocol. Video results lack a matched-data non-recursive control.
 Some test subsets contribute feedback, and several methods have incomplete
 public artifacts. These boundaries are part of the research record.

@@ -43,7 +43,7 @@ The lightweight math evaluators do not reproduce the original equivalence grader
 | [OPSD](../rsi/methods/opsd-data-lite/README.md) | Config and TTPO evaluation source | Selector, selected-row identities, checkpoints and predictions; reconcile 100 steps / 1 epoch |
 | [Image synthesis](../rsi/methods/policy-evolving-edit-synthesis/README.md) | Core loop, tests and Docker definition | Serving adapters, scene snapshot, seeds and judge records |
 | [VideoRSI](../rsi/methods/video-rsi/README.md) | Reference config and Video-MME evaluator | Full data pipeline, complete run settings and artifacts |
-| [Evolver](../rsi/methods/dataflow-evolver/README.md) | Experiment report, config and original grading harness | Non-public upstream implementation, diagnostics IDs and predictions |
+| [Evolver](../rsi/methods/dataflow-evolver/README.md) | Experiment report, config and original grading harness | Upstream implementation, original run artifacts, diagnostics IDs and predictions; public release in preparation |
 | [Self-Improver](../rsi/methods/dataflow-self-improver/README.md) | Config and iteration summaries | Method source, run identities, actual rollback logs and outputs |
 
 Commands recorded in original result manifests describe the author environment;

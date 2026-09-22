@@ -19,6 +19,20 @@ over rows.
              +-- rejected: condensed summary enters history, code is discarded
 ```
 
+## Reference corpus and Math-3K comparisons
+
+The reference run starts from a fixed 14,181-row mixture of the official GSM8K
+and MATH training sets. Before the run, the mixture was decontaminated against
+the downstream benchmark test files with normalized 13-gram overlap.
+
+For the 3,000-row comparison, **DataFlow Math-3K** denotes the Math subset of
+[DataFlow-Instruct-10K](https://huggingface.co/datasets/OpenDCAI/dataflow-instruct-10k),
+produced by the DataFlow team with a human-authored DataFlow Math pipeline over
+the MATH and GSM8K training sets. We also reran that official pipeline with
+`gpt-4o`, the pipeline LLM used by DataFlow-Evolver, to provide a matched
+teacher comparison. These reference datasets use the same SFT and evaluation
+protocol as the Evolver run.
+
 ## What recurses
 
 | Component | Recursively modified? |
@@ -97,10 +111,10 @@ rsi/methods/dataflow-evolver/
 The full implementation (pipeline-authoring agent driver, DataFlow operator
 runtime, SFT/evaluation harness) lives in the upstream source repository at
 revision `7b788746b24c2b9d6713709cb64d8c37602a2fbb`, branch
-`refactor/open-dataflow-pipeline-runtime`. That repository is not public at the
-time of writing, which is a real reproducibility limitation: the configuration
-and recorded per-iteration metrics are auditable here, but a full end-to-end
-rerun is not yet possible from this repository alone.
+`refactor/open-dataflow-pipeline-runtime`. Public release of that source and the
+original run artifacts is being prepared; links will follow. Until then, the
+configuration and recorded per-iteration metrics are auditable here, but a full
+end-to-end rerun is not yet possible from this repository alone.
 
 ## Running the full loop
 
@@ -142,8 +156,9 @@ From the reference run (5 iterations, 14,181-row corpus, 6,000-row LLM pool cap,
 
 | Component | Cost |
 | --- | --- |
-| Pipeline evolution | 3.53 h wall clock (25-63 min per iteration) |
-| Downstream checkpoint | ~17-19 min each (SFT + diagnostic-subset evaluation) |
+| Pipeline evolution and data generation | 3h 31m 57s effective runtime across five iterations |
+| Total effective runtime | 4h 30m 05s, including pipeline/data generation, checkpoint_000 baseline evaluation, and checkpoint_002/004 SFT plus diagnostic evaluation |
+| Calendar span | Approximately 6h 07m, including about 1h 37m of waiting and scheduling gaps |
 | Embedding review | 91-134 s per iteration |
 | Teacher tokens | 88.36M -- **83% of all token spend** |
 | Agent tokens | 9.25M, of which 73% cached input |
@@ -156,6 +171,11 @@ iteration -- halving the cap roughly halves the dominant cost. And the agent's
 input is heavily cached because repair attempts resume a session instead of
 restarting it, so an endpoint without prompt caching makes authoring markedly
 more expensive.
+
+The pipeline duration is reported as service-call and execution time from the
+logs. Because the archive does not preserve a local GPU-occupancy snapshot for
+the GPT-4o and Qwen3-Embedding-8B services, pipeline time is not converted to
+GPU-hours.
 
 ## Safety, rollback, and budget
 

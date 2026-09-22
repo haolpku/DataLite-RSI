@@ -14,7 +14,7 @@
   },
   "method_id": "dataflow-evolver",
   "metrics": {
-    "evaluation_scope": "Full benchmark test sets (gsm8k 1319, math 5000, minerva_math 272, gaokao2024_mix 91, olympiadbench 675, amc23 40, aime24 30, aime25 30). Baseline is untrained Qwen2.5-7B base; final is the same model fine-tuned on the 3,000-row dataset selected by DataFlow-Evolver. Both measured under identical generation settings. The 10% diagnostic subset used for in-loop feedback is reported separately under diagnostic_subset and is not the headline metric.",
+    "evaluation_scope": "Complete benchmark test files (gsm8k 1319, math 5000, minerva_math 272, gaokao2024_mix 91, olympiadbench 675, amc23 40, aime24 30, aime25 30). Baseline is untrained Qwen2.5-7B base; final is the same model fine-tuned on the 3,000-row dataset selected by DataFlow-Evolver. Both measured under identical generation settings. The fixed 10% diagnostic subset used for in-loop feedback is reported separately under diagnostic_subset; those examples are included in the final full-test score, so the headline is not fully untouched.",
     "baseline": {
       "primary_score": 0.306688,
       "gsm8k": 0.6566,
@@ -38,7 +38,7 @@
       "aime25": 0.0333
     },
     "reference_systems": {
-      "note": "Comparable systems evaluated under the same protocol. math3k_original and math3k_gpt4o_rewrite are 3,000-row math SFT datasets from DataFlow-Instruct-10K, trained and evaluated identically; qwen25_7b_instruct is the released instruct model shown as an external reference, not a controlled comparison.",
+      "note": "Comparable systems evaluated under the same protocol. math3k_original is the 3,000-row Math subset of DataFlow-Instruct-10K, produced by the DataFlow team's human-authored DataFlow Math pipeline over the MATH and GSM8K training sets. math3k_gpt4o_rewrite reruns that official pipeline with GPT-4o, matching the pipeline LLM used by DataFlow-Evolver. Both references are trained and evaluated identically; qwen25_7b_instruct is the released instruct model shown as an external reference, not a controlled comparison.",
       "dataflow_instruct_math3k_original": {
         "primary_score": 0.4082,
         "gsm8k": 0.8787,
@@ -74,7 +74,7 @@
       }
     },
     "diagnostic_subset": {
-      "note": "10% per-benchmark sample at seed 42, materialised before evolution. This is the in-loop feedback signal the method optimised against, not an evaluation result. Full test sets never entered the optimisation loop.",
+      "note": "10% per-benchmark sample at seed 42, materialised before evolution. This is the in-loop feedback signal the method used; the remaining test examples did not enter the optimisation loop. The final full-test score includes this diagnostic subset and is therefore not fully untouched.",
       "baseline": {
         "primary_score": 0.31126
       },
@@ -103,7 +103,7 @@
       "run_name_seed": null
     },
     "iterations": 5,
-    "compute_budget": "8x A100-80GB SXM (driver 535.129.03), GPU 7 reserved for the embedding service. Pipeline evolution 12,717s (3.53h) across 5 iterations; each downstream checkpoint added ~1,030-1,110s for SFT plus diagnostic-subset evaluation; embedding review 577s total. ~30h end-to-end including post-hoc full-test-set evaluation. Tokens: 88.36M pipeline teacher (gpt-4o, 87,315 requests), 9.25M pipeline agent (Codex + gpt-5.6-sol effort xhigh, 73% cached input), 8.82M embedding (Qwen3-Embedding-8B, 15,000 requests), 0.22M ReviewAgent (gpt-5.6-sol, 7 requests); 106.65M total.",
+    "compute_budget": "8x NVIDIA A100-SXM4-80GB (driver 535.129.03); GPU 7 reserved for the embedding service. Effective runtime from logs, excluding waiting and scheduling gaps: pipeline plus data generation 3h31m57s across 5 iterations; checkpoint_000 baseline evaluation 22m25s with training_performed=false and no SFT; checkpoint_002 7-card DDP SFT plus diagnostic evaluation 17m11s; checkpoint_004 7-card DDP SFT plus diagnostic evaluation 18m32s; total effective runtime including all three checkpoints 4h30m05s. Calendar span was approximately 6h07m, including about 1h37m of gaps. SFT used full-parameter BF16 DeepSpeed ZeRO-2, world size 7 on cuda:0-6, batch size/GPU 1, gradient accumulation 4, 1 epoch, cutoff_len 16384. Evaluation used CUDA_VISIBLE_DEVICES=1,2,3,4 with DP=4, TP=1, PP=1, max_model_len 32768; greedy sampling once and competition-set sampling four times. Pipeline GPU occupancy was not archived, so its duration is not converted to GPU-hours. Tokens: 88.36M pipeline teacher (gpt-4o, 87,315 requests), 9.25M pipeline agent (Codex + gpt-5.6-sol effort xhigh, 73% cached input), 8.82M embedding (Qwen3-Embedding-8B, 15,000 requests), 0.22M ReviewAgent (gpt-5.6-sol, 7 requests); 106.65M total.",
     "human_intervention": "none",
     "models": {
       "pipeline_agent": "Codex CLI + gpt-5.6-sol (effort xhigh)",
@@ -112,19 +112,35 @@
       "embedding": "Qwen3-Embedding-8B"
     },
     "wall_time_seconds": {
-      "pipeline_evolution": 12716.7,
+      "pipeline_evolution": 12717,
       "per_iteration": [
-        1933.4,
-        3319.5,
-        1510.1,
-        2198.9,
-        3754.9
+        1933,
+        3320,
+        1510,
+        2199,
+        3755
       ],
-      "downstream_checkpoints": [
-        1031.3,
-        1112.3
-      ],
-      "embedding_review": 576.6
+      "checkpoints": {
+        "checkpoint_000": {
+          "seconds": 1345,
+          "training_performed": false,
+          "work": "Qwen2.5-7B Base baseline evaluation"
+        },
+        "checkpoint_002": {
+          "seconds": 1031,
+          "training_performed": true,
+          "work": "7-card DDP SFT plus diagnostic-subset evaluation"
+        },
+        "checkpoint_004": {
+          "seconds": 1112,
+          "training_performed": true,
+          "work": "7-card DDP SFT plus diagnostic-subset evaluation"
+        }
+      },
+      "total_effective_runtime": 16205,
+      "calendar_span": 22020,
+      "waiting_and_scheduling_gaps": 5815,
+      "embedding_review": 577
     },
     "tokens": {
       "pipeline_teacher": {

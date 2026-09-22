@@ -39,7 +39,8 @@ def make_data(root=ROOT):
         record = records[Path(math['source']).parent.name]
         metrics = record['metrics']
         score = lambda arm: metrics[arm]['primary_score'] * 100
-        rows = [['Base model', score('baseline'), 'base']]
+        base_label = 'Qwen2.5-7B base' if key == 'evolver' else 'Base model'
+        rows = [[base_label, score('baseline'), 'base']]
         if key == 'opsd':
             control = metrics['controls']['opsd_100_steps']['primary_score'] * 100
             pool = record['settings']['training_pool_size']
@@ -47,7 +48,14 @@ def make_data(root=ROOT):
         elif key == 'evolver':
             refs = metrics['reference_systems']
             control = refs['dataflow_instruct_math3k_original']['primary_score'] * 100
-            rows.extend([['Original Math-3K', control, 'control'], ['GPT-4o-rewritten Math-3K', refs['dataflow_instruct_math3k_gpt4o_rewrite']['primary_score'] * 100, 'base']])
+            rows.extend([
+                ['DataFlow Math-3K · expert-authored pipeline', control, 'control'],
+                [
+                    'DataFlow Math-3K · GPT-4o rewrite',
+                    refs['dataflow_instruct_math3k_gpt4o_rewrite']['primary_score'] * 100,
+                    'base',
+                ],
+            ])
         else:
             control = score('baseline')
         if key in ('opsd', 'self'):

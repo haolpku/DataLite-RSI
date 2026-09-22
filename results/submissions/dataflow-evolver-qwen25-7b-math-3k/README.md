@@ -3,8 +3,10 @@
 Status: **unverified**. Submitted for maintainer review.
 
 Five iterations of [DataFlow-Evolver](../../../rsi/methods/dataflow-evolver/) over
-a fixed 14,181-row GSM8K-train + MATH-train corpus, producing exactly 3,000
-`{instruction, output}` SFT records, evaluated on the
+a fixed 14,181-row mixture of the official GSM8K and MATH training sets,
+decontaminated against the downstream benchmark test files with normalized
+13-gram overlap, produced exactly 3,000 `{instruction, output}` SFT records,
+evaluated on the
 [math SFT transfer suite](../../../benchmarks/math-sft-transfer-suite/).
 
 ## Headline
@@ -13,13 +15,19 @@ Fine-tuning Qwen2.5-7B base on the 3,000 selected rows lifted the full-test-set
 primary score from **30.67% to 37.93% (+7.26 points)**, with the largest gains on
 GSM8K (+23.5) and Minerva (+16.2).
 
-All columns below are the complete benchmark test sets under identical generation
-settings. The two Math-3K columns are 3,000-row math SFT datasets from
-DataFlow-Instruct-10K trained and evaluated the same way, so they are directly
-comparable. Qwen2.5-7B-Instruct is an external reference point, not a controlled
-comparison.
+All columns below report the complete benchmark test files under identical
+generation settings. The final Evolver score includes the fixed 10% diagnostic
+sample described below, so it is not a fully untouched evaluation. The
+expert-pipeline reference is the 3,000-row Math subset of
+[DataFlow-Instruct-10K](https://huggingface.co/datasets/OpenDCAI/dataflow-instruct-10k),
+produced by the DataFlow team with a human-authored DataFlow Math pipeline over
+the MATH and GSM8K training sets. The GPT-4o rewrite reruns that official
+pipeline with GPT-4o, matching the pipeline LLM used by DataFlow-Evolver. Both
+references are trained and evaluated under the same protocol as the Evolver run,
+so they are directly comparable. Qwen2.5-7B-Instruct is an external reference
+point, not a controlled comparison.
 
-| Benchmark | Base | **DataFlow-Evolver** | Math-3K | Math-3K gpt-4o | *Instruct* |
+| Benchmark | Qwen2.5-7B base | **DataFlow-Evolver** | DataFlow Math-3K (expert-authored pipeline) | DataFlow Math-3K (GPT-4o rewrite) | *Instruct* |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | `gsm8k` | 65.66 | **89.16** | 87.87 | 88.10 | *92.65* |
 | `math` | 62.06 | 69.44 | **72.36** | 69.96 | *75.18* |
@@ -32,10 +40,10 @@ comparison.
 | **primary_score** | **30.67** | **37.93** | **40.82** | **36.85** | ***46.09*** |
 
 Read honestly, this is a mixed result. The method clearly beats the base model
-(+7.26) and beats the gpt-4o rewrite of Math-3K (+1.08) while using a teacher of
-the same class. It does **not** beat the original Math-3K subset (-2.89), which
-wins on five of eight benchmarks — decisively on `gaokao2024_mix` (40.66 vs
-28.57) and `olympiadbench` (36.89 vs 32.00).
+(+7.26) and beats the GPT-4o rewrite of DataFlow Math-3K (+1.08) while using a
+teacher of the same class. It does **not** beat the expert-authored DataFlow
+Math-3K subset (-2.89), which wins on five of eight benchmarks — decisively on
+`gaokao2024_mix` (40.66 vs 28.57) and `olympiadbench` (36.89 vs 32.00).
 
 Where the method does win is the two largest benchmarks by question count:
 `gsm8k` (89.16, best of all four trained systems) and `amc23` (43.13, likewise).
@@ -53,7 +61,7 @@ incumbent improved monotonically:
 | checkpoint 4 | incumbent after iteration 4 | **0.403** |
 
 `review_score` rose over the same span (0.7357 → 0.7660 → 0.7709), and on the
-full test sets every iteration after the first beats iteration 1:
+complete test files every iteration after the first beats iteration 1:
 
 | Dataset | full-set primary | vs iteration 1 |
 | --- | ---: | ---: |
@@ -75,9 +83,9 @@ full test sets every iteration after the first beats iteration 1:
 | ReviewAgent | `gpt-5.6-sol`, 80-row sample; run artifacts record sample seed 43 |
 | Teacher LLM | `gpt-4o`, temperature 0.6, top_p 0.95, max_tokens 16,384 |
 | Embedding | Qwen3-Embedding-8B, proxy corpus ODA-Math-460k, 3,000 samples |
-| SFT | LLaMA-Factory 0.9.3, full-parameter, DeepSpeed ZeRO-2, GPUs 0-6 |
-| Evaluation | Qwen2.5-Math harness @ `a45202bd16f1ec06f433442dc1152d0074773465`, vLLM 0.9.2, 4 DP ranks on GPUs 0-3 |
-| Hardware | 8x A100-80GB SXM, driver 535.129.03; GPU 7 reserved for the embedding service |
+| SFT | LLaMA-Factory 0.9.3, full-parameter, 7-card DDP (`world size=7`, `cuda:0-6`), DeepSpeed ZeRO-2 |
+| Evaluation | Qwen2.5-Math harness @ `a45202bd16f1ec06f433442dc1152d0074773465`, vLLM 0.9.2, 4-card data parallel (`CUDA_VISIBLE_DEVICES=1,2,3,4`, DP=4, TP=1, PP=1), `max_model_len=32,768`; greedy sampling once and competition-set sampling four times |
+| Hardware | 8x NVIDIA A100-SXM4-80GB, driver 535.129.03; GPU 7 reserved for the embedding service |
 | Seed | SFT `seed`/`data_seed` 42; evaluation seed 0 per the harness default |
 
 Training and inference follow the
@@ -93,19 +101,21 @@ The method could not simply rewrite the whole corpus.
 
 ## Two evaluation scopes, and why
 
-**In-loop feedback uses a fixed diagnostic subset, never the full test sets.**
+**In-loop feedback uses a fixed diagnostic subset drawn from each test file.**
 This is a deliberate design choice: the periodic downstream signal is injected
-into the next pipeline proposal prompt, so evaluating on complete test sets there
-would let benchmark content steer the optimisation. Restricting the loop to a
-10% sample bounds that exposure.
+into the next pipeline proposal prompt, so evaluating on complete test files there
+would expose too much benchmark content to the optimisation. Restricting the loop
+to a fixed 10% sample bounds that exposure; the remaining test examples do not
+enter the loop.
 
-**The reported scores are the full test sets**, evaluated after the run finished.
-They never influenced any acceptance decision, and no pipeline was ever authored
-with visibility into them.
+**The reported scores use the complete test files**, evaluated after the run
+finished. The diagnostic subset therefore appears in both the in-loop feedback and
+the final full-test score; the headline is not fully untouched. It did not enter
+the pipeline acceptance score directly.
 
 | Scope | Used for | Enters the loop? |
 | --- | --- | --- |
-| Full test sets | baseline/final in `result.json`, all reported scores | No |
+| Complete test files | baseline/final in `result.json`, all reported scores | The final score includes the diagnostic subset |
 | Diagnostic subset (10%) | in-loop feedback signal only | Yes, by design |
 
 ### Per-iteration full-set scores
@@ -215,8 +225,8 @@ iteration 4's 37.93 — the highest of the five.
 Two reasons not to over-read that inversion:
 
 1. **The spread is tiny.** All five `review_score` values sit inside a 0.058 band,
-   and the full-set primaries inside 2.9 points. With one SFT seed per dataset and
-   no variance estimate, that ordering is plausibly within run-to-run noise.
+   and the full-set primaries inside 2.9 points. Run-to-run variance is unmeasured,
+   so that ordering is plausibly within ordinary training noise.
 2. **The two are measuring different things.** `review_score` weights per-sample
    correctness at 0.40 and difficulty at 0.15. Iteration 2 traded correctness
    (0.72 vs 0.93) for difficulty (0.79 vs 0.58), and harder examples may transfer
@@ -252,24 +262,29 @@ against.
 
 ## Cost
 
-Wall clock, pipeline evolution only (agent authoring + pipeline execution +
-review, per iteration):
+Effective runtime recorded in the logs, excluding intermediate waiting, queueing,
+and scheduling gaps (agent authoring + pipeline execution + review, per iteration):
 
 | iter | wall time | repairs |
 | ---: | ---: | ---: |
-| 1 | 32.2 min | 1 |
-| 2 | 55.3 min | 2 |
-| 3 | 25.2 min | 0 |
-| 4 | 36.6 min | 1 |
-| 5 | 62.6 min | 2 |
-| **total** | **3.53 h** (12,717 s) | 6 |
+| 1 | 32m 13s | 1 |
+| 2 | 55m 20s | 2 |
+| 3 | 25m 10s | 0 |
+| 4 | 36m 39s | 1 |
+| 5 | 1h 02m 35s | 2 |
+| **pipeline + data generation** | **3h 31m 57s** (12,717s) | 6 |
 
-Each downstream checkpoint added roughly 17-19 min for SFT plus
-diagnostic-subset evaluation (1,031 s and 1,112 s for checkpoints 2 and 4).
-Embedding review cost 577 s across the run, 91-134 s per iteration. The
-post-hoc full-test-set evaluations dominate total machine time and are not part
-of the loop's cost. End-to-end the run occupied its 8-GPU node for roughly 30 h
-including all evaluation.
+| Checkpoint | Work | Effective time |
+| --- | --- | ---: |
+| `checkpoint_000` | Qwen2.5-7B Base baseline evaluation; `training_performed=false`, no SFT | 22m 25s |
+| `checkpoint_002` | 7-card SFT + diagnostic-subset evaluation | 17m 11s |
+| `checkpoint_004` | 7-card SFT + diagnostic-subset evaluation | 18m 32s |
+| **all three checkpoints** | **Effective runtime including pipeline and checkpoints** | **4h 30m 05s** |
+
+The experiment spanned approximately 6h 07m by calendar time, including about
+1h 37m of waiting, preparation, and scheduling gaps. Pipeline service GPU
+occupancy was not archived, so its duration is not converted into GPU-hours.
+Embedding review took 577s across the run (91-134s per iteration).
 
 Token usage, by namespace — the framework records provider-reported usage and
 marks missing usage rather than estimating it:
@@ -293,14 +308,14 @@ comparison — 7 requests total, one per candidate plus a re-score.
 
 ## Scope and limitations
 
-- **The method does not beat the strongest comparable dataset.** The original
-  Math-3K subset of DataFlow-Instruct-10K reaches 40.82 against this run's 37.93,
-  winning five of eight benchmarks. The method does beat the base model (+7.26)
-  and the gpt-4o rewrite of that same subset (+1.08), but a curated human-authored
-  corpus remains ahead. Closing that gap is the obvious target for a longer run.
-- **One seed per dataset.** Each candidate got a single SFT run at seed 42.
-  Run-to-run variance is unmeasured, which is what limits how finely the
-  per-iteration ordering can be read.
+- **The method does not beat the strongest comparable dataset.** The expert-authored
+  DataFlow Math-3K subset reaches 40.82 against this run's 37.93, winning five of
+  eight benchmarks. The method does beat the base model (+7.26) and the GPT-4o
+  rewrite of that same subset (+1.08), but a curated human-authored corpus remains
+  ahead. Closing that gap is the obvious target for a longer run.
+- **No repeated-seed variance estimate.** The report does not include repeated
+  SFT runs, so run-to-run variance is unmeasured and the per-iteration ordering
+  should not be over-interpreted.
 - **Small competition sets.** At 30 questions and avg@4, AIME24/25 resolve to
   about 0.8 points, and both regress below base in this run. Read
   the large benchmarks first.
@@ -342,9 +357,9 @@ A verifier should know this before attempting a rerun:
   a digest to record the intent to pin; replace it with the digest once the image
   exists. The exact package versions needed to rebuild the environment are in the
   table above.
-- **`code_revision`** names the real commit the run used, but the DataFlow-Evolver
-  repository is private, so `git clone` will fail. What is auditable without it:
-  the reference configuration under
+- **`code_revision`** names the real commit used by the run. The public release of
+  the DataFlow-Evolver source is being prepared, so `git clone` is not yet
+  available. What is auditable without it: the reference configuration under
   [`rsi/methods/dataflow-evolver/`](../../../rsi/methods/dataflow-evolver/), and the
   evaluation harness that produced every score, committed verbatim under
   [`evaluation/qwen25_math/`](../../../evaluation/qwen25_math/). Grading can be
@@ -352,6 +367,6 @@ A verifier should know this before attempting a rerun:
 
 Run artifacts (per-iteration operator source, review evidence, agent sessions,
 token accounting, benchmark outputs, and the 3,000-row dataset) are on the
-experiment machine. `artifacts_url` is null pending upload to Hugging Face; the
-`sha256` values above identify the input corpus and the final dataset in the
-meantime.
+experiment machine. `artifacts_url` is null while the public release is being
+prepared; links will follow. The `sha256` values above identify the input corpus
+and the final dataset in the meantime.

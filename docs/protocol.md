@@ -6,7 +6,7 @@ software check does not promote a scientific result to verified status.
 | Result group | Headline | Comparator and boundary |
 | --- | --- | --- |
 | OPSD | Five-set math mean, Avg@12; shown as % | Base and full-pool OPSD; the featured comparator uses 100 optimizer steps. Selection compute is additional. Three seeds are evaluation seeds. |
-| Evolver | Eight-set full-test macro mean; shown as % | Base, original Math-3K and rewritten Math-3K. A 10% diagnostic subset from these test files informs proposals; the final full-test result includes that subset. |
+| Evolver | Eight-set full-test macro mean; shown as % | Qwen2.5-7B base, DataFlow's expert-authored Math-3K subset from DataFlow-Instruct-10K, and a matched GPT-4o rewrite of the official pipeline. A 10% diagnostic subset from the test files informs proposals; the final full-test result includes that subset. |
 | Self-Improver | Seven-set transfer macro mean; shown as % | Base and four iterations. MATH-500/AIME26 are in-loop probes excluded from the headline. Seed identities and rollback evidence remain unresolved. |
 | Image synthesis | 0.5 × (GEdit/10 + ImgEdit/5) | Base backbone and stratified synthesis. This normalized composite is not accuracy. Both trained arms use 1,000 pairs; total synthesis compute is not matched. |
 | VideoRSI | Video-MME overall accuracy; shown as % | Each of five models versus its own base. No matched-data or larger-data controls. Overall gains do not imply every category improves. |

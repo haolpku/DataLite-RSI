@@ -43,11 +43,14 @@ class ScoreBenchmarkTest(unittest.TestCase):
         self.assertEqual(imgedit["invalid_count"], 1)
 
     def test_rejects_unknown_benchmark(self) -> None:
-        with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".jsonl") as fh:
-            fh.write('{"benchmark": "other", "sample_id": "x", "score": 1}\n')
-            fh.flush()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "predictions.jsonl"
+            path.write_text(
+                '{"benchmark": "other", "sample_id": "x", "score": 1}\n',
+                encoding="utf-8",
+            )
             with self.assertRaises(ValueError):
-                evaluator.load_predictions(Path(fh.name))
+                evaluator.load_predictions(path)
 
 
 class FixtureTest(unittest.TestCase):

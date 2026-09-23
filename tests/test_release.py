@@ -41,9 +41,14 @@ class ReleaseTests(unittest.TestCase):
             r = json.loads((ROOT/f'results/submissions/{key}/result.json').read_text())
             scale,digits = (1,5) if r['track']=='generative' else (100,2)
             expected = ' → '.join(f"{r['metrics'][phase]['primary_score']*scale:.{digits}f}" for phase in ('baseline','final'))
-            self.assertEqual(shown,expected)
+        self.assertEqual(shown,expected)
         self.assertAlmostEqual(data['math']['opsd']['rows'][1][1],60.3)
-        self.assertGreater(data['math']['evolver']['rows'][1][1],data['math']['evolver']['rows'][-1][1])
+        evolver_rows = data['math']['evolver']['rows']
+        self.assertEqual(evolver_rows[1][0], 'DataFlow Math-3K · GPT-4o rewrite')
+        self.assertEqual(evolver_rows[1][2], 'control')
+        self.assertGreater(evolver_rows[-1][1], evolver_rows[1][1])
+        self.assertGreater(evolver_rows[2][1], evolver_rows[-1][1])
+        self.assertEqual(data['math']['evolver']['gain'], '+1.08 pp')
         self.assertIn('Eight-set',data['math']['evolver']['metric'])
         self.assertIn('Seven-set',data['math']['self']['metric'])
 

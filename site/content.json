@@ -12,8 +12,8 @@
     "evolver": {
       "model": "Qwen2.5-7B",
       "metric": "Eight-set full-test mean · 3,000-row SFT per trained arm",
-      "label": "Compared with DataFlow's expert-authored Math-3K",
-      "explanation": "DataFlow-Evolver improves over the Qwen2.5-7B base and the matched GPT-4o rewrite, but remains below DataFlow's expert-authored Math-3K reference.",
+      "label": "Compared with DataFlow Math-3K's GPT-4o rewrite",
+      "explanation": "DataFlow-Evolver improves over the Qwen2.5-7B base and the matched GPT-4o rewrite. DataFlow's expert-authored Math-3K remains a higher-scoring reference.",
       "context": "Math-3K is the 3,000-row Math subset of DataFlow-Instruct-10K, produced by DataFlow's human-authored DataFlow Math pipeline over MATH and GSM8K training data. This run evolves a pipeline over a fixed 14,181-row mixture of the official MATH and GSM8K training sets, decontaminated against downstream test files with normalized 13-gram matching. The GPT-4o reference reruns the official pipeline with the same pipeline LLM used by DataFlow-Evolver.",
       "protocol": "The headline is the eight-set full-test mean. A fixed 10% diagnostic sample from each test file supplied in-loop feedback; because those examples are included in the final full-test set, the headline is not a fully untouched evaluation. Pipeline evolution took 3h 31m 57s of effective runtime across five iterations. Including checkpoint_000 baseline evaluation and checkpoint_002/004 SFT plus diagnostic evaluation, total effective runtime was 4h 30m 05s. The wall-clock span was approximately 6h 07m, including about 1h 37m of waiting and scheduling gaps; pipeline time is not converted to GPU-hours because its service GPU occupancy was not archived. Public release of the full upstream implementation and original run artifacts is in preparation; links will follow.",
       "source": "results/submissions/dataflow-evolver-qwen25-7b-math-3k/result.json"

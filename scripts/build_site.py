@@ -47,12 +47,16 @@ def make_data(root=ROOT):
             rows.append([f'Full-pool OPSD · {pool:,} examples', control, 'control'])
         elif key == 'evolver':
             refs = metrics['reference_systems']
-            control = refs['dataflow_instruct_math3k_original']['primary_score'] * 100
+            control = refs['dataflow_instruct_math3k_gpt4o_rewrite']['primary_score'] * 100
             rows.extend([
-                ['DataFlow Math-3K · expert-authored pipeline', control, 'control'],
                 [
                     'DataFlow Math-3K · GPT-4o rewrite',
-                    refs['dataflow_instruct_math3k_gpt4o_rewrite']['primary_score'] * 100,
+                    control,
+                    'control',
+                ],
+                [
+                    'DataFlow Math-3K · expert-authored pipeline',
+                    refs['dataflow_instruct_math3k_original']['primary_score'] * 100,
                     'base',
                 ],
             ])

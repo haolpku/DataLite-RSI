@@ -30,7 +30,7 @@ class ManifestSpec:
 SPECS = (
     ManifestSpec(
         "benchmark",
-        "benchmarks/*/benchmark.json",
+        "benchmarks/**/benchmark.json",
         "id",
         (
             "schema_version",
@@ -316,7 +316,11 @@ def validate_repository(root: Path) -> list[str]:
                 errors.append(f"{relative}: cannot read valid UTF-8 JSON: {exc}")
                 continue
 
-            file_errors = validate_manifest(data, spec, path.parent.name)
+            expected_id = path.parent.name
+            if spec.kind == "benchmark":
+                benchmark_parts = path.parent.relative_to(root / "benchmarks").parts
+                expected_id = "-".join(benchmark_parts)
+            file_errors = validate_manifest(data, spec, expected_id)
             errors.extend(f"{relative}: {error}" for error in file_errors)
             if isinstance(data, dict) and _is_nonempty_string(data.get(spec.id_field)):
                 manifest_id = data[spec.id_field]

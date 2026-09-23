@@ -1,0 +1,40 @@
+{
+  "schema_version": "0.1",
+  "id": "hle-withtools",
+  "name": "Humanity's Last Exam with research tools",
+  "version": "0.1.0",
+  "track": "llm",
+  "description": "Evaluate an OpenAI-compatible agent on Humanity's Last Exam with web research, web fetching, Python execution, and structured submission.",
+  "task_types": [
+    "question-answering",
+    "reasoning",
+    "tool-use"
+  ],
+  "dataset": {
+    "registry_id": "hle",
+    "revision": "5a81a4c7271a2a2a312b9a690f0c2fde837e4c29"
+  },
+  "evaluator": {
+    "entrypoint": "python benchmarks/hle/withtools/evaluator.py --predictions <RESULTS_JSONL> --output <METRICS_JSON>",
+    "container_image": null
+  },
+  "metrics": [
+    {
+      "name": "accuracy",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "completion_rate",
+      "higher_is_better": true,
+      "range": [
+        0.0,
+        1.0
+      ]
+    }
+  ],
+  "license": "NOASSERTION"
+}

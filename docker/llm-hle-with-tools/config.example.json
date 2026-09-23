@@ -1,0 +1,52 @@
+{
+  "model": {
+    "provider": "openai_compatible",
+    "model": "replace-with-solver-model",
+    "base_url": "https://example.invalid/v1",
+    "api_key_env": "MODEL_API_KEY",
+    "timeout": 300,
+    "retries": 3,
+    "parameters": {
+      "temperature": 0
+    }
+  },
+  "judge": {
+    "provider": "openai_compatible",
+    "model": "replace-with-judge-model",
+    "base_url": "https://example.invalid/v1",
+    "api_key_env": "JUDGE_API_KEY",
+    "timeout": 300,
+    "retries": 3,
+    "parameters": {
+      "temperature": 0
+    }
+  },
+  "tools": {
+    "web_search": {
+      "provider": "tavily",
+      "api_key_env": "TAVILY_API_KEY",
+      "timeout": 60,
+      "max_results": 5
+    },
+    "web_fetch": {
+      "provider": "builtin",
+      "timeout": 20
+    },
+    "code_execution": {
+      "provider": "builtin",
+      "timeout": 300,
+      "max_output_chars": 100000
+    }
+  },
+  "dataset": {
+    "provider": "jsonl",
+    "path": "/data/hle.jsonl"
+  },
+  "sample_id": "replace-with-sample-id",
+  "output": "/output/results.jsonl",
+  "sample_retries": 0,
+  "max_turns": 100,
+  "max_tool_calls": 120,
+  "compaction_tokens": 50000,
+  "resume": true
+}

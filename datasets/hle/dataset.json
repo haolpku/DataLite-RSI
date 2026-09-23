@@ -1,0 +1,26 @@
+{
+  "schema_version": "0.1",
+  "id": "hle",
+  "name": "Humanity's Last Exam",
+  "description": "The full Humanity's Last Exam question-answering dataset used by the HLE benchmark.",
+  "huggingface": {
+    "repo_id": "cais/hle",
+    "revision": "5a81a4c7271a2a2a312b9a690f0c2fde837e4c29"
+  },
+  "modalities": [
+    "text",
+    "image"
+  ],
+  "formats": [
+    "parquet"
+  ],
+  "splits": {
+    "test": {
+      "num_examples": 2500
+    }
+  },
+  "license": "MIT",
+  "access": "gated",
+  "contains_pii": false,
+  "provenance_url": "https://huggingface.co/datasets/cais/hle"
+}

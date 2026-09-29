@@ -1,0 +1,26 @@
+{
+  "schema_version": "video-rsi-task-prior-v1",
+  "description": "Uniform bootstrap prior before a frozen-target capability baseline is available.",
+  "tasks": {
+    "entity_tracking": 0.125,
+    "state_change": 0.125,
+    "temporal_relation": 0.125,
+    "conditional_counting": 0.125,
+    "dynamic_spatial_trajectory": 0.125,
+    "cross_event_comparison": 0.125,
+    "causal_event_dependency": 0.125,
+    "multi_hop_reasoning": 0.125
+  },
+  "axes": {
+    "hop_count": [1, 2, 3],
+    "temporal_span": ["within_event", "cross_event", "long_range"],
+    "evidence_topology": [
+      "shared_entity_chain",
+      "precondition_outcome",
+      "ordered_disjoint_events",
+      "parallel_comparison",
+      "connected_event_path"
+    ]
+  }
+}
+

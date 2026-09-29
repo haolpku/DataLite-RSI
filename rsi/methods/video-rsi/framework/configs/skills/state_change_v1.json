@@ -1,0 +1,24 @@
+{
+  "skill_id": "state_change",
+  "version": "1",
+  "task_types": ["state_change"],
+  "instructions": "Compare the same visible entity at two or more timestamped observations. Describe the initial and final state using only observable attributes, actions, location, or relations. Do not inherit an action from an earlier observation when it is not visible in the current one.",
+  "preferred_operators": [
+    "EvidenceSelectionOperator",
+    "QuestionGenerationOperator",
+    "DistractorEnhancementOperator"
+  ],
+  "required_capabilities": ["cross_time_grounding", "same_entity_identity"],
+  "evaluation_checks": [
+    "at least two timestamped observations support the answer",
+    "before and after states are individually grounded",
+    "the question is not answerable from one caption alone",
+    "all options are mutually exclusive and visually verifiable"
+  ],
+  "forbidden_shortcuts": [
+    "single-caption answer",
+    "outside-world knowledge",
+    "answer wording copied into the question"
+  ],
+  "metadata": {"owner": "video-rsi", "status": "experimental"}
+}

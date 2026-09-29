@@ -63,23 +63,6 @@ signals are used to update task definitions, prompts, operators, and pipeline
 routing in the next iteration. The target model is not repeatedly trained during
 this pipeline-search process.
 
-## Evaluation
-
-Starting from an initial data pipeline, VideoRSI performed five pipeline
-iterations and used the final best pipeline to synthesize a 4.5k video SFT
-dataset. The dataset was used to fine-tune models from five video-language model
-families and evaluated on Video-MME.
-
-| Model | Base | VideoRSI SFT | Gain |
-| --- | ---: | ---: | ---: |
-| Qwen3-VL-8B-Instruct | 56.56 | 58.89 | +2.33 |
-| LLaVA-OneVision-7B | 58.52 | 59.48 | +0.96 |
-| Qwen2.5-VL-3B-Instruct | 42.44 | 59.04 | +16.60 |
-| Gemma-4-E4B | 47.74 | 48.37 | +0.63 |
-| InternVL3-2B-hf | 34.85 | 55.22 | +20.37 |
-
-VideoRSI improves the Video-MME overall score for every evaluated model family.
-
 ## What recurses
 
 | Component | Recursively modified? |
@@ -88,36 +71,43 @@ VideoRSI improves the Video-MME overall score for every evaluated model family.
 | Output SFT dataset | **Yes** — as a consequence of running the improved pipeline |
 | Source video corpus | No — fixed for the whole run |
 | Frozen target used for difficulty filtering | No — not trained during pipeline search |
-| Video-MME test labels | No — reported after the fact |
+| Downstream benchmark labels | No — never used for in-loop selection |
 
-## Scope of this contribution
+## Public implementation
 
-This directory contains the method manifest, documentation, and the portable
-reference configuration:
+This contribution includes a portable implementation under `framework/`:
 
 ```text
 rsi/methods/video-rsi/
 |-- method.json
 |-- README.md
-`-- configs/video-rsi-reference.yaml
+|-- configs/video-rsi-reference.yaml
+`-- framework/
+    |-- src/video_rsi/       # evidence, task, operator and pipeline runtime
+    |-- drivers/             # versioned runs, fixed evaluation, Codex evolution
+    |-- configs/             # task priors and task-specific skill packs
+    |-- tests/               # deterministic unit/integration tests
+    `-- docs/                # pipeline and evolution design
 ```
 
-The full pipeline implementation is not in this repository. The configuration
-and recorded transfer numbers are auditable here; a full end-to-end rerun is
-not yet possible from this repository alone.
+The framework contains no videos, API credentials, model weights, checkpoints,
+or generated data pools. Those must be supplied at runtime through explicit
+paths and environment variables. See [`framework/README.md`](framework/README.md)
+and [`framework/drivers/README.md`](framework/drivers/README.md) for the
+execution boundary and commands.
 
 ## External services
 
 Captioning, entity extraction, question generation, and distractor refinement
 need a vision-language serving endpoint. Frozen-target difficulty filtering
-needs a local copy of the target video-language model. The reported SFT
-transfer uses the [Video-MME evaluator](../../../evaluation/videomme/) under
-the [Video-MME SFT transfer protocol](../../../benchmarks/videomme-sft-transfer/).
+needs a local copy of the target video-language model. Training recipes and
+model-specific benchmark adapters are intentionally outside this first public
+framework contribution.
 
 ## Safety, rollback, and budget
 
-- **Pipeline search does not train the target.** Weights change only in the
-  post-search SFT used to report transfer.
+- **Pipeline search does not train the target.** Any downstream training is a
+  separate experiment, outside the search loop.
 - **Text-only and schema filters** drop questions that are ungrounded or
   solvable without the video.
 - **Budget** is a fixed five iterations. There is no convergence criterion.
@@ -125,10 +115,10 @@ the [Video-MME SFT transfer protocol](../../../benchmarks/videomme-sft-transfer/
 
 ## Known limitations
 
-- **Upstream code is not in this repository**, so pipeline execution cannot be
-  audited from GitHub alone.
-- **Video-MME is an after-the-fact transfer metric.** It is not the in-loop
-  acceptance rule; pipeline updates use yield and filter diagnostics.
-- **Seeds, compute budget, container image, and code revision** are not pinned
-  in the current result manifests.
-- **No smoke test** ships with this method contribution.
+- **External assets are required.** Caption/entity corpora, video files,
+  serving endpoints and model weights are not redistributed.
+- **Downstream benchmarks are out of loop.** Pipeline updates use yield and
+  filter diagnostics rather than held-out benchmark labels.
+- **No end-to-end GPU smoke test** ships with this method contribution; the
+  included deterministic tests cover pipeline contracts, evolution decisions,
+  and pool lineage without paid APIs.

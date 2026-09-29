@@ -1,0 +1,14 @@
+{
+  "skill_id": "temporal_relation",
+  "version": "1",
+  "task_types": ["temporal_relation"],
+  "instructions": "Construct a temporal comparison over timestamped evidence. The answer must depend on ordering, duration, overlap, or a before/after relation that cannot be recovered from a single observation.",
+  "preferred_operators": ["EvidenceSelectionOperator", "QuestionGenerationOperator"],
+  "required_capabilities": ["cross_time_grounding", "timestamp_reasoning"],
+  "evaluation_checks": [
+    "evidence contains two non-identical time intervals",
+    "temporal relation is explicit and answer-unique",
+    "reversing the selected intervals changes the answer"
+  ],
+  "forbidden_shortcuts": ["single-caption answer", "caption order treated as video time"]
+}

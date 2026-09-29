@@ -1,0 +1,2 @@
+"""Versioned prompt resources."""
+

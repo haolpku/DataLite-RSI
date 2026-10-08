@@ -38,6 +38,12 @@ def test_framework_python_imports_and_authoring_skills_do_not_use_source_package
             "OperatorABC",
             "PipelineABC",
             "FileStorage",
+            "BatchedPipelineABC",
+            "BatchedFileStorage",
+            "StreamBatchedPipelineABC",
+            "StreamBatchedFileStorage",
+            "batch_size",
+            "resume_from_last",
             "pipeline.compile()",
             "pipeline.forward()",
             "DF_COMPILE_ONLY",
@@ -61,6 +67,14 @@ def test_provider_skills_stay_byte_identical():
         assert len(set(variants.values())) == 1, (
             f"{relative} differs across providers: {sorted(variants)}"
         )
+
+
+def test_llm_serving_contract_is_defined_in_its_own_core_module():
+    from rsi.framework import LLMServingABC, PipelineLLMServing
+    from rsi.framework.core.llm_serving import LLMServingABC as CoreServing
+
+    assert LLMServingABC is CoreServing
+    assert issubclass(PipelineLLMServing, CoreServing)
 
 
 def test_framework_copy_runs_authored_compile_forward_shape(tmp_path):

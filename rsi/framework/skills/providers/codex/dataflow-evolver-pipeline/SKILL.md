@@ -75,6 +75,39 @@ the source file quoted it.
 `storage.write` accepts a non-empty `list[dict]` or a DataFrame. An empty list
 raises, so handle a zero-row result explicitly rather than writing it.
 
+### Batched and streaming variants
+
+Use the default `PipelineABC` + `FileStorage` pair unless the task needs to
+process a large corpus in fixed batches. The variants must be paired:
+
+```python
+from rsi.framework import (
+    BatchedFileStorage, BatchedPipelineABC,
+    StreamBatchedFileStorage, StreamBatchedPipelineABC,
+)
+```
+
+Use `BatchedPipelineABC` with `BatchedFileStorage` when each batch may be
+loaded from the current step and the pipeline should append later batches to
+the same output step. Use `StreamBatchedPipelineABC` with
+`StreamBatchedFileStorage` when a step should be read through
+`iter_chunks()` without materializing the whole file. `BatchedFileStorage`
+accepts only `jsonl` or `csv` caches. The framework owns the batch loop and
+resume marker; the entry point is:
+
+```python
+pipeline.compile()
+if os.getenv("DF_COMPILE_ONLY") == "1":
+    raise SystemExit(0)
+pipeline.forward(batch_size=256, resume_from_last=True)
+```
+
+Do not mix a batched pipeline with ordinary `FileStorage`, do not mix the
+streaming pipeline with `BatchedFileStorage`, and do not manually slice rows
+inside an operator. `batch_size` controls data processing, not LLM HTTP
+concurrency; serving keeps its own `max_workers` setting. For a normal-sized
+corpus, keep the simpler `PipelineABC` + `FileStorage` contract.
+
 ## Framework-owned prefix reuse
 
 Step filenames are execution-relative, not operator-relative. If a prefix

@@ -9,7 +9,8 @@ from .core.pipeline import (
     RunContext,
     bounded_repair_context,
 )
-from .core.dataflow_operator import LLMServingABC, OperatorABC
+from .core.llm_serving import LLMServingABC
+from .core.dataflow_operator import OperatorABC
 from .core.dataflow_pipeline import (
     BatchedPipelineABC,
     PipelineABC,

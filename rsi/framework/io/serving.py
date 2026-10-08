@@ -36,7 +36,7 @@ from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Sequence
 
-from ..core.dataflow_operator import LLMServingABC
+from ..core.llm_serving import LLMServingABC
 from ..core.runtime_logger import get_logger
 
 

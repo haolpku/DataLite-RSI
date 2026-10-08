@@ -39,7 +39,10 @@ rsi/framework/
 Use the public contracts from `rsi.framework`:
 
 ```python
-from rsi.framework import FileStorage, OperatorABC, PipelineABC, PipelineLLMServing, run
+from rsi.framework import (
+    BatchedFileStorage, BatchedPipelineABC, FileStorage, OperatorABC, PipelineABC,
+    PipelineLLMServing, StreamBatchedFileStorage, StreamBatchedPipelineABC, run,
+)
 ```
 
 Generated operators and pipelines use the step-based contract: an operator
@@ -49,6 +52,17 @@ subclasses `PipelineABC`, builds one `FileStorage`, and calls its operators in
 `forward()` executes it. This is the same contract as `open-dataflow` 1.0.10,
 reimplemented here so no `open-dataflow` installation or `dataflow` import is
 needed; `tests/parity` pins the observable behavior against the real package.
+For a large corpus, pair `BatchedPipelineABC` with `BatchedFileStorage` and call
+`forward(batch_size=N, resume_from_last=True)`; pair
+`StreamBatchedPipelineABC` with `StreamBatchedFileStorage` when each step should
+be streamed in chunks instead of buffered in memory. These classes are active
+runtime contracts and are covered by the batched/streaming parity cases. Do not
+mix the pipeline and storage variants, and do not use data batches to control
+LLM HTTP concurrency.
+`LLMServingABC` is the DataFlow graph-discovery contract in
+`core/llm_serving.py`; `PipelineLLMServing` is its OpenAI-compatible
+implementation in `io/serving.py`. The two are intentionally separate from the
+outer evolution-agent serving interface in `evolution/providers/serving.py`.
 The earlier key-based `Operator`/`Pipeline` contract in `core/` still drives the
 outer evolution loop and remains available to existing artifacts through
 `evolution/execution/generated_pipeline.py`.

@@ -29,7 +29,9 @@ def _bounded_repair_section(value: str, limit: int) -> str:
 _PIPELINE_RUNTIME_BOUNDARY = """
 【最高优先级运行边界】
 先加载并遵循 `$dataflow-evolver-pipeline`。生成代码从 `rsi.framework` 导入
-`OperatorABC`、`PipelineABC`、`FileStorage`、`PipelineLLMServing`；算子由本任务
+`OperatorABC`、`PipelineABC`、`FileStorage`、`PipelineLLMServing`；处理大文件时可成对使用
+`BatchedPipelineABC` + `BatchedFileStorage`，或 `StreamBatchedPipelineABC` +
+`StreamBatchedFileStorage`；算子由本任务
 本地生成，compile 预检、执行、产物发现、缓存与验收由框架提供。不得导入
 `dataflow` 包（未安装，且框架会拒绝该 artifact）。生成代码与 Serving 契约均以该
 skill 为准。
@@ -68,7 +70,14 @@ Entry file: {entry_path}
    必须在 Pipeline 层按专用 skill 构造并注入 `PipelineLLMServing`，且不得根据模型名称自行推断响应模式：
 {llm_block}
    如果流水线包含 LLM 算子，也请把该算子的 prompt 作为可调整的设计部分之一：根据 Review 和下游归因适度改进任务说明、上下文组织和输出约束。prompt 应保持任务级、可复用、可审计，不得针对单个 benchmark 题目或答案硬编码。
-7. `FileStorage` 把每个算子产物按 `pipeline_step_step{{N}}.jsonl` 写入
+7. 默认使用 `PipelineABC` + `FileStorage`。只有在任务确实需要数据批处理或大文件低内存
+   处理时，才成对改用 `BatchedPipelineABC` + `BatchedFileStorage`，或
+   `StreamBatchedPipelineABC` + `StreamBatchedFileStorage`；不要把 pipeline 基类和 storage
+   实现交叉搭配。批处理入口由框架统一调用 `pipeline.forward(batch_size=N,
+   resume_from_last=True)`，流式版本通过 `iter_chunks()` 把当前 batch 注入 storage；不要在
+   operator 内手动切数据，也不要把 `batch_size` 当成 LLM 请求并发控制。`BatchedFileStorage`
+   只支持 `jsonl`/`csv`，`StreamBatchedFileStorage` 适合避免把整个 step 加载进内存。
+   `FileStorage` 把每个算子产物按 `pipeline_step_step{{N}}.jsonl` 写入
    `{iteration_dir}/cache`；正式运行产生的最后一个 step JSONL 是本轮最终数据集产物。
 8. 主入口必须使用专用 skill 中唯一的
    `pipeline.compile()` → `DF_COMPILE_ONLY` 守卫 → `pipeline.forward()` 契约。

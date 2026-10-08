@@ -35,7 +35,8 @@ from typing import Any, Dict
 
 from tqdm import tqdm
 
-from .dataflow_operator import LLMServingABC, OperatorABC
+from .llm_serving import LLMServingABC
+from .dataflow_operator import OperatorABC
 from .runtime_logger import get_logger
 from ..io.dataflow_storage import DataFlowStorage
 

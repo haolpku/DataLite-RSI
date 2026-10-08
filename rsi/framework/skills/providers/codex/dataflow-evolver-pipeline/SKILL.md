@@ -1,6 +1,6 @@
 ---
 name: dataflow-evolver-pipeline
-description: Author or repair a data-processing pipeline for one evolution iteration over a fixed structured corpus, using the DataLite-RSI runtime contracts.
+description: Write or repair a data-processing pipeline for a DataLite-RSI evolution iteration.
 ---
 
 # Pipeline authoring
@@ -25,9 +25,8 @@ Import the runtime contracts from `rsi.framework`:
 - `PipelineLLMServing` for an OpenAI-compatible API operator
 
 Do not import the `dataflow` package; it is not installed and the framework
-rejects any artifact that imports it. The framework's classes carry the same
-observable behavior as `open-dataflow` 1.0.10, so code written against that
-works unchanged apart from the import path.
+rejects any artifact that imports it. Use the contracts below when authoring
+generated code.
 
 The input is a fixed structured entry file supplied as `ENTRY_PATH`. A task may
 declare text, image, video, or several modalities in `input_contract`.

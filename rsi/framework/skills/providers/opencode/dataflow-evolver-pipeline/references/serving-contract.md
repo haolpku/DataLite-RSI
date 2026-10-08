@@ -1,10 +1,11 @@
 # Pipeline LLM serving contract
 
-Generated pipelines use `rsi.framework.PipelineLLMServing`. The Pipeline
-constructs and injects the serving instance; operators only call
-`generate_from_input(prompts)`, which returns one aligned `str` or `None` per
-input. Its observable behavior matches `open-dataflow` 1.0.10's API serving class,
-so code written against that contract works unchanged.
+When an operator needs model access, the generated Pipeline constructs
+`rsi.framework.PipelineLLMServing` and injects it into the operator. The shared
+`LLMServingABC` interface defines `generate_from_input(prompts, ...)`: it returns
+one response per prompt, in input order, with `str` or `None` for each result.
+The concrete serving class also supports conversations and embeddings, described
+below. Use this document and `rsi.framework` imports for generated pipelines.
 
 ## Request fields
 
@@ -32,9 +33,11 @@ rather than as a batch of null responses. `generate_from_input` sends a default
 `system` message (`"You are a helpful assistant"`) followed by the user prompt;
 pass `system_prompt` to replace it.
 
-Besides `generate_from_input`, serving also offers `generate_from_conversations`
-for pre-built message lists, `generate_embedding_from_input` for embeddings, and
-a per-call `json_schema` argument that sets a strict `response_format`.
+Besides the base interface method `generate_from_input`, the concrete
+`PipelineLLMServing` class offers `generate_from_conversations` for pre-built
+message lists and `generate_embedding_from_input` for embeddings. Its
+`generate_from_input` also accepts a per-call `json_schema` argument that sets
+a strict `response_format`.
 
 ## Response contracts
 

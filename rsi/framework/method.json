@@ -1,0 +1,23 @@
+{
+  "schema_version": "0.1",
+  "id": "dataflow-evolver",
+  "name": "DataFlow Evolve",
+  "version": "0.1.0",
+  "description": "Recursively evolves a data-processing pipeline over a fixed structured corpus. A coding agent proposes executable Python operators from the current best-so-far pipeline; the framework executes them and a candidate evaluator scores the output. Text tasks use ReviewAgent, while image/video/mixed tasks inject their own evaluator and operators. A better passing challenger replaces the incumbent. Rejected pipelines remain as condensed history, but their code is not inherited. Optional downstream diagnostics inform the next proposal without entering the acceptance score.",
+  "tracks": [
+    "llm",
+    "multimodal"
+  ],
+  "entrypoint": "python -m rsi.framework --task <task-config.json>",
+  "modifies": [
+    "data",
+    "code"
+  ],
+  "feedback_signal": "Text tasks use ReviewAgent's weighted correctness, relevance, difficulty, and schema composite. Optional DAS, normalized Vendi, and nearest-neighbor spread contribute to its embedding component; duplicate, null, contamination, and parse-valid rates affect hard metrics and pass gates. Image/video/mixed tasks require a task-owned evaluator returning a comparable score in [0,1], a passed gate, and optional domain feedback. Best-so-far compares (passed, candidate score). PipelineDiagnosticAgent and periodic downstream diagnostics are excluded from that comparison.",
+  "stopping_rule": "Fixed iteration budget (max_iterations, 5 in the reference configuration). No convergence or early-stopping criterion. Per iteration the coding agent gets max_turns 50, a wall-clock timeout, and up to execution_repairs additional repair attempts after an artifact-validation, compile, execution, or output-validation failure; exhausting them fails that iteration without ending the run. The final incumbent is selected best-so-far: passing candidates first, then highest review_score.",
+  "human_intervention": "none",
+  "license": "Apache-2.0",
+  "unified_entrypoint": "rsi.framework.run",
+  "migration_status": "The evolution controller, review and diagnostic agents, execution wrapper, provider runtimes, configuration and skills live under rsi/framework. Generated operators use the framework's operator, pipeline and storage contracts. Text review is available; image/video/mixed tasks require a task-owned evaluator. Policy and Video domain algorithms remain source-only and are not yet integrated.",
+  "source_ref": "Derived from the DataFlow-Evolver research prototype at commit ba6e489524bbf5835a06cccad555c5182e4ce4f4, whose source is retained read-only under rsi/methods/dataflow-evolver/."
+}

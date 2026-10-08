@@ -41,7 +41,7 @@ class ReleaseTests(unittest.TestCase):
             r = json.loads((ROOT/f'results/submissions/{key}/result.json').read_text())
             scale,digits = (1,5) if r['track']=='generative' else (100,2)
             expected = ' → '.join(f"{r['metrics'][phase]['primary_score']*scale:.{digits}f}" for phase in ('baseline','final'))
-        self.assertEqual(shown,expected)
+            self.assertEqual(shown,expected,f'{key}: site score does not match its manifest')
         self.assertAlmostEqual(data['math']['opsd']['rows'][1][1],60.3)
         evolver_rows = data['math']['evolver']['rows']
         self.assertEqual(evolver_rows[1][0], 'DataFlow Math-3K · GPT-4o rewrite')
@@ -62,7 +62,7 @@ class ReleaseTests(unittest.TestCase):
                 if tag=='a' and 'href' in attrs:self.links.append(attrs['href'])
         with tempfile.TemporaryDirectory() as tmp:
             builder.build(output=Path(tmp),revision='a'*40,check=True)
-            text=(Path(tmp)/'index.html').read_text()
+            text=(Path(tmp)/'index.html').read_text(encoding='utf-8')
             page=Page();page.feed(text)
             self.assertEqual(len(page.ids),len(set(page.ids)))
             self.assertNotIn('{{',text)

@@ -1,0 +1,173 @@
+# Default workflow: fixed raw data -> PipelineAgent -> ReviewAgent feedback.
+project:
+  workspace_dir: ${DF_WORKSPACE:./workspace}
+  # Required. The loop refuses to fall back to from-scratch synthesis.
+  input_path: ${RAW_DATA_PATH:}
+  # Use a fresh name for every run; existing non-empty run directories are rejected.
+  run_name: ${DF_RUN_NAME:run}
+
+task:
+  # Fixed contract; the entry point never infers the output schema.
+  target_schema:
+    instruction: str
+    output: str
+  quality_criteria:
+    - 内容正确且与任务相关
+    - 输出字段完整、可解析
+    - 数据具有足够难度和多样性
+
+llm:
+  backend: api
+  api:
+    api_url: ${DF_API_URL:}
+    model_name: ${DF_REVIEW_MODEL:gpt-5.5}
+    api_key: ${DF_API_KEY:}
+    # Shared default for generated-pipeline API operators; keep configurable to match
+    # the upstream service's rate limit.
+    max_workers: ${DF_API_MAX_WORKERS:10}
+  pipeline_llm:
+    generation:
+      model_name: ${DF_PIPELINE_MODEL:gpt-4o}
+    reasoning:
+      model_name: ${DF_PIPELINE_MODEL:gpt-4o}
+
+# PipelineAgent runtime. All backends receive the same prompt and must write the
+# same pipeline.py + decision.json artifacts.
+agent:
+  backend: ${AGENT_BACKEND:claude}  # claude | opencode | codex
+  api_key_env: ${DF_AGENT_API_KEY_ENV:DF_AGENT_API_KEY}
+  base_url: ${DF_AGENT_BASE_URL:}
+  setting_sources: [project]
+  max_turns: 50
+  pipeline_filename: pipeline.py
+  max_retries: 4
+  retry_base_delay: 10
+  run_timeout_sec: ${DF_AGENT_RUN_TIMEOUT_SEC:3600}
+  resume_on_retry: true
+  claude:
+    model: ${CLAUDE_AGENT_MODEL:}
+    effort: ${CLAUDE_AGENT_EFFORT:}
+    api_key_env: ${CLAUDE_AGENT_API_KEY_ENV:}
+    base_url: ${CLAUDE_AGENT_BASE_URL:}
+    permission_mode: bypassPermissions
+    env:
+      # Claude Code requires this acknowledgement when bypassPermissions runs as root.
+      IS_SANDBOX: ${IS_SANDBOX:1}
+  opencode:
+    binary: ${OPENCODE_BIN:opencode}
+    # Empty model uses the OpenCode runtime default. Provider selects only
+    # OpenCode's adapter; credentials still use the generic fields above.
+    model: ${OPENCODE_MODEL:}
+    provider: ${OPENCODE_PROVIDER:anthropic}
+    api_key_env: ${OPENCODE_API_KEY_ENV:}
+    base_url: ${OPENCODE_BASE_URL:}
+    variant: ${OPENCODE_VARIANT:}
+    max_steps: ${OPENCODE_MAX_STEPS:50}
+    mcp_timeout_ms: ${OPENCODE_MCP_TIMEOUT_MS:30000}
+    # OpenCode-native permission value: allow | ask | deny.
+    permission: allow
+  codex:
+    # Codex uses the local `codex exec --json` CLI.
+    binary: ${CODEX_BIN:codex}
+    model: ${CODEX_MODEL:}
+    model_provider: ${CODEX_MODEL_PROVIDER:}
+    effort: ${CODEX_EFFORT:xhigh}
+    api_key_env: ${CODEX_API_KEY_ENV:}
+    base_url: ${CODEX_BASE_URL:}
+    mcp_timeout_ms: ${CODEX_MCP_TIMEOUT_MS:30000}
+    # PipelineAgent is expected to execute and inspect generated pipelines on the host.
+    bypass_sandbox: true
+
+loop:
+  # Total number of linear Pipeline -> Review iterations.
+  max_iterations: ${DF_MAX_ITERATIONS:5}
+  # Deterministic framework-owned preflight; the Agent never executes pipeline.py itself.
+  compile_timeout_sec: ${DF_COMPILE_TIMEOUT_SEC:120}
+  execution_timeout_sec: ${DF_EXECUTION_TIMEOUT_SEC:1200}
+  # Additional Agent repair calls after one generated pipeline fails to execute.
+  execution_repairs: ${DF_EXECUTION_REPAIRS:1}
+  python_exe: ${DF_AGENT_PYTHON:}
+
+# Optional process-isolated SFT/evaluation feedback. After every N static Review
+# iterations, the framework evaluates the current best-so-far dataset. The command
+# runs in its own environment and receives appended `--request` and `--result` paths.
+# With the default five iterations, interval=2 creates checkpoints after iterations 2 and 4.
+downstream_eval:
+  enabled: ${DF_DOWNSTREAM_EVAL_ENABLED:false}
+  interval: ${DF_DOWNSTREAM_EVAL_INTERVAL:2}
+  command: []
+  benchmarks: []
+  # Optional checkpoint 0: evaluate the untrained downstream model before the
+  # first PipelineAgent call. The external runner receives stage=baseline and
+  # must skip SFT because dataset_path and pipeline_path are null.
+  baseline:
+    enabled: ${DF_DOWNSTREAM_BASELINE_ENABLED:false}
+  # Maximum retained cases; actual count is min(this value, result.incorrect_count).
+  bad_cases_per_benchmark: 3
+  timeout_sec: ${DF_DOWNSTREAM_EVAL_TIMEOUT_SEC:86400}
+  # Convert bounded bad cases into a structured data-side diagnosis before
+  # anything is shown to the next PipelineAgent.
+  attribution:
+    enabled: ${DF_DOWNSTREAM_ATTRIBUTION_ENABLED:true}
+    max_retries: ${DF_DOWNSTREAM_ATTRIBUTION_MAX_RETRIES:2}
+    max_findings: 6
+    max_actions: 8
+
+review:
+  sample_size: ${DF_REVIEW_SAMPLE_SIZE:80}
+  sample_seed: 42
+  correctness_threshold: 0.6
+  schema_threshold: 0.6
+  relevance_threshold: 0.6
+  null_threshold: 0.5
+  hard_metrics: true
+  weights:
+    correctness: 0.40
+    relevance: 0.25
+    difficulty: 0.15
+    schema: 0.20
+  decontamination:
+    reference_files: []
+    ngram: 8
+    max_rate: 0.01
+  # Optional deterministic dataset-level review. It compares a fixed-size sample of
+  # each candidate with a high-quality proxy set using DAS = -RBF-MMD. Candidate
+  # embeddings are reused for threshold-free Vendi and nearest-neighbour cosine
+  # diversity metrics. All embedding evidence remains separate from the 0-1 LLM
+  # review_score and is fed directly to the next PipelineAgent prompt.
+  dataset_quality:
+    enabled: ${DF_EMBEDDING_REVIEW_ENABLED:true}
+    # When enabled, review_score blends sample-level LLM quality with embedding quality,
+    # then applies full-file duplicate/null/parse/contamination penalties.
+    score_weight: ${DF_DATASET_QUALITY_SCORE_WEIGHT:0.25}
+    score_weights:
+      das: 0.40
+      vendi: 0.30
+      nearest_neighbor: 0.30
+    sample_size: ${DF_DAS_SAMPLE_SIZE:5000}
+    sample_seed: ${DF_DAS_SAMPLE_SEED:42}
+    require_full_sample: true
+    rbf_sigma: 1.0
+    biased: true
+    normalize_embeddings: true
+    max_embedding_fail_rate: 0.02
+    cache_dir: ${DF_DAS_CACHE_DIR:}
+    candidate:
+      user_field: instruction
+      assistant_field: output
+    proxy:
+      # Runtime is local-only. Prepare the proxy snapshot under data/ before launch.
+      source: ${DF_DAS_PROXY_SOURCE:local}
+      path: ${DF_DAS_PROXY_PATH:./data/ODA-Math-460k}
+      name: ${DF_DAS_PROXY_NAME:}
+      split: ${DF_DAS_PROXY_SPLIT:train}
+      user_field: question
+      assistant_field: response
+    embedding:
+      model_name: ${DF_DAS_EMBEDDING_MODEL:./model/Qwen3-Embedding-8B}
+      base_url: ${DF_DAS_EMBEDDING_URL:http://127.0.0.1:8000/v1}
+      api_key: ${DF_DAS_EMBEDDING_API_KEY:EMPTY}
+      max_concurrent_requests: ${DF_DAS_EMBEDDING_CONCURRENCY:128}
+      max_retries: 3
+      truncate_prompt_tokens: 40960
+      truncation_side: right

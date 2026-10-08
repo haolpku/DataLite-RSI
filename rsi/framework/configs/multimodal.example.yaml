@@ -1,0 +1,47 @@
+# Example private settings for one DataFlow task containing image/video refs.
+# Supply a task-owned candidate_evaluator through rsi.framework.run(resources=...).
+# This file does not choose or implement a vision model or domain scoring rule.
+project:
+  workspace_dir: ${DF_WORKSPACE:./workspace}
+  input_path: ${DF_INPUT_PATH:}
+  run_name: ${DF_RUN_NAME:run}
+
+task:
+  target_schema:
+    instruction: str
+    output: str
+    image: object
+    video: object
+  quality_criteria:
+    - Keep image and video evidence grounded in the fixed input.
+    - Preserve valid artifact references and their provenance.
+
+llm:
+  api:
+    api_url: ${DF_PIPELINE_API_URL:}
+    model_name: ${DF_PIPELINE_MODEL:}
+    api_key: ${DF_PIPELINE_API_KEY:}
+    max_workers: 2
+
+agent:
+  backend: ${AGENT_BACKEND:codex}
+  pipeline_filename: pipeline.py
+  max_retries: 1
+  run_timeout_sec: 600
+  codex:
+    binary: ${CODEX_BIN:codex}
+    model: ${CODEX_MODEL:}
+    effort: ${CODEX_EFFORT:high}
+
+loop:
+  max_iterations: ${DF_MAX_ITERATIONS:3}
+  compile_timeout_sec: 120
+  execution_timeout_sec: 600
+  execution_repairs: 1
+  python_exe: ${DF_AGENT_PYTHON:}
+
+pipeline_diagnostic:
+  enabled: false
+
+downstream_eval:
+  enabled: false

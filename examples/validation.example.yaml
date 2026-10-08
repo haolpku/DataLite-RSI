@@ -1,0 +1,201 @@
+# Example: validate the evolution loop end to end without GPUs.
+#
+# This is the configuration used to prove the runtime drives a real coding
+# agent through real iterations. It is a FRAMEWORK CHECK, not a research setup:
+# the corpus is tiny and the downstream feedback is fabricated, so nothing here
+# supports a quality claim.
+#
+# Every path and endpoint is an environment placeholder with no default, so the
+# file is portable and holds no credentials. Set at minimum:
+#
+#   export DF_WORKSPACE=./workspace
+#   export RAW_DATA_PATH=./data/corpus.jsonl
+#   export DF_API_URL=https://your-gateway/v1/chat/completions
+#   export DF_PIPELINE_API_URL=https://your-gateway/v1
+#   export DF_AGENT_BASE_URL=https://your-gateway/v1
+#   export DF_API_KEY=... DF_AGENT_API_KEY=... DF_PIPELINE_API_KEY=...
+#   export DF_AGENT_PYTHON="$(which python)"
+#
+# See docs/getting-started.md for the full walkthrough.
+
+project:
+  workspace_dir: ${DF_WORKSPACE:}
+  input_path: ${RAW_DATA_PATH:}
+  run_name: ${DF_RUN_NAME:validate}
+
+task:
+  target_schema:
+    instruction: str
+    output: str
+  quality_criteria:
+    - Require a non-empty instruction that states the source math problem without changing its meaning.
+    - Require a self-contained step-by-step output that ends with the final answer in \boxed{}.
+    - Exclude truncated outputs, answer-only outputs, and unsupported answer changes.
+
+llm:
+  backend: api
+  api:
+    # ReviewAgent's serving always sends a temperature, so this model must
+    # accept one. Models that reject an explicit temperature cannot be used here.
+    api_url: ${DF_API_URL:}
+    model_name: ${DF_REVIEW_MODEL:gpt-4o}
+    api_key: ${DF_API_KEY:}
+    max_workers: ${DF_API_MAX_WORKERS:6}
+    request_timeout: ${DF_REVIEW_REQUEST_TIMEOUT:600}
+    max_retries: ${DF_REVIEW_MAX_RETRIES:3}
+  pipeline_llm:
+    generation:
+      api_url: ${DF_PIPELINE_API_URL:}
+      model_name: ${DF_PIPELINE_MODEL:gpt-4o-mini}
+      api_key: ${DF_PIPELINE_API_KEY:}
+      max_workers: ${DF_PIPELINE_MAX_WORKERS:6}
+      serving_kwargs:
+        temperature: 0.6
+        top_p: 0.95
+        max_tokens: 2048
+        enable_thinking: omit
+        connect_timeout: 10
+        read_timeout: 600
+        max_retries: 3
+
+agent:
+  backend: ${AGENT_BACKEND:codex}
+  api_key_env: ${DF_AGENT_API_KEY_ENV:DF_AGENT_API_KEY}
+  base_url: ${DF_AGENT_BASE_URL:}
+  setting_sources: [project]
+  max_turns: 40
+  pipeline_filename: pipeline.py
+  max_retries: 3
+  retry_base_delay: 10
+  run_timeout_sec: ${DF_AGENT_RUN_TIMEOUT_SEC:1800}
+  resume_on_retry: true
+  claude:
+    # The claude backend speaks the Anthropic-native endpoint, so this base URL
+    # is the gateway root, which also serves /v1/messages.
+    model: ${CLAUDE_AGENT_MODEL:claude-opus-4-8}
+    effort: ${CLAUDE_AGENT_EFFORT:}
+    api_key_env: ${CLAUDE_AGENT_API_KEY_ENV:DF_AGENT_API_KEY}
+    base_url: ${CLAUDE_AGENT_BASE_URL:}
+    permission_mode: bypassPermissions
+    env:
+      IS_SANDBOX: ${IS_SANDBOX:1}
+  opencode:
+    binary: ${OPENCODE_BIN:opencode}
+    # Must be non-empty: the runtime refuses a blank model.
+    model: ${OPENCODE_MODEL:gpt-4o}
+    provider: ${OPENCODE_PROVIDER:openai}
+    api_key_env: ${OPENCODE_API_KEY_ENV:DF_AGENT_API_KEY}
+    base_url: ${OPENCODE_BASE_URL:}
+    variant: ${OPENCODE_VARIANT:}
+    max_steps: ${OPENCODE_MAX_STEPS:40}
+    mcp_timeout_ms: ${OPENCODE_MCP_TIMEOUT_MS:30000}
+    permission: allow
+  codex:
+    binary: ${CODEX_BIN:codex}
+    model: ${CODEX_MODEL:gpt-4o}
+    model_provider: ${CODEX_MODEL_PROVIDER:}
+    effort: ${CODEX_EFFORT:medium}
+    api_key_env: ${CODEX_API_KEY_ENV:DF_AGENT_API_KEY}
+    base_url: ${CODEX_BASE_URL:}
+    mcp_timeout_ms: ${CODEX_MCP_TIMEOUT_MS:30000}
+    bypass_sandbox: true
+
+loop:
+  # Three iterations so a downstream checkpoint at interval=2 actually fires and
+  # its feedback reaches iteration 3's authoring prompt.
+  max_iterations: ${DF_MAX_ITERATIONS:3}
+  compile_timeout_sec: ${DF_COMPILE_TIMEOUT_SEC:180}
+  execution_timeout_sec: ${DF_EXECUTION_TIMEOUT_SEC:1800}
+  execution_repairs: ${DF_EXECUTION_REPAIRS:1}
+  python_exe: ${DF_AGENT_PYTHON:}
+
+pipeline_diagnostic:
+  enabled: ${DF_DIAGNOSTIC_ENABLED:true}
+  read_only: true
+  backend: ${DF_DIAGNOSTIC_BACKEND:codex}
+  api_key_env: ${DF_AGENT_API_KEY_ENV:DF_AGENT_API_KEY}
+  base_url: ${DF_AGENT_BASE_URL:}
+  max_turns: 15
+  run_timeout_sec: ${DF_DIAGNOSTIC_TIMEOUT_SEC:900}
+  codex:
+    binary: ${CODEX_BIN:codex}
+    model: ${DF_DIAGNOSTIC_MODEL:gpt-4o}
+    effort: ${DF_DIAGNOSTIC_EFFORT:low}
+    api_key_env: ${CODEX_API_KEY_ENV:DF_AGENT_API_KEY}
+    base_url: ${CODEX_BASE_URL:}
+    bypass_sandbox: false
+
+# FABRICATED feedback: fake_downstream.py satisfies the real result schema, so
+# request serialization, subprocess invocation, result validation, bad-case
+# consistency and attribution input are all genuinely exercised -- only the
+# numbers are invented. Point `command` at a real runner for a real experiment.
+downstream_eval:
+  enabled: ${DF_DOWNSTREAM_EVAL_ENABLED:true}
+  interval: ${DF_DOWNSTREAM_EVAL_INTERVAL:2}
+  command:
+    - ${DF_DOWNSTREAM_PYTHON:python}
+    - ${DF_DOWNSTREAM_RUNNER:examples/fake_downstream.py}
+  benchmarks: [gsm8k]
+  baseline:
+    enabled: ${DF_DOWNSTREAM_BASELINE_ENABLED:false}
+  bad_cases_per_benchmark: 3
+  timeout_sec: ${DF_DOWNSTREAM_EVAL_TIMEOUT_SEC:600}
+  attribution:
+    enabled: ${DF_DOWNSTREAM_ATTRIBUTION_ENABLED:true}
+    max_retries: 1
+    max_findings: 4
+    max_actions: 4
+
+review:
+  sample_size: ${DF_REVIEW_SAMPLE_SIZE:10}
+  sample_seed: 42
+  correctness_threshold: 0.6
+  schema_threshold: 0.6
+  relevance_threshold: 0.6
+  null_threshold: 0.5
+  hard_metrics: true
+  weights:
+    correctness: 0.40
+    relevance: 0.25
+    difficulty: 0.15
+    schema: 0.20
+  decontamination:
+    reference_files: []
+    ngram: 8
+    max_rate: 0.01
+  # Off by default: this path speaks the vLLM chat-embedding form (`messages`),
+  # not standard OpenAI `input`, so it needs a vLLM-compatible embedding server.
+  # Enable it only when DF_DAS_EMBEDDING_URL points at one.
+  dataset_quality:
+    enabled: ${DF_EMBEDDING_REVIEW_ENABLED:false}
+    score_weight: ${DF_DATASET_QUALITY_SCORE_WEIGHT:0.25}
+    score_weights:
+      das: 0.40
+      vendi: 0.30
+      nearest_neighbor: 0.30
+    sample_size: ${DF_DAS_SAMPLE_SIZE:24}
+    sample_seed: 42
+    require_full_sample: false
+    rbf_sigma: 1.0
+    biased: true
+    normalize_embeddings: true
+    max_embedding_fail_rate: 0.10
+    cache_dir: ${DF_DAS_CACHE_DIR:}
+    candidate:
+      user_field: instruction
+      assistant_field: output
+    proxy:
+      source: local
+      path: ${DF_DAS_PROXY_PATH:}
+      name: ""
+      split: train
+      user_field: question
+      assistant_field: response
+    embedding:
+      model_name: ${DF_DAS_EMBEDDING_MODEL:}
+      base_url: ${DF_DAS_EMBEDDING_URL:}
+      api_key: ${DF_DAS_EMBEDDING_API_KEY:}
+      max_concurrent_requests: ${DF_DAS_EMBEDDING_CONCURRENCY:8}
+      max_retries: 3
+      truncate_prompt_tokens: 8192
+      truncation_side: right

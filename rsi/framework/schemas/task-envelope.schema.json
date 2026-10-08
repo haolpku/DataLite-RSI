@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "task-envelope.schema.json",
+  "title": "DataLite-RSI DataFlow TaskEnvelope 0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "task_id", "method_id", "objective", "data", "output", "metadata"],
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "task_id": {"type": "string", "minLength": 1},
+    "method_id": {"const": "dataflow-evolver"},
+    "objective": {"type": "string", "minLength": 1},
+    "data": {"type": "object"},
+    "input_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["modalities"],
+      "properties": {
+        "modalities": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["text", "image", "video"]}},
+        "required_fields": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "artifact_fields": {"type": "object", "additionalProperties": {"enum": ["image", "video_reference", "blob", "binary"]}}
+      }
+    },
+    "output": {
+      "type": "object",
+      "required": ["required_keys"],
+      "properties": {
+        "required_keys": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "artifact_types": {"type": "array", "items": {"type": "string"}},
+        "format": {"type": ["string", "null"]}
+      }
+    },
+    "metadata": {"type": "object"},
+    "workspace": {"type": "string"},
+    "provider": {"type": "string"},
+    "role": {"type": "string"}
+  }
+}

@@ -6,7 +6,7 @@
 
 <br>
 
-[![Project website](https://img.shields.io/badge/Explore-Project_Website-6264DC?style=flat-square)](https://haolpku.github.io/DataLite-RSI/) [![Repository checks](https://github.com/haolpku/DataLite-RSI/actions/workflows/validate-contributions.yml/badge.svg)](https://github.com/haolpku/DataLite-RSI/actions/workflows/validate-contributions.yml) [![Contributions welcome](https://img.shields.io/badge/Community-Contributions_welcome-298D8D?style=flat-square)](#join-the-effort)
+[![Project website](https://img.shields.io/badge/Explore-Project_Website-6264DC?style=flat-square)](https://haolpku.github.io/DataLite-RSI/) [![Repository checks](https://github.com/haolpku/DataLite-RSI/actions/workflows/validate-contributions.yml/badge.svg)](https://github.com/haolpku/DataLite-RSI/actions/workflows/validate-contributions.yml) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-D97757?style=flat-square)](LICENSE) [![Contributions welcome](https://img.shields.io/badge/Community-Contributions_welcome-298D8D?style=flat-square)](#join-the-effort)
 
 **An open research initiative for Less is More in RSI.**
 
@@ -19,6 +19,17 @@ How can we build more effective self-improving systems with less training data?<
 ---
 
 ## The idea
+
+The current framework entry is the
+[pipeline evolution framework](rsi/framework/README.md): its
+incumbent/challenger loop can process a fixed JSONL corpus containing text,
+image references, video references, or a mixture. Shared operator, pipeline,
+storage, checkpoint, and provenance contracts live in
+[`rsi/framework/`](rsi/framework/). Visual tasks still need a task-owned
+evaluator and operators; the existing Policy and Video code remains available
+as integration material, not a completed combined algorithm. See the
+[multimodal interface guide](docs/dataflow-multimodal-extension.md) and
+[the runtime parity audit](docs/dataflow-serving-parity.md).
 
 **Less is More for Recursive Self-Improvement is our research direction.** We aim
 to bring the community together around data-efficient RSI: better data decisions,
@@ -125,7 +136,7 @@ Have a method, a new task, or a comparison to add?
 | [OPSD-Data-Lite](rsi/methods/opsd-data-lite/) | Training subset | Description · config · math evaluation harness |
 | [Policy-Evolving Edit Synthesis](rsi/methods/policy-evolving-edit-synthesis/) | Instruction-generation policies | Core loop · rubric tests · environment definition |
 | [VideoRSI](rsi/methods/video-rsi/) | Video data pipeline | Description · config · Video-MME evaluation source |
-| [DataFlow-Evolver](rsi/methods/dataflow-evolver/) | Data-processing program | Reference config · experiment report · grading harness |
+| [DataFlow-Evolver](rsi/methods/dataflow-evolver/) | Data-processing program | Baseline source · reference config · experiment report · grading harness |
 | [DataFlow-Self-Improver](rsi/methods/dataflow-self-improver/) | Data pipeline and corpus | Description · config · iteration summaries |
 
 Full reruns still require method-specific source, adapters or artifacts.
@@ -133,16 +144,69 @@ The [reproduction guide](docs/reproduction.md#follow-an-original-experiment)
 lists what is available and what is missing for each method;
 [open evidence gaps](docs/release-gaps.md) track the remaining work.
 
+The active [DataFlow-centered framework](rsi/framework/README.md) is under
+`rsi/framework/`. It supports text and mixed media record pipelines through
+one evolution controller. The `rsi/methods/` trees are preserved as method
+source and experiment references; Policy and Video domain loops are not yet
+integrated into the active framework.
+
 ## Quick start
 
-**Inspect and validate locally.** Python 3.11+; no GPU or model download needed.
+### Run the evolution framework
+
+Python 3.10+. Installing and checking needs no GPU and no model download.
 
 ```bash
 git clone https://github.com/haolpku/DataLite-RSI.git
 cd DataLite-RSI
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements-dev.txt
+python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -e ".[review,dev]"
+python -c "import rsi.framework; print('ok')"
+pytest -q                                            # ~145 passed, offline
+```
+
+A run needs three things: a **fixed corpus** (one `.jsonl`/`.json`/`.csv`/`.parquet`
+file), a **config** naming your models, and a **task** pointing at both. Then:
+
+```bash
+export DF_API_KEY=sk-...          # ReviewAgent
+export DF_AGENT_API_KEY=sk-...    # coding agent
+export DF_PIPELINE_API_KEY=sk-... # generated-pipeline serving
+
+datalite-rsi --task my-task.json --run-id my-first-run
+```
+
+One coding-agent backend is installed separately, as a Node CLI — `codex`,
+`opencode`, or `claude`. All three are supported equally; `agent.backend` in the
+config selects between them.
+
+```bash
+npm install -g @openai/codex              # or opencode-ai
+                                          # or @anthropic-ai/claude-code
+```
+
+**Start here: [Getting started](docs/getting-started.md)** walks through the
+install extras, a worked corpus/config/task, where every artifact lands, and how
+to read a failure. The [framework README](rsi/framework/README.md) covers the
+architecture.
+
+<details>
+<summary><strong>Install extras</strong></summary>
+
+| Extra | Adds | Needed for |
+| --- | --- | --- |
+| *(base)* | pandas, numpy, requests, tqdm, colorlog, PyYAML | importing the runtime, running a generated pipeline |
+| `review` | openai | ReviewAgent scoring and embedding dataset-quality review |
+| `claude` | claude-agent-sdk | the `claude` coding-agent backend |
+| `parquet` | pyarrow | `.parquet` entry files or step caches |
+| `dev` | pytest, pydantic, Pillow | the repository test suite |
+
+</details>
+
+### Validate contributions and reproduce checks
+
+```bash
+pip install -e ".[dev]"
 python scripts/validate_contributions.py .
 python scripts/run_checks.py
 ```
@@ -168,19 +232,23 @@ to upstream implementations that are not yet public.
 
 | Explore the research | Run and reproduce | Extend the collection |
 | --- | --- | --- |
-| [Concept & scope](docs/concept.md) | [Reproduction guide](docs/reproduction.md) | [Contribution guide](CONTRIBUTING.md) |
-| [Result records](results/) | [Evaluation harnesses](evaluation/) | [Manifest schemas](schemas/) |
-| [Method packages](rsi/methods/) | [Docker environments](docker/) | [Copyable templates](templates/) |
-| [Evaluation protocols](docs/protocol.md) | [Dataset registry](datasets/) | [中文贡献指南](docs/CONTRIBUTING_zh.md) |
+| [Concept & scope](docs/concept.md) | [**Getting started**](docs/getting-started.md) | [Contribution guide](CONTRIBUTING.md) |
+| [Result records](results/) | [Framework README](rsi/framework/README.md) | [Manifest schemas](schemas/) |
+| [Method packages](rsi/methods/) | [Reproduction guide](docs/reproduction.md) | [Copyable templates](templates/) |
+| [Evaluation protocols](docs/protocol.md) | [Runtime parity audit](docs/dataflow-serving-parity.md) | [中文贡献指南](docs/CONTRIBUTING_zh.md) |
+| [Multimodal boundary](docs/dataflow-multimodal-extension.md) | [Runnable examples](examples/) | [Dataset registry](datasets/) |
+| [Result manifests](results/submissions/) | [Evaluation harnesses](evaluation/) | [Docker environments](docker/) |
 
 <details>
 <summary><strong>Repository map</strong></summary>
 
 ```text
 DataLite-RSI/
+├── rsi/framework/  Active evolution runtime (the installable package)
+├── rsi/methods/    Method source and experiment references
+├── docs/         Getting started, concept, protocols, parity audit
+├── examples/     Runnable configuration and harness examples
 ├── site/         Project homepage source
-├── docs/         Concept, protocols, reproduction and release notes
-├── rsi/methods/  Method packages and configurations
 ├── results/      Experiment records and result summaries
 ├── benchmarks/  Suite definitions, evaluators and fixtures
 ├── datasets/    Dataset metadata and pinned references
@@ -228,8 +296,12 @@ Do not commit model weights, generated media, secrets, or dataset archives.
 <summary><strong>Citation and licensing</strong></summary>
 
 Paper and citation metadata are pending. Refer to this repository and a commit
-when discussing the current collection. Method manifests currently declare
-`NOASSERTION`; no project-wide reuse license has been assigned. Vendored components
+when discussing the current collection.
+
+This repository is licensed under [Apache License 2.0](LICENSE). Individual
+method manifests under `rsi/methods/` may still declare `NOASSERTION` where the
+upstream source they mirror carries no license of its own; those trees are
+research references, not part of the installable runtime. Vendored components
 retain their own license notices.
 
 </details>

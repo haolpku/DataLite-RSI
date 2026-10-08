@@ -1,5 +1,14 @@
 # DataFlow-Evolver
 
+> `dataflow_evolver/` is a byte-for-byte source copy of external commit
+> `ba6e489524bbf5835a06cccad555c5182e4ce4f4`. The provider skill files
+> under `skills/` are copied from that commit too. This is a source reference:
+> the active application imports only [`rsi/framework/`](../../framework/README.md).
+> The DataLite method manifest and portable experiment configuration are local
+> wrapper files. Baseline tests are omitted here because they exercise the
+> original `open-dataflow` runtime; active framework regressions live in the
+> repository's root `tests/`.
+
 **Evolve the pipeline, not the dataset.**
 
 Most data-centric self-improvement loops mutate a dataset directly.
@@ -62,10 +71,10 @@ embedding_quality = 0.40*das + 0.30*vendi + 0.30*nn_spread
 review_score      = (0.75*llm_composite + 0.25*embedding_quality) * hard_metric_factor
 ```
 
-`hard_metric_factor` is 0.0 if any threshold is violated -- correctness, schema,
-relevance, null rate, n-gram contamination, or duplication -- and 1.0 otherwise. A
-single violation makes a candidate unacceptable no matter how good its soft
-scores are.
+`hard_metric_factor` continuously discounts duplication, nulls, contamination,
+and invalid JSON rows. Configured correctness, relevance, schema, null, and
+contamination thresholds separately set `passed=False`; best-so-far compares
+`(passed, review_score)`.
 
 A challenger replaces the incumbent when it passes and scores strictly higher.
 Ties keep the incumbent. Rejected candidates leave a condensed summary in the
@@ -98,30 +107,35 @@ for the measured correlation.
 
 ## Scope of this contribution
 
-This directory contains the method manifest, documentation, and the portable
-reference configuration:
+This directory contains the method manifest, documentation, portable
+configuration, baseline source, and provider skill references:
 
 ```text
 rsi/methods/dataflow-evolver/
 |-- method.json
 |-- README.md
+|-- dataflow_evolver/    Importable Python package
+|-- skills/
 +-- configs/math-periodic.yaml   Reference run configuration
 ```
 
-The full implementation (pipeline-authoring agent driver, DataFlow operator
-runtime, SFT/evaluation harness) lives in the upstream source repository at
-revision `7b788746b24c2b9d6713709cb64d8c37602a2fbb`, branch
-`refactor/open-dataflow-pipeline-runtime`. Public release of that source and the
-original run artifacts is being prepared; links will follow. Until then, the
-configuration and recorded per-iteration metrics are auditable here, but a full
-end-to-end rerun is not yet possible from this repository alone.
+The source baseline is commit `ba6e489524bbf5835a06cccad555c5182e4ce4f4`
+on `refactor/open-dataflow-pipeline-runtime`. A real provider-backed rerun still
+needs local data, credentials, and the selected provider; none are bundled.
+The copied upstream source has no LICENSE file, and
+the method manifest stays `NOASSERTION` until a redistribution license is set.
 
-## Running the full loop
+## Historical source CLI
 
-The full loop needs the upstream package and the environment variables below.
+The active entry is `python -m rsi.framework --task <task.json>` and uses only
+`rsi/framework/`. The following source CLI is retained for baseline inspection;
+it is not called by the active framework.
 **No credential belongs in the config file.**
+Run the following Bash commands from the DataLite-RSI repository root. The
+standalone source CLI needs this method package on `PYTHONPATH`.
 
 ```bash
+export PYTHONPATH="$PWD/rsi/methods/dataflow-evolver${PYTHONPATH:+:$PYTHONPATH}"
 export DF_WORKSPACE_DIR=...        # run artifacts root
 export DF_INPUT_PATH=...           # fixed raw corpus (sha256 f9bae97a...)
 export DF_RUN_NAME=...             # unique; the framework refuses to reuse one

@@ -3,7 +3,7 @@
   "id": "dataflow-evolver",
   "name": "DataFlow-Evolver",
   "version": "0.1.0",
-  "description": "Recursively evolves the data-processing pipeline, not the data. A coding agent proposes a challenger pipeline as executable Python operators starting from the current best-so-far pipeline; the framework runs it on a fixed raw corpus, an independent review agent scores the resulting dataset, and the challenger replaces the incumbent only if it scores higher. Rejected pipelines persist in the evolution history as condensed summaries so later iterations avoid repeating a failed strategy, but their code is not inherited. Every N iterations a real downstream SFT plus benchmark evaluation supplies bad-case diagnostics that enter the next proposal prompt without entering the acceptance score.",
+  "description": "Source reference for DataFlow-Evolver at commit ba6e489524bbf5835a06cccad555c5182e4ce4f4. Its original coding agent evolves an open-dataflow processing pipeline over a fixed structured corpus, ReviewAgent scores the resulting text dataset, and the best-so-far incumbent is retained.",
   "tracks": [
     "llm"
   ],
@@ -12,8 +12,9 @@
     "data",
     "code"
   ],
-  "feedback_signal": "review_score = (0.75 * llm_composite + 0.25 * embedding_quality) * hard_metric_factor. llm_composite weights an LLM reviewer's per-sample correctness 0.40, relevance 0.25, difficulty 0.15, and schema conformance 0.20 over a fixed 80-row seeded sample. embedding_quality combines 0.40 * DAS (negative MMD against a fixed high-quality proxy corpus), 0.30 * normalised cosine Vendi score, and 0.30 * a nearest-neighbour cosine spread term. hard_metric_factor zeroes the score on threshold violations for correctness, schema, relevance, null rate, n-gram contamination, or duplication. Periodic downstream SFT and evaluation results are injected into the next proposal prompt as diagnostic evidence and are deliberately excluded from review_score; that evaluation uses a fixed diagnostic subset rather than full benchmark test sets, so benchmark content does not steer the optimisation.",
+  "feedback_signal": "ReviewAgent's weighted correctness, relevance, difficulty, and schema composite, with optional DAS, normalized Vendi, and nearest-neighbor spread. Hard metrics and pass gates include duplication, nulls, contamination, and parse validity. Best-so-far compares (passed, review_score); PipelineDiagnosticAgent and periodic downstream diagnostics do not enter that comparison.",
   "stopping_rule": "Fixed iteration budget (max_iterations, 5 in the reference configuration). No convergence or early-stopping criterion. Per iteration the coding agent gets max_turns 50, a wall-clock timeout, and up to execution_repairs additional repair attempts after an artifact-validation, compile, execution, or output-validation failure; exhausting them fails that iteration without ending the run. The final incumbent is selected best-so-far: passing candidates first, then highest review_score.",
   "human_intervention": "none",
-  "license": "NOASSERTION"
+  "license": "NOASSERTION",
+  "migration_status": "External baseline source reference only. The DataFlow-centered active implementation is under rsi/framework and does not import this directory."
 }

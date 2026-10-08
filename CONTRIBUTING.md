@@ -170,3 +170,14 @@ requests run the repository checks automatically.
 
 Maintainers may request evaluation reruns, licensing clarification, schema
 changes, or independent verification before accepting or ranking a result.
+
+## Licensing of contributions
+
+This repository is licensed under [Apache License 2.0](LICENSE). By submitting a
+contribution you agree that it is released under those terms.
+
+If your contribution mirrors or vendors third-party material, keep that
+material's own license notice with it and say so in the pull request. Method
+trees under `rsi/methods/` that mirror upstream source without a license of
+their own continue to declare `NOASSERTION` in their manifest; they are research
+references and are not part of the installable runtime.

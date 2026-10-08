@@ -1,0 +1,1963 @@
+{
+ "environment": {
+  "compat_source": "DataFlow-Evolver dataflow_evolver/compat",
+  "open_dataflow": "1.0.10",
+  "pandas": "3.0.6",
+  "python": "3.11.17"
+ },
+ "results": {
+  "batched": {
+   "batched/conflicting_resume": {
+    "error": "ValueError: Cannot set both `resume_step` and `resume_from_last` to True.",
+    "ok": false
+   },
+   "batched/no_resume_marker": {
+    "ok": true,
+    "value": {
+     "batches_seen": [
+      [
+       0,
+       1
+      ],
+      [
+       2,
+       3
+      ],
+      [
+       4,
+       5
+      ]
+     ],
+     "files": [
+      "pipeline_step_step1.jsonl"
+     ],
+     "marker": null,
+     "output": "{\"i\":0,\"seen\":true}\n{\"i\":1,\"seen\":true}\n{\"i\":2,\"seen\":true}\n{\"i\":3,\"seen\":true}\n{\"i\":4,\"seen\":true}\n{\"i\":5,\"seen\":true}\n"
+    }
+   },
+   "batched/rejects_parquet_cache_type": {
+    "error": "ValueError: BatchedFileStorage only supports 'jsonl' and 'csv' cache types, got: parquet",
+    "ok": false
+   },
+   "batched/size_2": {
+    "ok": true,
+    "value": {
+     "batches_seen": [
+      [
+       0,
+       1
+      ],
+      [
+       2,
+       3
+      ],
+      [
+       4,
+       5
+      ]
+     ],
+     "files": [
+      "pipeline_step_last_success_step.txt",
+      "pipeline_step_step1.jsonl"
+     ],
+     "marker": "2,0\n",
+     "output": "{\"i\":0,\"seen\":true}\n{\"i\":1,\"seen\":true}\n{\"i\":2,\"seen\":true}\n{\"i\":3,\"seen\":true}\n{\"i\":4,\"seen\":true}\n{\"i\":5,\"seen\":true}\n"
+    }
+   },
+   "batched/size_4_uneven": {
+    "ok": true,
+    "value": {
+     "batches_seen": [
+      [
+       0,
+       1,
+       2,
+       3
+      ],
+      [
+       4,
+       5
+      ]
+     ],
+     "files": [
+      "pipeline_step_last_success_step.txt",
+      "pipeline_step_step1.jsonl"
+     ],
+     "marker": "2,0\n",
+     "output": "{\"i\":0,\"seen\":true}\n{\"i\":1,\"seen\":true}\n{\"i\":2,\"seen\":true}\n{\"i\":3,\"seen\":true}\n{\"i\":4,\"seen\":true}\n{\"i\":5,\"seen\":true}\n"
+    }
+   },
+   "batched/size_none": {
+    "ok": true,
+    "value": {
+     "batches_seen": [
+      [
+       0,
+       1,
+       2,
+       3,
+       4,
+       5
+      ]
+     ],
+     "files": [
+      "pipeline_step_last_success_step.txt",
+      "pipeline_step_step1.jsonl"
+     ],
+     "marker": "2,0\n",
+     "output": "{\"i\":0,\"seen\":true}\n{\"i\":1,\"seen\":true}\n{\"i\":2,\"seen\":true}\n{\"i\":3,\"seen\":true}\n{\"i\":4,\"seen\":true}\n{\"i\":5,\"seen\":true}\n"
+    }
+   },
+   "stream/record_count_and_keys": {
+    "ok": true,
+    "value": {
+     "cached": 3,
+     "chunks": [
+      1
+     ],
+     "count": 3,
+     "keys": [
+      "i"
+     ]
+    }
+   },
+   "stream/size_2": {
+    "ok": true,
+    "value": {
+     "batches_seen": [
+      [
+       0,
+       1
+      ],
+      [
+       2,
+       3
+      ],
+      [
+       4,
+       5
+      ]
+     ],
+     "files": [
+      "pipeline_step_last_success_step.txt",
+      "pipeline_step_step1.jsonl"
+     ],
+     "marker": "2,0\n",
+     "output": "{\"i\":0,\"seen\":true}\n{\"i\":1,\"seen\":true}\n{\"i\":2,\"seen\":true}\n{\"i\":3,\"seen\":true}\n{\"i\":4,\"seen\":true}\n{\"i\":5,\"seen\":true}\n"
+    }
+   },
+   "stream/size_4_uneven": {
+    "ok": true,
+    "value": {
+     "batches_seen": [
+      [
+       0,
+       1,
+       2,
+       3
+      ],
+      [
+       4,
+       5
+      ]
+     ],
+     "files": [
+      "pipeline_step_last_success_step.txt",
+      "pipeline_step_step1.jsonl"
+     ],
+     "marker": "2,0\n",
+     "output": "{\"i\":0,\"seen\":true}\n{\"i\":1,\"seen\":true}\n{\"i\":2,\"seen\":true}\n{\"i\":3,\"seen\":true}\n{\"i\":4,\"seen\":true}\n{\"i\":5,\"seen\":true}\n"
+    }
+   }
+  },
+  "pipeline": {
+   "compile/extra_kwargs_forwarded": {
+    "ok": true,
+    "value": {
+     "recorded": [
+      {
+       "threshold": 0.5
+      }
+     ],
+     "runs": [
+      [
+       "run",
+       0,
+       {
+        "threshold": 0.5
+       }
+      ]
+     ]
+    }
+   },
+   "compile/forward_events": {
+    "ok": true,
+    "value": {
+     "cache_files": [
+      "pipeline_step_step1.jsonl",
+      "pipeline_step_step2.jsonl"
+     ],
+     "events_during_forward": [
+      [
+       "run",
+       0,
+       {}
+      ],
+      [
+       "run",
+       1,
+       {}
+      ]
+     ]
+    }
+   },
+   "compile/forward_without_compile": {
+    "ok": true,
+    "value": [
+     [
+      "run",
+      0,
+      {}
+     ]
+    ]
+   },
+   "compile/missing_storage_kwarg": {
+    "error": "TypeError: missing a required argument: 'storage'",
+    "ok": false
+   },
+   "compile/operator_called_twice": {
+    "ok": true,
+    "value": {
+     "recorded": [
+      "op0",
+      "op0"
+     ],
+     "runs": [
+      [
+       "run",
+       0,
+       {}
+      ],
+      [
+       "run",
+       0,
+       {}
+      ]
+     ]
+    }
+   },
+   "compile/phase": {
+    "ok": true,
+    "value": {
+     "accumulated_keys": [
+      [
+       "a"
+      ],
+      [
+       "a"
+      ],
+      [
+       "a"
+      ]
+     ],
+     "cache_files_after_compile": [],
+     "events_during_compile": [
+      [
+       "side-effect"
+      ]
+     ],
+     "final_keys": [
+      "a"
+     ],
+     "last_modified_index_of_keys": {
+      "a": [
+       0
+      ]
+     },
+     "node_names": [
+      "DATASET-INPUT",
+      "op0",
+      "op1",
+      "DATASET-OUTPUT"
+     ],
+     "operator_step_after_compile": 1,
+     "recorded_operators": [
+      "op0",
+      "op1"
+     ]
+    }
+   },
+   "compile/twice_raises": {
+    "error": "AssertionError: Storage must be a DataFlowStorage object, but got <class 'NoneType'> in OPRuntime(operator=<operator>, args={})'s `run` function with key `storage`.",
+    "ok": false
+   },
+   "compile/zero_operators": {
+    "ok": true,
+    "value": {
+     "accumulated_keys": [
+      []
+     ],
+     "node_names": [
+      "DATASET-INPUT",
+      "DATASET-OUTPUT"
+     ],
+     "recorded": []
+    }
+   },
+   "forward/resume_step_0": {
+    "ok": true,
+    "value": [
+     0,
+     1,
+     2
+    ]
+   },
+   "forward/resume_step_1": {
+    "error": "FileNotFoundError: File <path> does not exist. Please check the path.",
+    "ok": false
+   },
+   "keys/unknown_input": {
+    "error": "KeyError: \"Key Matching Error in following Operators during pipeline.compile():\\n- Input key 'nope' in `op` (class <KeyedOp>) does not match any output keys from previous operators or dataset keys. Check parameter 'input_key' in the `op.run()`.\"",
+    "ok": false
+   },
+   "keys/valid": {
+    "ok": true,
+    "value": {
+     "accumulated_keys": [
+      [
+       "a"
+      ],
+      [
+       "a",
+       "b"
+      ]
+     ],
+     "final_keys": [
+      "a",
+      "b"
+     ]
+    }
+   },
+   "serving/lifecycle_refcount": {
+    "ok": true,
+    "value": {
+     "active_after_forward": true,
+     "cleanup_count": 1,
+     "cleanups": [
+      [
+       "cleanup"
+      ]
+     ],
+     "references_after_compile": 2
+    }
+   }
+  },
+  "serving": {
+   "concurrency/result_order": {
+    "ok": true,
+    "value": {
+     "completion_order": [
+      "second",
+      "third",
+      "first"
+     ],
+     "results": [
+      "FIRST",
+      "SECOND",
+      "THIRD"
+     ]
+    }
+   },
+   "ctor/defaults": {
+    "ok": true,
+    "value": {
+     "configs": {
+      "temperature": 0.0
+     },
+     "has_session": true,
+     "headers": {
+      "Authorization": "Bearer parity-test-key",
+      "Content-Type": "application/json",
+      "User-Agent": "Apifox/1.0.0 (https://apifox.com)"
+     },
+     "max_retries": 5,
+     "max_workers": 10,
+     "timeout": [
+      10.0,
+      120.0
+     ]
+    }
+   },
+   "ctor/deprecated_timeout": {
+    "ok": true,
+    "value": [
+     10.0,
+     33
+    ]
+   },
+   "ctor/enable_thinking_absent": {
+    "ok": true,
+    "value": {
+     "temperature": 0.0
+    }
+   },
+   "ctor/enable_thinking_false": {
+    "ok": true,
+    "value": {
+     "enable_thinking": false,
+     "temperature": 0.0
+    }
+   },
+   "ctor/enable_thinking_invalid_string": {
+    "ok": true,
+    "value": {
+     "enable_thinking": "false",
+     "temperature": 0.0
+    }
+   },
+   "ctor/enable_thinking_none": {
+    "ok": true,
+    "value": {
+     "temperature": 0.0
+    }
+   },
+   "ctor/enable_thinking_omit": {
+    "ok": true,
+    "value": {
+     "temperature": 0.0
+    }
+   },
+   "ctor/enable_thinking_true": {
+    "ok": true,
+    "value": {
+     "enable_thinking": true,
+     "temperature": 0.0
+    }
+   },
+   "ctor/extra_configs": {
+    "ok": true,
+    "value": {
+     "stream": true,
+     "temperature": 0.7,
+     "top_p": 0.9
+    }
+   },
+   "ctor/missing_key": {
+    "error": "ValueError: Lack of `DF_PARITY_API_KEY` in environment variables. Please set `DF_PARITY_API_KEY` as your api-key to http://parity.invalid/v1/chat/completions before using <serving>.",
+    "ok": false
+   },
+   "failure/connect_timeout": {
+    "ok": true,
+    "value": {
+     "attempts": 1,
+     "result": [
+      null
+     ],
+     "slept_at_least_4s": false
+    }
+   },
+   "failure/connection_error": {
+    "ok": true,
+    "value": {
+     "attempts": 1,
+     "result": [
+      null
+     ],
+     "slept_at_least_4s": false
+    }
+   },
+   "failure/connection_error_read_timed_out": {
+    "ok": true,
+    "value": {
+     "attempts": 1,
+     "result": [
+      null
+     ],
+     "slept_at_least_4s": false
+    }
+   },
+   "failure/http_500_retries": {
+    "ok": true,
+    "value": {
+     "attempts": 3,
+     "result": [
+      null
+     ],
+     "slept_at_least_4s": true
+    }
+   },
+   "failure/malformed_json": {
+    "ok": true,
+    "value": {
+     "attempts": 1,
+     "result": [
+      null
+     ],
+     "slept_at_least_4s": false
+    }
+   },
+   "failure/read_timeout": {
+    "ok": true,
+    "value": {
+     "attempts": 1,
+     "result": [
+      null
+     ],
+     "slept_at_least_4s": false
+    }
+   },
+   "format/absent/content_only": {
+    "ok": true,
+    "value": "C"
+   },
+   "format/absent/empty_choices": {
+    "ok": true,
+    "value": null
+   },
+   "format/absent/empty_reasoning_string": {
+    "ok": true,
+    "value": "C"
+   },
+   "format/absent/message_not_mapping": {
+    "ok": true,
+    "value": null
+   },
+   "format/absent/no_choices_key": {
+    "ok": true,
+    "value": null
+   },
+   "format/absent/null_content_no_reasoning": {
+    "ok": true,
+    "value": null
+   },
+   "format/absent/null_content_with_reasoning": {
+    "ok": true,
+    "value": null
+   },
+   "format/absent/prewrapped": {
+    "ok": true,
+    "value": "<think>x</think>\n<answer>y</answer>"
+   },
+   "format/absent/reasoning_alias": {
+    "ok": true,
+    "value": "C"
+   },
+   "format/absent/reasoning_content": {
+    "ok": true,
+    "value": "C"
+   },
+   "format/false/content_only": {
+    "ok": true,
+    "value": "C"
+   },
+   "format/false/empty_choices": {
+    "ok": true,
+    "value": null
+   },
+   "format/false/empty_reasoning_string": {
+    "ok": true,
+    "value": "C"
+   },
+   "format/false/message_not_mapping": {
+    "ok": true,
+    "value": null
+   },
+   "format/false/no_choices_key": {
+    "ok": true,
+    "value": null
+   },
+   "format/false/null_content_no_reasoning": {
+    "ok": true,
+    "value": null
+   },
+   "format/false/null_content_with_reasoning": {
+    "ok": true,
+    "value": null
+   },
+   "format/false/prewrapped": {
+    "ok": true,
+    "value": "<think>x</think>\n<answer>y</answer>"
+   },
+   "format/false/reasoning_alias": {
+    "ok": true,
+    "value": "C"
+   },
+   "format/false/reasoning_content": {
+    "ok": true,
+    "value": "C"
+   },
+   "format/invalid_string/content_only": {
+    "error": "TypeError: enable_thinking must be a bool, omit, or None",
+    "ok": false
+   },
+   "format/invalid_string/empty_choices": {
+    "error": "TypeError: enable_thinking must be a bool, omit, or None",
+    "ok": false
+   },
+   "format/invalid_string/empty_reasoning_string": {
+    "error": "TypeError: enable_thinking must be a bool, omit, or None",
+    "ok": false
+   },
+   "format/invalid_string/message_not_mapping": {
+    "error": "TypeError: enable_thinking must be a bool, omit, or None",
+    "ok": false
+   },
+   "format/invalid_string/no_choices_key": {
+    "error": "TypeError: enable_thinking must be a bool, omit, or None",
+    "ok": false
+   },
+   "format/invalid_string/null_content_no_reasoning": {
+    "error": "TypeError: enable_thinking must be a bool, omit, or None",
+    "ok": false
+   },
+   "format/invalid_string/null_content_with_reasoning": {
+    "error": "TypeError: enable_thinking must be a bool, omit, or None",
+    "ok": false
+   },
+   "format/invalid_string/prewrapped": {
+    "error": "TypeError: enable_thinking must be a bool, omit, or None",
+    "ok": false
+   },
+   "format/invalid_string/reasoning_alias": {
+    "error": "TypeError: enable_thinking must be a bool, omit, or None",
+    "ok": false
+   },
+   "format/invalid_string/reasoning_content": {
+    "error": "TypeError: enable_thinking must be a bool, omit, or None",
+    "ok": false
+   },
+   "format/none/content_only": {
+    "ok": true,
+    "value": "C"
+   },
+   "format/none/empty_choices": {
+    "ok": true,
+    "value": null
+   },
+   "format/none/empty_reasoning_string": {
+    "ok": true,
+    "value": "C"
+   },
+   "format/none/message_not_mapping": {
+    "ok": true,
+    "value": null
+   },
+   "format/none/no_choices_key": {
+    "ok": true,
+    "value": null
+   },
+   "format/none/null_content_no_reasoning": {
+    "ok": true,
+    "value": null
+   },
+   "format/none/null_content_with_reasoning": {
+    "ok": true,
+    "value": null
+   },
+   "format/none/prewrapped": {
+    "ok": true,
+    "value": "<think>x</think>\n<answer>y</answer>"
+   },
+   "format/none/reasoning_alias": {
+    "ok": true,
+    "value": "C"
+   },
+   "format/none/reasoning_content": {
+    "ok": true,
+    "value": "C"
+   },
+   "format/omit/content_only": {
+    "ok": true,
+    "value": "C"
+   },
+   "format/omit/empty_choices": {
+    "ok": true,
+    "value": null
+   },
+   "format/omit/empty_reasoning_string": {
+    "ok": true,
+    "value": "C"
+   },
+   "format/omit/message_not_mapping": {
+    "ok": true,
+    "value": null
+   },
+   "format/omit/no_choices_key": {
+    "ok": true,
+    "value": null
+   },
+   "format/omit/null_content_no_reasoning": {
+    "ok": true,
+    "value": null
+   },
+   "format/omit/null_content_with_reasoning": {
+    "ok": true,
+    "value": null
+   },
+   "format/omit/prewrapped": {
+    "ok": true,
+    "value": "<think>x</think>\n<answer>y</answer>"
+   },
+   "format/omit/reasoning_alias": {
+    "ok": true,
+    "value": "C"
+   },
+   "format/omit/reasoning_content": {
+    "ok": true,
+    "value": "C"
+   },
+   "format/true/content_only": {
+    "ok": true,
+    "value": "<think></think>\n<answer>C</answer>"
+   },
+   "format/true/empty_choices": {
+    "ok": true,
+    "value": null
+   },
+   "format/true/empty_reasoning_string": {
+    "ok": true,
+    "value": "<think></think>\n<answer>C</answer>"
+   },
+   "format/true/message_not_mapping": {
+    "ok": true,
+    "value": null
+   },
+   "format/true/no_choices_key": {
+    "ok": true,
+    "value": null
+   },
+   "format/true/null_content_no_reasoning": {
+    "ok": true,
+    "value": null
+   },
+   "format/true/null_content_with_reasoning": {
+    "ok": true,
+    "value": "<think>R</think>\n<answer></answer>"
+   },
+   "format/true/prewrapped": {
+    "ok": true,
+    "value": "<think>x</think>\n<answer>y</answer>"
+   },
+   "format/true/reasoning_alias": {
+    "ok": true,
+    "value": "<think>R</think>\n<answer>C</answer>"
+   },
+   "format/true/reasoning_content": {
+    "ok": true,
+    "value": "<think>R</think>\n<answer>C</answer>"
+   },
+   "request/conversations": {
+    "ok": true,
+    "value": {
+     "request": {
+      "body": {
+       "messages": [
+        {
+         "content": "q",
+         "role": "user"
+        }
+       ],
+       "model": "parity-model",
+       "temperature": 0.0
+      },
+      "headers": {
+       "Authorization": "Bearer parity-test-key",
+       "Content-Type": "application/json",
+       "User-Agent": "Apifox/1.0.0 (https://apifox.com)"
+      },
+      "timeout": [
+       10.0,
+       120.0
+      ],
+      "url": "http://parity.invalid/v1/chat/completions"
+     },
+     "result": [
+      "C"
+     ]
+    }
+   },
+   "request/custom_system_prompt": {
+    "ok": true,
+    "value": {
+     "request": {
+      "body": {
+       "messages": [
+        {
+         "content": "SYS",
+         "role": "system"
+        },
+        {
+         "content": "hello",
+         "role": "user"
+        }
+       ],
+       "model": "parity-model",
+       "temperature": 0.0
+      },
+      "headers": {
+       "Authorization": "Bearer parity-test-key",
+       "Content-Type": "application/json",
+       "User-Agent": "Apifox/1.0.0 (https://apifox.com)"
+      },
+      "timeout": [
+       10.0,
+       120.0
+      ],
+      "url": "http://parity.invalid/v1/chat/completions"
+     },
+     "result": [
+      "C"
+     ]
+    }
+   },
+   "request/default": {
+    "ok": true,
+    "value": {
+     "request": {
+      "body": {
+       "messages": [
+        {
+         "content": "You are a helpful assistant",
+         "role": "system"
+        },
+        {
+         "content": "hello",
+         "role": "user"
+        }
+       ],
+       "model": "parity-model",
+       "temperature": 0.0
+      },
+      "headers": {
+       "Authorization": "Bearer parity-test-key",
+       "Content-Type": "application/json",
+       "User-Agent": "Apifox/1.0.0 (https://apifox.com)"
+      },
+      "timeout": [
+       10.0,
+       120.0
+      ],
+      "url": "http://parity.invalid/v1/chat/completions"
+     },
+     "result": [
+      "C"
+     ]
+    }
+   },
+   "request/embedding": {
+    "ok": true,
+    "value": {
+     "request": {
+      "body": {
+       "input": "t",
+       "model": "parity-model",
+       "temperature": 0.0
+      },
+      "headers": {
+       "Authorization": "Bearer parity-test-key",
+       "Content-Type": "application/json",
+       "User-Agent": "Apifox/1.0.0 (https://apifox.com)"
+      },
+      "timeout": [
+       10.0,
+       120.0
+      ],
+      "url": "http://parity.invalid/v1/chat/completions"
+     },
+     "result": [
+      []
+     ]
+    }
+   },
+   "request/enable_thinking_false": {
+    "ok": true,
+    "value": {
+     "request": {
+      "body": {
+       "enable_thinking": false,
+       "messages": [
+        {
+         "content": "You are a helpful assistant",
+         "role": "system"
+        },
+        {
+         "content": "hello",
+         "role": "user"
+        }
+       ],
+       "model": "parity-model",
+       "temperature": 0.0
+      },
+      "headers": {
+       "Authorization": "Bearer parity-test-key",
+       "Content-Type": "application/json",
+       "User-Agent": "Apifox/1.0.0 (https://apifox.com)"
+      },
+      "timeout": [
+       10.0,
+       120.0
+      ],
+      "url": "http://parity.invalid/v1/chat/completions"
+     },
+     "result": [
+      "C"
+     ]
+    }
+   },
+   "request/enable_thinking_omit": {
+    "ok": true,
+    "value": {
+     "request": {
+      "body": {
+       "messages": [
+        {
+         "content": "You are a helpful assistant",
+         "role": "system"
+        },
+        {
+         "content": "hello",
+         "role": "user"
+        }
+       ],
+       "model": "parity-model",
+       "temperature": 0.0
+      },
+      "headers": {
+       "Authorization": "Bearer parity-test-key",
+       "Content-Type": "application/json",
+       "User-Agent": "Apifox/1.0.0 (https://apifox.com)"
+      },
+      "timeout": [
+       10.0,
+       120.0
+      ],
+      "url": "http://parity.invalid/v1/chat/completions"
+     },
+     "result": [
+      "C"
+     ]
+    }
+   },
+   "request/enable_thinking_true": {
+    "ok": true,
+    "value": {
+     "request": {
+      "body": {
+       "enable_thinking": true,
+       "messages": [
+        {
+         "content": "You are a helpful assistant",
+         "role": "system"
+        },
+        {
+         "content": "hello",
+         "role": "user"
+        }
+       ],
+       "model": "parity-model",
+       "temperature": 0.0
+      },
+      "headers": {
+       "Authorization": "Bearer parity-test-key",
+       "Content-Type": "application/json",
+       "User-Agent": "Apifox/1.0.0 (https://apifox.com)"
+      },
+      "timeout": [
+       10.0,
+       120.0
+      ],
+      "url": "http://parity.invalid/v1/chat/completions"
+     },
+     "result": [
+      "<think>R</think>\n<answer>C</answer>"
+     ]
+    }
+   },
+   "request/json_schema": {
+    "ok": true,
+    "value": {
+     "request": {
+      "body": {
+       "messages": [
+        {
+         "content": "You are a helpful assistant",
+         "role": "system"
+        },
+        {
+         "content": "hello",
+         "role": "user"
+        }
+       ],
+       "model": "parity-model",
+       "response_format": {
+        "json_schema": {
+         "name": "custom_response",
+         "schema": {
+          "type": "object"
+         },
+         "strict": true
+        },
+        "type": "json_schema"
+       },
+       "temperature": 0.0
+      },
+      "headers": {
+       "Authorization": "Bearer parity-test-key",
+       "Content-Type": "application/json",
+       "User-Agent": "Apifox/1.0.0 (https://apifox.com)"
+      },
+      "timeout": [
+       10.0,
+       120.0
+      ],
+      "url": "http://parity.invalid/v1/chat/completions"
+     },
+     "result": [
+      "C"
+     ]
+    }
+   },
+   "request/multiple_prompts": {
+    "ok": true,
+    "value": {
+     "request": {
+      "body": {
+       "messages": [
+        {
+         "content": "You are a helpful assistant",
+         "role": "system"
+        },
+        {
+         "content": "one",
+         "role": "user"
+        }
+       ],
+       "model": "parity-model",
+       "temperature": 0.0
+      },
+      "headers": {
+       "Authorization": "Bearer parity-test-key",
+       "Content-Type": "application/json",
+       "User-Agent": "Apifox/1.0.0 (https://apifox.com)"
+      },
+      "timeout": [
+       10.0,
+       120.0
+      ],
+      "url": "http://parity.invalid/v1/chat/completions"
+     },
+     "result": [
+      "C",
+      "C",
+      "C"
+     ]
+    }
+   },
+   "sse/metadata_fields": {
+    "ok": true,
+    "value": {
+     "choices": [
+      {
+       "finish_reason": "stop",
+       "index": 0,
+       "message": {
+        "content": "t",
+        "role": "assistant"
+       }
+      }
+     ],
+     "created": 17,
+     "id": "x",
+     "model": "m",
+     "object": "chat.completion",
+     "system_fingerprint": "fp"
+    }
+   },
+   "sse/metadata_fields/formatted_true": {
+    "ok": true,
+    "value": "<think></think>\n<answer>t</answer>"
+   },
+   "sse/multi_choice_out_of_order": {
+    "ok": true,
+    "value": {
+     "choices": [
+      {
+       "finish_reason": "stop",
+       "index": 0,
+       "message": {
+        "content": "AA2",
+        "role": "assistant"
+       }
+      },
+      {
+       "finish_reason": "length",
+       "index": 1,
+       "message": {
+        "content": "BB2",
+        "role": "assistant"
+       }
+      }
+     ],
+     "object": "chat.completion"
+    }
+   },
+   "sse/multi_choice_out_of_order/formatted_true": {
+    "ok": true,
+    "value": "<think></think>\n<answer>AA2</answer>"
+   },
+   "sse/non_ascii": {
+    "ok": true,
+    "value": {
+     "choices": [
+      {
+       "finish_reason": "stop",
+       "index": 0,
+       "message": {
+        "content": "✓",
+        "reasoning_content": "2 × 3 → 6",
+        "role": "assistant"
+       }
+      }
+     ],
+     "object": "chat.completion"
+    }
+   },
+   "sse/non_ascii/formatted_true": {
+    "ok": true,
+    "value": "<think>2 × 3 → 6</think>\n<answer>✓</answer>"
+   },
+   "sse/reasoning_alias": {
+    "ok": true,
+    "value": {
+     "choices": [
+      {
+       "finish_reason": "stop",
+       "index": 0,
+       "message": {
+        "content": "CC",
+        "reasoning": "RR",
+        "role": "assistant"
+       }
+      }
+     ],
+     "object": "chat.completion"
+    }
+   },
+   "sse/reasoning_alias/formatted_true": {
+    "ok": true,
+    "value": "<think>RR</think>\n<answer>CC</answer>"
+   },
+   "sse/single_choice": {
+    "ok": true,
+    "value": {
+     "choices": [
+      {
+       "finish_reason": "stop",
+       "index": 0,
+       "message": {
+        "content": "ans",
+        "reasoning_content": "st ep",
+        "role": "assistant"
+       }
+      }
+     ],
+     "id": "c1",
+     "model": "m",
+     "object": "chat.completion",
+     "usage": {
+      "total_tokens": 9
+     }
+    }
+   },
+   "sse/single_choice/formatted_true": {
+    "ok": true,
+    "value": "<think>st ep</think>\n<answer>ans</answer>"
+   }
+  },
+  "storage": {
+   "chain/two_steps": {
+    "ok": true,
+    "value": {
+     "files": [
+      "pipeline_step_step1.jsonl",
+      "pipeline_step_step2.jsonl"
+     ],
+     "final": "{\"a\":1,\"s1\":true,\"s2\":true}\n{\"a\":2,\"s1\":true,\"s2\":true}\n"
+    }
+   },
+   "entry_format/csv": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "int",
+       1
+      ],
+      "b": [
+       "NoneType",
+       null
+      ]
+     },
+     {
+      "a": [
+       "int",
+       2
+      ],
+      "b": [
+       "str",
+       "t"
+      ]
+     }
+    ]
+   },
+   "entry_format/dotted_name": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "int",
+       1
+      ]
+     }
+    ]
+   },
+   "entry_format/json": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "int",
+       1
+      ],
+      "b": [
+       "NoneType",
+       null
+      ]
+     }
+    ]
+   },
+   "naming/custom_prefix_csv": {
+    "ok": true,
+    "value": {
+     "file": "pipeline_step_step1.csv",
+     "roundtrip": [
+      {
+       "a": [
+        "int",
+        1
+       ],
+       "b": [
+        "NoneType",
+        null
+       ]
+      }
+     ]
+    }
+   },
+   "naming/custom_prefix_json": {
+    "ok": true,
+    "value": {
+     "file": "pipeline_step_step1.json",
+     "roundtrip": [
+      {
+       "a": [
+        "int",
+        1
+       ],
+       "b": [
+        "NoneType",
+        null
+       ]
+      }
+     ]
+    }
+   },
+   "naming/default_prefix_jsonl": {
+    "ok": true,
+    "value": {
+     "file": "dataflow_cache_step_step1.jsonl",
+     "roundtrip": [
+      {
+       "a": [
+        "int",
+        1
+       ],
+       "b": [
+        "NoneType",
+        null
+       ]
+      }
+     ]
+    }
+   },
+   "read/all_null_column": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "NoneType",
+       null
+      ]
+     },
+     {
+      "a": [
+       "NoneType",
+       null
+      ]
+     }
+    ]
+   },
+   "read/blank_lines": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "int",
+       1
+      ]
+     },
+     {
+      "a": [
+       "int",
+       2
+      ]
+     }
+    ]
+   },
+   "read/bool_and_numeric_string": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "int",
+       1
+      ]
+     },
+     {
+      "a": [
+       "int",
+       2
+      ]
+     }
+    ]
+   },
+   "read/bool_only": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "bool",
+       true
+      ]
+     },
+     {
+      "a": [
+       "bool",
+       false
+      ]
+     }
+    ]
+   },
+   "read/bool_with_null": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "float",
+       1.0
+      ]
+     },
+     {
+      "a": [
+       "NoneType",
+       null
+      ]
+     }
+    ]
+   },
+   "read/date_column": {
+    "ok": true,
+    "value": [
+     {
+      "date": [
+       "Timestamp",
+       "2024-01-02 00:00:00"
+      ]
+     },
+     {
+      "date": [
+       "Timestamp",
+       "2024-02-03 00:00:00"
+      ]
+     }
+    ]
+   },
+   "read/empty_file": {
+    "ok": true,
+    "value": []
+   },
+   "read/empty_string_and_null": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "str",
+       ""
+      ]
+     },
+     {
+      "a": [
+       "NoneType",
+       null
+      ]
+     }
+    ]
+   },
+   "read/exponent_string": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "float",
+       1000.0
+      ]
+     },
+     {
+      "a": [
+       "float",
+       2.0
+      ]
+     }
+    ]
+   },
+   "read/hex_string": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "str",
+       "0x10"
+      ]
+     }
+    ]
+   },
+   "read/huge_int": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "int",
+       9223372036854775807
+      ]
+     }
+    ]
+   },
+   "read/int_only": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "int",
+       1
+      ]
+     },
+     {
+      "a": [
+       "int",
+       2
+      ]
+     }
+    ]
+   },
+   "read/int_with_null": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "float",
+       1.0
+      ]
+     },
+     {
+      "a": [
+       "NoneType",
+       null
+      ]
+     }
+    ]
+   },
+   "read/key_order": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "int",
+       2
+      ],
+      "m": [
+       "int",
+       3
+      ],
+      "z": [
+       "int",
+       1
+      ]
+     }
+    ]
+   },
+   "read/mixed_int_str": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "int",
+       1
+      ]
+     },
+     {
+      "a": [
+       "str",
+       "x"
+      ]
+     }
+    ]
+   },
+   "read/nan_inf_strings": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "NoneType",
+       null
+      ]
+     },
+     {
+      "a": [
+       "float",
+       "inf"
+      ]
+     }
+    ]
+   },
+   "read/nested_inner_null": {
+    "ok": true,
+    "value": [
+     {
+      "a": {
+       "k": [
+        "NoneType",
+        null
+       ]
+      },
+      "b": [
+       [
+        "int",
+        1
+       ],
+       [
+        "NoneType",
+        null
+       ]
+      ]
+     }
+    ]
+   },
+   "read/nested_objects": {
+    "ok": true,
+    "value": [
+     {
+      "a": {
+       "k": [
+        "int",
+        1
+       ]
+      },
+      "b": [
+       [
+        "int",
+        1
+       ],
+       [
+        "int",
+        2
+       ]
+      ]
+     },
+     {
+      "a": {
+       "k": [
+        "int",
+        2
+       ]
+      },
+      "b": []
+     }
+    ]
+   },
+   "read/numeric_string": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "int",
+       123
+      ]
+     },
+     {
+      "a": [
+       "int",
+       456
+      ]
+     }
+    ]
+   },
+   "read/numeric_string_spaced": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "int",
+       12
+      ]
+     },
+     {
+      "a": [
+       "int",
+       3
+      ]
+     }
+    ]
+   },
+   "read/over_int64": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "int",
+       9223372036854775808
+      ]
+     }
+    ]
+   },
+   "read/oversized_int": {
+    "error": "ValueError: Failed to load jsonl file: Value is too big!",
+    "ok": false
+   },
+   "read/plain_date_string": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "str",
+       "2024-01-02"
+      ]
+     },
+     {
+      "a": [
+       "str",
+       "2024-02-03"
+      ]
+     }
+    ]
+   },
+   "read/ragged_rows": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "int",
+       1
+      ],
+      "b": [
+       "NoneType",
+       null
+      ]
+     },
+     {
+      "a": [
+       "int",
+       2
+      ],
+      "b": [
+       "str",
+       "x"
+      ]
+     }
+    ]
+   },
+   "read/row_key_order_differs": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "int",
+       2
+      ],
+      "z": [
+       "int",
+       1
+      ]
+     },
+     {
+      "a": [
+       "int",
+       3
+      ],
+      "z": [
+       "int",
+       4
+      ]
+     }
+    ]
+   },
+   "read/str_with_null": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "str",
+       "x"
+      ]
+     },
+     {
+      "a": [
+       "NoneType",
+       null
+      ]
+     }
+    ]
+   },
+   "read/underscore_string": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "int",
+       1000
+      ]
+     }
+    ]
+   },
+   "read/unicode": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "str",
+       "café ✓"
+      ]
+     }
+    ]
+   },
+   "read/zero_and_null": {
+    "ok": true,
+    "value": [
+     {
+      "a": [
+       "float",
+       0.0
+      ]
+     },
+     {
+      "a": [
+       "NoneType",
+       null
+      ]
+     }
+    ]
+   },
+   "step/empty_entry_name_dict": {
+    "ok": true,
+    "value": []
+   },
+   "step/empty_entry_name_shape": {
+    "ok": true,
+    "value": [
+     0,
+     0
+    ]
+   },
+   "step/missing_file": {
+    "error": "FileNotFoundError: File <path> does not exist. Please check the path.",
+    "ok": false
+   },
+   "step/read_before_step": {
+    "error": "ValueError: You must call storage.step() before reading or writing data. Please call storage.step() first for each operator step.",
+    "ok": false
+   },
+   "step/semantics": {
+    "ok": true,
+    "value": {
+     "first_write": "pfx_step1.jsonl",
+     "initial_operator_step": -1,
+     "keys": [
+      "a",
+      "b"
+     ],
+     "parent_after_step": 0,
+     "reset": -1,
+     "second_step": 1,
+     "third_write": "pfx_step3.jsonl",
+     "view_is_parent": false,
+     "view_step": 0
+    }
+   },
+   "step/unsupported_output_type": {
+    "error": "ValueError: Unsupported output type: pickle",
+    "ok": false
+   },
+   "write/bool_and_int": {
+    "ok": true,
+    "value": {
+     "content": "{\"a\":true}\n{\"a\":2}\n",
+     "file": "dataflow_cache_step_step1.jsonl"
+    }
+   },
+   "write/bool_and_none": {
+    "ok": true,
+    "value": {
+     "content": "{\"a\":true}\n{\"a\":null}\n",
+     "file": "dataflow_cache_step_step1.jsonl"
+    }
+   },
+   "write/empty_dicts": {
+    "ok": true,
+    "value": {
+     "content": "\n",
+     "file": "dataflow_cache_step_step1.jsonl"
+    }
+   },
+   "write/empty_list": {
+    "error": "IndexError: list index out of range",
+    "ok": false
+   },
+   "write/float_and_none": {
+    "ok": true,
+    "value": {
+     "content": "{\"a\":1.5}\n{\"a\":null}\n",
+     "file": "dataflow_cache_step_step1.jsonl"
+    }
+   },
+   "write/inf_float": {
+    "ok": true,
+    "value": {
+     "content": "{\"a\":null}\n",
+     "file": "dataflow_cache_step_step1.jsonl"
+    }
+   },
+   "write/int_and_none": {
+    "ok": true,
+    "value": {
+     "content": "{\"a\":1.0}\n{\"a\":null}\n{\"a\":3.0}\n",
+     "file": "dataflow_cache_step_step1.jsonl"
+    }
+   },
+   "write/key_order": {
+    "ok": true,
+    "value": {
+     "content": "{\"z\":1,\"a\":2}\n",
+     "file": "dataflow_cache_step_step1.jsonl"
+    }
+   },
+   "write/nan_float": {
+    "ok": true,
+    "value": {
+     "content": "{\"a\":null}\n",
+     "file": "dataflow_cache_step_step1.jsonl"
+    }
+   },
+   "write/nested_null": {
+    "ok": true,
+    "value": {
+     "content": "{\"a\":{\"k\":null},\"b\":[1,null]}\n",
+     "file": "dataflow_cache_step_step1.jsonl"
+    }
+   },
+   "write/new_key_later": {
+    "ok": true,
+    "value": {
+     "content": "{\"a\":1,\"b\":null}\n{\"a\":2,\"b\":3.0}\n",
+     "file": "dataflow_cache_step_step1.jsonl"
+    }
+   },
+   "write/none_only": {
+    "ok": true,
+    "value": {
+     "content": "{\"a\":null}\n",
+     "file": "dataflow_cache_step_step1.jsonl"
+    }
+   },
+   "write/none_value": {
+    "ok": true,
+    "value": {
+     "content": "{\"a\":null,\"b\":\"x\"}\n",
+     "file": "dataflow_cache_step_step1.jsonl"
+    }
+   },
+   "write/numeric_string": {
+    "ok": true,
+    "value": {
+     "content": "{\"a\":\"0123\"}\n",
+     "file": "dataflow_cache_step_step1.jsonl"
+    }
+   },
+   "write/plain_dict": {
+    "error": "ValueError: Unsupported data type: <class 'dict'>",
+    "ok": false
+   },
+   "write/ragged": {
+    "ok": true,
+    "value": {
+     "content": "{\"a\":1.0,\"b\":null}\n{\"a\":null,\"b\":2.0}\n",
+     "file": "dataflow_cache_step_step1.jsonl"
+    }
+   },
+   "write/ragged_str": {
+    "ok": true,
+    "value": {
+     "content": "{\"a\":\"x\",\"b\":null}\n{\"a\":null,\"b\":\"y\"}\n",
+     "file": "dataflow_cache_step_step1.jsonl"
+    }
+   },
+   "write/row_key_order_differs": {
+    "ok": true,
+    "value": {
+     "content": "{\"z\":1,\"a\":2}\n{\"z\":4,\"a\":3}\n",
+     "file": "dataflow_cache_step_step1.jsonl"
+    }
+   },
+   "write/scalar_list": {
+    "error": "ValueError: Unsupported data type: <class 'int'>",
+    "ok": false
+   },
+   "write/str_and_int": {
+    "ok": true,
+    "value": {
+     "content": "{\"a\":\"s\"}\n{\"a\":1}\n",
+     "file": "dataflow_cache_step_step1.jsonl"
+    }
+   },
+   "write/surrogate": {
+    "ok": true,
+    "value": {
+     "content": "{\"t\":\"ok?bad\",\"n\":3,\"o\":{\"k\":[1,null]}}\n",
+     "file": "dataflow_cache_step_step1.jsonl"
+    }
+   },
+   "write/tuple_value": {
+    "ok": true,
+    "value": {
+     "content": "{\"a\":\"(1, 2)\"}\n",
+     "file": "dataflow_cache_step_step1.jsonl"
+    }
+   },
+   "write/unicode": {
+    "ok": true,
+    "value": {
+     "content": "{\"a\":\"café ✓\"}\n",
+     "file": "dataflow_cache_step_step1.jsonl"
+    }
+   }
+  }
+ }
+}

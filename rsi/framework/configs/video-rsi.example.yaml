@@ -45,6 +45,7 @@ loop:
 
 pipeline_diagnostic:
   enabled: true
+  read_only: true
 
 downstream_eval:
   enabled: false

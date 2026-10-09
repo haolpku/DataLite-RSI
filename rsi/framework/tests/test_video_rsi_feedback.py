@@ -54,7 +54,7 @@ def test_video_rsi_feedback_uses_enriched_duplicate_signal_for_frontier_count(tm
         "producer_route": "caption_entity",
         "pool_status": "accepted",
     }
-    path.write_text(json.dumps(row) + "\\n", encoding="utf-8")
+    path.write_text(json.dumps(row) + "\n", encoding="utf-8")
 
     feedback = VideoRSICandidateEvaluator(
         signal_provider=lambda _: {"duplicate_outcome": "duplicate"}

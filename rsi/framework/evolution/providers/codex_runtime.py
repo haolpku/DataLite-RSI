@@ -252,7 +252,14 @@ def _run_once_cli(
 ) -> AgentRunResult:
     cfg = backend_config(agent_cfg, "codex")
     read_only = agent_cfg.get("read_only", False) is True
-    bypass_sandbox = cfg.get("bypass_sandbox", False) is True and not read_only
+    raw_bypass_sandbox = cfg.get("bypass_sandbox", False)
+    bypass_sandbox = (
+        raw_bypass_sandbox is True
+        or (
+            isinstance(raw_bypass_sandbox, str)
+            and raw_bypass_sandbox.strip().lower() in {"1", "true", "yes", "on"}
+        )
+    ) and not read_only
     sandbox_mode = (
         "read-only"
         if read_only

@@ -196,7 +196,7 @@ architecture.
 | Extra | Adds | Needed for |
 | --- | --- | --- |
 | *(base)* | pandas, numpy, requests, tqdm, colorlog, PyYAML | importing the runtime, running a generated pipeline |
-| `review` | openai | ReviewAgent scoring and embedding dataset-quality review |
+| `review` | openai | ReviewAgent scoring and embedding quality review |
 | `claude` | claude-agent-sdk | the `claude` coding-agent backend |
 | `parquet` | pyarrow | `.parquet` entry files or step caches |
 | `dev` | pytest, pydantic, Pillow | the repository test suite |

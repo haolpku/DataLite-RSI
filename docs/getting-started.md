@@ -36,7 +36,7 @@ pip install -e ".[all,dev]"        # everything
 | Extra | Adds | Needed for |
 | --- | --- | --- |
 | *(base)* | pandas, numpy, requests, tqdm, colorlog, PyYAML | importing the runtime, running a generated pipeline |
-| `review` | openai | ReviewAgent scoring, embedding dataset-quality review |
+| `review` | openai | ReviewAgent scoring, embedding quality review |
 | `claude` | claude-agent-sdk | the `claude` coding-agent backend |
 | `parquet` | pyarrow | `.parquet` entry files or step caches |
 | `dev` | pytest, pydantic, Pillow | the repository test suite |
@@ -125,6 +125,19 @@ task:
     - Require a non-empty instruction that states the source problem.
     - Require a self-contained step-by-step output.
 
+review:
+  # Optional domain rubric mode. It replaces the default four-dimension
+  # ReviewAgent prompt with one criterion-by-criterion assessment.
+  mode: criteria
+  criteria:
+    pass_rate: 0.6
+  embedding_quality:
+    review_score_weight: 0.25       # configurable embedding share of review_score
+    metrics:
+      das: {enabled: false, weight: 0.40}
+      vendi: {enabled: false, weight: 0.30}
+      nearest_neighbor: {enabled: false, weight: 0.30}
+
 llm:
   api:                                # ReviewAgent's model
     api_url: ${DF_API_URL:}           # .../v1/chat/completions
@@ -149,9 +162,20 @@ loop:
 credentials in the environment, never in the file**, and never commit a config
 holding a real key.
 
-A ready-made example with every section filled in, including fabricated
-downstream feedback for environments without GPUs, is in
-`.validation/server_validation.yaml`.
+In `review.mode: criteria`, the reviewer returns `met`, `evidence`, and
+`suggestion` for every `task.quality_criteria` entry. The framework computes
+the sample-level score as the proportion of criteria marked `met`; it does not
+use the correctness/relevance/difficulty/schema dimensions in this mode. When one or more
+`review.embedding_quality.metrics.*.enabled` switches are true, the sample-level criteria score is
+blended with the enabled embedding metrics using `review.embedding_quality.review_score_weight`
+(a value in `[0, 1]` supplied by the configuration), just as in the default review mode. When all three
+switches are false, the criteria proportion is the review score before deterministic safety handling.
+Deterministic checks for malformed JSON, required fields, duplicates, and
+benchmark contamination remain separate safety gates.
+
+For the complete review configuration reference, including deterministic validation,
+decontamination, embedding quality, and MMD options, see
+[review-configuration.md](review-configuration.md).
 
 ## 5. Write a task
 
@@ -255,7 +279,7 @@ Common setup problems:
 | `requires codex, claude, or opencode provider` | `provider` in the task does not match `agent.backend` |
 | `temperature does not support 0` | the ReviewAgent model rejects an explicit temperature; its serving always sends one, so choose a model that accepts it |
 | `运行目录已存在且非空` | reuse of a `run_name`; pick a fresh one |
-| embedding errors in dataset-quality review | that path speaks the vLLM chat-embedding form (`messages`), not standard OpenAI `input`; it needs a vLLM-compatible embedding server, or set `review.dataset_quality.enabled: false` |
+| embedding errors in embedding quality review | that path speaks the vLLM chat-embedding form (`messages`), not standard OpenAI `input`; it needs a vLLM-compatible embedding server, or disable all `review.embedding_quality.metrics.*.enabled` switches |
 
 ## Next steps
 

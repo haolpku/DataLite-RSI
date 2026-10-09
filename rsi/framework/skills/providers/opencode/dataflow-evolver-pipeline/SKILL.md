@@ -9,6 +9,8 @@ Use this skill only for the `pipeline_builder` and `pipeline_repairer` roles. Th
 diagnostic agent uses a separate read-only system prompt and must never load this
 skill. The framework owns compile, execution, observation, cache selection,
 candidate evaluation, and best-so-far acceptance. Text tasks use ReviewAgent;
+the default rubric is four dimensions, while a domain config may select
+criteria mode so the agent receives task.quality_criteria evidence instead;
 image/video tasks require a task-specific evaluator. Do not execute
 `pipeline.py` yourself.
 

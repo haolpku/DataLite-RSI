@@ -26,8 +26,8 @@ from rsi.framework.evolution.evaluation.downstream_eval import (
     DownstreamEvaluatorABC,
     result_to_dict,
 )
-from rsi.framework.evolution.evaluation.dataset_quality import (
-    DatasetQualityEvaluator,
+from rsi.framework.evolution.evaluation.embedding_quality import (
+    EmbeddingQualityEvaluator,
     OpenAIChatEmbeddingBackend,
     ProxyDatasetConfig,
 )
@@ -599,38 +599,52 @@ def build_loop(
     serving = build_serving(cfg.llm) if candidate_evaluator is None else None
     if candidate_evaluator is None:
         review_cfg = cfg.review
+        sampling_cfg = review_cfg.get("sampling") or Config({})
+        criteria_cfg = review_cfg.get("criteria") or Config({})
+        four_cfg = review_cfg.get("four_dimensions") or Config({})
+        validation_cfg = review_cfg.get("validation") or Config({})
         decon_cfg = review_cfg.get("decontamination") or Config({})
-        dataset_quality_cfg = review_cfg.get("dataset_quality") or Config({})
-        dataset_quality_evaluator, dataset_quality_fields = _build_dataset_quality_evaluator(
-            dataset_quality_cfg,
+        embedding_quality_cfg = review_cfg.get("embedding_quality") or Config({})
+        metrics_cfg = embedding_quality_cfg.get("metrics") or Config({})
+        embedding_quality_evaluator, embedding_quality_fields = _build_embedding_quality_evaluator(
+            embedding_quality_cfg,
             workspace=workspace,
         )
         reviewer: CandidateEvaluator = ReviewAgent(
             serving,
             contamination=decontamination.build(
                 reference_files=list(decon_cfg.get("reference_files", []) or []),
-                n=int(decon_cfg.get("ngram", decontamination.DEFAULT_NGRAM)),
+                n=int(decon_cfg.get("ngram_size", decontamination.DEFAULT_NGRAM)),
                 max_rate=float(decon_cfg.get("max_rate", decontamination.DEFAULT_MAX_RATE)),
-                fields=list(decon_cfg.get("fields", []) or []) or None,
+                fields=list(decon_cfg.get("reference_fields", []) or []) or None,
             ),
-            correctness_threshold=float(review_cfg.get("correctness_threshold", 0.6)),
-            schema_threshold=float(review_cfg.get("schema_threshold", 0.6)),
-            relevance_threshold=float(review_cfg.get("relevance_threshold", 0.6)),
-            sample_size=int(review_cfg.get("sample_size", 80)),
-            weights=_plain_dict(review_cfg.get("weights")) or None,
-            hard_metrics=bool(review_cfg.get("hard_metrics", True)),
-            seed=review_cfg.get("sample_seed", None),
-            null_threshold=float(review_cfg.get("null_threshold", 0.5)),
-            dataset_quality_evaluator=dataset_quality_evaluator,
-            dataset_quality_fields=dataset_quality_fields,
-            dataset_quality_weight=float(dataset_quality_cfg.get("score_weight", 0.25)),
-            dataset_quality_score_weights=_plain_dict(
-                dataset_quality_cfg.get("score_weights")
+            four_dimension_thresholds=_plain_dict(
+                four_cfg.get("pass_thresholds")
             ) or None,
-            duplicate_fields=list(review_cfg.get("duplicate_fields", []) or []) or None,
+            sampling_size=int(sampling_cfg.get("size", 80)),
+            sampling_seed=sampling_cfg.get("seed", None),
+            four_dimension_weights=_plain_dict(four_cfg.get("weights")) or None,
+            validation_enabled=_as_bool(validation_cfg.get("enabled", True)),
+            max_null_rate=float(validation_cfg.get("max_null_rate", 0.5)),
+            embedding_quality_evaluator=embedding_quality_evaluator,
+            embedding_quality_fields=embedding_quality_fields,
+            embedding_review_score_weight=(
+                float(embedding_quality_cfg.get("review_score_weight"))
+                if embedding_quality_cfg.get("review_score_weight") is not None
+                else None
+            ),
+            embedding_metric_weights=_plain_dict(
+                {
+                    name: (metrics_cfg.get(name) or Config({})).get("weight", 0.0)
+                    for name in ("das", "vendi", "nearest_neighbor")
+                    if _as_bool((metrics_cfg.get(name) or Config({})).get("enabled", False))
+                }
+            ) or None,
             contamination_fields=(
                 list(decon_cfg.get("candidate_fields", []) or []) or None
             ),
+            mode=str(review_cfg.get("mode", "four_dimensions") or "four_dimensions"),
+            criteria_pass_rate=float(criteria_cfg.get("pass_rate", 0.6)),
         )
     else:
         reviewer = candidate_evaluator
@@ -812,41 +826,60 @@ def _build_downstream_evaluator(
     )
 
 
-def _build_dataset_quality_evaluator(
+def _build_embedding_quality_evaluator(
     value: Config,
     *,
     workspace: Path,
-) -> tuple[DatasetQualityEvaluator | None, tuple[str, str]]:
-    """Build the optional deterministic DAS evaluator from the review config."""
+) -> tuple[EmbeddingQualityEvaluator | None, tuple[str, str]]:
+    """Build embedding metrics from their explicit per-metric configuration."""
+    metrics_cfg = value.get("metrics") or Config({})
+    metric_names = ("das", "vendi", "nearest_neighbor")
+    enabled_metrics = [
+        name
+        for name in metric_names
+        if _as_bool((metrics_cfg.get(name) or Config({})).get("enabled", False))
+    ]
+    metric_weights = {
+        name: float((metrics_cfg.get(name) or Config({})).get("weight", 0.0))
+        for name in enabled_metrics
+    }
+    if enabled_metrics and all(weight <= 0.0 for weight in metric_weights.values()):
+        raise ValueError("review.embedding_quality.metrics 至少需要一个启用且有正权重的指标")
     candidate_cfg = value.get("candidate") or Config({})
     fields = (
         str(candidate_cfg.get("user_field", "instruction")),
         str(candidate_cfg.get("assistant_field", "output")),
     )
-    if not _as_bool(value.get("enabled", False)):
+    if not enabled_metrics:
         return None, fields
 
-    proxy_comparison_enabled = _as_bool(
-        value.get("proxy_comparison_enabled", True)
-    )
-    proxy_cfg = value.get("proxy") or Config({})
+    sampling_cfg = value.get("sampling") or Config({})
     embedding_cfg = value.get("embedding") or Config({})
-    proxy_path = str(proxy_cfg.get("path", "") or "").strip()
-    base_url = str(embedding_cfg.get("base_url", "") or "").strip()
-    model_name = str(embedding_cfg.get("model_name", "") or "").strip()
-    if proxy_comparison_enabled and not proxy_path:
-        raise ValueError("review.dataset_quality.proxy.path 不能为空")
-    if not base_url:
-        raise ValueError("review.dataset_quality.embedding.base_url 不能为空")
-    if not model_name:
-        raise ValueError("review.dataset_quality.embedding.model_name 不能为空")
+    service_cfg = value.get("service") or Config({})
+    sample_size = int(sampling_cfg.get("size", 5000))
+    sample_seed = int(sampling_cfg.get("seed", 42))
+    require_requested_size = _as_bool(sampling_cfg.get("require_requested_size", True))
+    cache_value = str(embedding_cfg.get("cache_dir", "") or "").strip()
+    cache_dir = Path(cache_value) if cache_value else workspace / "cache" / "embedding"
 
-    cache_value = str(value.get("cache_dir", "") or "").strip()
-    cache_dir = Path(cache_value) if cache_value else workspace / "cache" / "das"
+    das_cfg = metrics_cfg.get("das") or Config({})
+    das_enabled = "das" in enabled_metrics
+    proxy_cfg = das_cfg.get("proxy") or Config({})
+    proxy_path = str(proxy_cfg.get("path", "") or "").strip()
+    if das_enabled and not proxy_path:
+        raise ValueError("review.embedding_quality.metrics.das.proxy.path 不能为空")
+
+    base_url = str(service_cfg.get("base_url", "") or "").strip()
+    model_name = str(service_cfg.get("model_name", "") or "").strip()
+    if not base_url:
+        raise ValueError("review.embedding_quality.service.base_url 不能为空")
+    if not model_name:
+        raise ValueError("review.embedding_quality.service.model_name 不能为空")
+
     proxy = None
-    if proxy_comparison_enabled:
+    if das_enabled:
         proxy = ProxyDatasetConfig(
-            source=str(proxy_cfg.get("source", "huggingface")),
+            source=str(proxy_cfg.get("source", "local")),
             path=proxy_path,
             name=str(proxy_cfg.get("name", "") or ""),
             split=str(proxy_cfg.get("split", "train")),
@@ -856,27 +889,34 @@ def _build_dataset_quality_evaluator(
     embedder = OpenAIChatEmbeddingBackend(
         model_name=model_name,
         base_url=base_url,
-        api_key=str(embedding_cfg.get("api_key", "EMPTY") or "EMPTY"),
-        max_concurrent_requests=int(embedding_cfg.get("max_concurrent_requests", 128)),
-        max_retries=int(embedding_cfg.get("max_retries", 3)),
-        truncate_prompt_tokens=int(embedding_cfg.get("truncate_prompt_tokens", 40960)),
-        truncation_side=str(embedding_cfg.get("truncation_side", "right")),
+        api_key=str(service_cfg.get("api_key", "EMPTY") or "EMPTY"),
+        max_concurrent_requests=int(service_cfg.get("max_concurrent_requests", 128)),
+        max_retries=int(service_cfg.get("max_retries", 3)),
+        truncate_prompt_tokens=int(service_cfg.get("truncate_prompt_tokens", 40960)),
+        truncation_side=str(service_cfg.get("truncation_side", "right")),
     )
-    evaluator = DatasetQualityEvaluator(
+    mmd_cfg = das_cfg.get("mmd") or Config({})
+    estimator = str(mmd_cfg.get("estimator", "biased") or "biased").strip().lower()
+    if das_enabled and estimator not in {"biased", "unbiased"}:
+        raise ValueError(
+            "review.embedding_quality.metrics.das.mmd.estimator 必须是 biased 或 unbiased"
+        )
+    evaluator = EmbeddingQualityEvaluator(
+        enabled_metrics=enabled_metrics,
         proxy=proxy,
         embedder=embedder,
-        sample_size=int(value.get("sample_size", 5000)),
-        seed=int(value.get("sample_seed", 42)),
-        sigma=float(value.get("rbf_sigma", 1.0)),
-        biased=_as_bool(value.get("biased", True)),
-        normalize_embeddings=_as_bool(value.get("normalize_embeddings", True)),
-        max_embedding_fail_rate=float(value.get("max_embedding_fail_rate", 0.02)),
+        sample_size=sample_size,
+        seed=sample_seed,
+        # MMD parameters belong exclusively to DAS. Ignore malformed or
+        # absent values when only candidate-only metrics are enabled.
+        sigma=float(mmd_cfg.get("sigma", 1.0)) if das_enabled else 1.0,
+        biased=(estimator == "biased") if das_enabled else True,
+        normalize_embeddings=_as_bool(embedding_cfg.get("normalize_embeddings", True)),
+        max_embedding_failure_rate=float(embedding_cfg.get("max_failure_rate", 0.02)),
         cache_dir=cache_dir,
-        require_full_sample=_as_bool(value.get("require_full_sample", True)),
-        proxy_comparison_enabled=proxy_comparison_enabled,
+        require_requested_size=require_requested_size,
     )
     return evaluator, fields
-
 
 def _as_bool(value: Any) -> bool:
     if isinstance(value, bool):

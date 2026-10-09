@@ -29,12 +29,13 @@ class PipelineConfig:
 
 
 @dataclass
-class DatasetQualityResult:
+class EmbeddingQualityResult:
     """Deterministic embedding evidence for distribution fit and diversity."""
 
     enabled: bool = False
     status: str = "disabled"
-    metric: str = "DAS"
+    metric: str = ""
+    enabled_metrics: list[str] = field(default_factory=list)
     proxy_name: str = ""
 
     candidate_total: int = 0
@@ -83,7 +84,7 @@ class ReviewResult:
     review_score: float = 0.0
     score_components: dict[str, float] = field(default_factory=dict)
     failure_signals: list[str] = field(default_factory=list)
-    dataset_quality: DatasetQualityResult = field(default_factory=DatasetQualityResult)
+    embedding_quality: EmbeddingQualityResult = field(default_factory=EmbeddingQualityResult)
     # A modality-specific evaluator may attach native IF/VC/VQ, frozen-target,
     # or other evidence without changing the incumbent comparison contract.
     domain_feedback: dict[str, Any] = field(default_factory=dict)

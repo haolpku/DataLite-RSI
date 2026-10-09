@@ -29,8 +29,10 @@ llm:
 agent:
   backend: ${AGENT_BACKEND:codex}
   pipeline_filename: pipeline.py
-  max_retries: 1
-  run_timeout_sec: 900
+  # A long authoring turn can be interrupted by an upstream stream reset.
+  # Resume the same Codex thread instead of discarding its inspected context.
+  max_retries: ${VIDEO_RSI_CODEX_MAX_RETRIES:3}
+  run_timeout_sec: ${VIDEO_RSI_CODEX_RUN_TIMEOUT_SEC:600}
   codex:
     binary: ${CODEX_BIN:codex}
     model: ${CODEX_MODEL:}

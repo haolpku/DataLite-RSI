@@ -41,6 +41,9 @@ agent:
     api_key_env: ${VIDEO_RSI_CODEX_API_KEY:}
     base_url: ${VIDEO_RSI_CODEX_BASE_URL:}
     model_provider: ${VIDEO_RSI_CODEX_MODEL_PROVIDER:}
+    # Set only in a private run on hosts where user namespaces are unavailable.
+    # The framework otherwise retains the default workspace-write sandbox.
+    bypass_sandbox: ${VIDEO_RSI_CODEX_BYPASS_SANDBOX:false}
 
 loop:
   max_iterations: ${VIDEO_RSI_MAX_ITERATIONS:5}

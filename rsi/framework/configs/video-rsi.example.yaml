@@ -35,6 +35,12 @@ agent:
     binary: ${CODEX_BIN:codex}
     model: ${CODEX_MODEL:}
     effort: ${CODEX_EFFORT:high}
+    # Optional OpenAI-compatible endpoint for the authoring agent.  Keep the
+    # credential and endpoint in the private runtime environment rather than
+    # in a task file or repository checkout.
+    api_key_env: ${VIDEO_RSI_CODEX_API_KEY:}
+    base_url: ${VIDEO_RSI_CODEX_BASE_URL:}
+    model_provider: ${VIDEO_RSI_CODEX_MODEL_PROVIDER:}
 
 loop:
   max_iterations: ${VIDEO_RSI_MAX_ITERATIONS:5}

@@ -5,8 +5,10 @@ the CLI is `python -m rsi.framework --task <task.json>`.
 It runs the fixed-corpus incumbent/challenger evolution loop for text,
 image, video, or mixed structured records. Every active task declares
 `method_id: "dataflow-evolver"`; modality
-never selects a different loop. Policy and Video source trees remain in
-`rsi/methods/` as research references, outside the active runtime import path.
+never selects a different loop. Policy source trees remain in `rsi/methods/` as
+research references, outside the active runtime import path. VideoRSI is
+integrated through a router skill and feedback adapter; its old fixed v0 graph
+remains reference-only.
 
 ```text
 rsi/framework/
@@ -76,8 +78,9 @@ pass a `candidate_evaluator` through `resources`; its `review(dataset_path,
 task, **kwargs)` returns `CandidateFeedback(score, passed, domain_feedback)`.
 The framework owns comparison of `(passed, score)`, checkpoint, provenance,
 execution observation, and bounded repair. The evaluator owns visual evidence
-and domain gates. Policy IF/VC/VQ and VideoRSI frozen-target/frontier rules have
-not yet been integrated into this loop.
+and domain gates. VideoRSI supplies a route-aware feedback adapter; callers
+inject its frozen-target or verifier signal provider for a concrete campaign.
+Policy IF/VC/VQ remains source-only.
 
 Provider authoring skills are stored in `skills/providers/` and copied into a
 run-local provider-native path only for PipelineAgent. PipelineDiagnosticAgent
@@ -86,6 +89,13 @@ discovery, and read-only behavior. It loads no project skill; the run manifest
 records the diagnostic prompt fingerprint when diagnosis is enabled. Its artifact
 does not enter ReviewAgent score or best-so-far acceptance. Provider SDKs are
 loaded only when their provider runs.
+
+`tasks/video-rsi-router.json` activates the VideoRSI router contract in the
+provider-native authoring skill. It replaces a single mandatory v0 graph with
+evidence-aware route-specific pipelines generated per iteration. The caller
+injects a VideoRSI candidate evaluator through
+`run(..., resources={"candidate_evaluator": ...})`; its route-level feedback
+and acceptance signals remain distinct from the generic text ReviewAgent.
 `requirements/core.txt` covers config, the step-based runtime (pandas drives
 storage type semantics) and offline evaluation imports;
 `requirements/live-review.txt` adds the Review/embedding API clients, and

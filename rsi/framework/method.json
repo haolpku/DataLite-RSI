@@ -18,6 +18,6 @@
   "human_intervention": "none",
   "license": "Apache-2.0",
   "unified_entrypoint": "rsi.framework.run",
-  "migration_status": "The evolution controller, review and diagnostic agents, execution wrapper, provider runtimes, configuration and skills live under rsi/framework. Generated operators use the framework's operator, pipeline and storage contracts. Text review is available; image/video/mixed tasks require a task-owned evaluator. Policy and Video domain algorithms remain source-only and are not yet integrated.",
+  "migration_status": "The evolution controller, review and diagnostic agents, execution wrapper, provider runtimes, configuration and skills live under rsi/framework. Generated operators use the framework's operator, pipeline and storage contracts. Text review is available; image/video/mixed tasks require a task-owned evaluator. VideoRSI is integrated as a route-aware authoring-skill profile and feedback adapter; its older fixed v0 graph remains source-only as a reference. Policy domain algorithms remain source-only.",
   "source_ref": "Derived from the DataFlow-Evolver research prototype at commit ba6e489524bbf5835a06cccad555c5182e4ce4f4, whose source is retained read-only under rsi/methods/dataflow-evolver/."
 }

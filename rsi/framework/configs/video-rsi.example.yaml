@@ -1,0 +1,50 @@
+# Private runtime template for a VideoRSI router task.
+# Supply VIDEO_RSI_INPUT_PATH, pipeline endpoint settings, credentials, and a
+# task-owned candidate_evaluator via rsi.framework.run(resources=...).
+project:
+  workspace_dir: ${VIDEO_RSI_WORKSPACE:./workspace}
+  input_path: ${VIDEO_RSI_INPUT_PATH:}
+  run_name: ${VIDEO_RSI_RUN_NAME:run}
+
+task:
+  target_schema:
+    video: object
+    question: str
+    choices: list
+    answer: str
+    evidence: list
+  quality_criteria:
+    - Every generated question cites source-video evidence intervals.
+    - Question options must contain one unambiguous answer and three valid negatives.
+    - Keep text-only solvability and frozen-target difficulty as feedback signals.
+    - Preserve rejected and reserve candidates with rejection provenance.
+
+llm:
+  api:
+    api_url: ${VIDEO_RSI_PIPELINE_API_URL:}
+    model_name: ${VIDEO_RSI_PIPELINE_MODEL:}
+    api_key: ${VIDEO_RSI_PIPELINE_API_KEY:}
+    max_workers: ${VIDEO_RSI_MAX_WORKERS:16}
+
+agent:
+  backend: ${AGENT_BACKEND:codex}
+  pipeline_filename: pipeline.py
+  max_retries: 1
+  run_timeout_sec: 900
+  codex:
+    binary: ${CODEX_BIN:codex}
+    model: ${CODEX_MODEL:}
+    effort: ${CODEX_EFFORT:high}
+
+loop:
+  max_iterations: ${VIDEO_RSI_MAX_ITERATIONS:5}
+  compile_timeout_sec: 120
+  execution_timeout_sec: 900
+  execution_repairs: 1
+  python_exe: ${DF_AGENT_PYTHON:}
+
+pipeline_diagnostic:
+  enabled: true
+
+downstream_eval:
+  enabled: false

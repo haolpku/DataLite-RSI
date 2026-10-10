@@ -63,3 +63,43 @@ def test_video_rsi_feedback_uses_enriched_duplicate_signal_for_frontier_count(tm
     assert feedback.domain_feedback["accepted_candidates"] == 1
     assert feedback.domain_feedback["accepted_frontier_novel_count"] == 0
     assert feedback.score == 0.0
+
+
+def test_video_rsi_feedback_admits_hard_valid_unlabelled_candidate(tmp_path):
+    """Absent soft signals must not silently turn a valid probe into zero."""
+    path = tmp_path / "candidate.jsonl"
+    row = {
+        "question": "What is picked up?",
+        "choices": ["A cup", "A book", "A hat", "A key"],
+        "answer": "A cup",
+        "selected_evidence": [{"id": "e1", "start_sec": 1, "end_sec": 3}],
+        "producer_route": "caption_entity",
+    }
+    path.write_text(json.dumps(row) + "\n", encoding="utf-8")
+
+    feedback = VideoRSICandidateEvaluator().review(str(path), TaskSpec("video", {}, []))
+
+    assert feedback.domain_feedback["accepted_candidates"] == 1
+    assert feedback.domain_feedback["accepted_frontier_novel_count"] == 1
+    assert feedback.domain_feedback["text_only_outcomes"] == {"unknown": 1}
+    assert feedback.domain_feedback["difficulty_labels"] == {"unknown": 1}
+    assert feedback.score == 1.0
+
+
+def test_video_rsi_feedback_respects_explicit_reserve_status(tmp_path):
+    path = tmp_path / "candidate.jsonl"
+    row = {
+        "question": "What is picked up?",
+        "choices": ["A cup", "A book", "A hat", "A key"],
+        "answer": "A cup",
+        "selected_evidence": [{"id": "e1", "start_sec": 1, "end_sec": 3}],
+        "producer_route": "caption_entity",
+        "pool_status": "reserve",
+    }
+    path.write_text(json.dumps(row) + "\n", encoding="utf-8")
+
+    feedback = VideoRSICandidateEvaluator().review(str(path), TaskSpec("video", {}, []))
+
+    assert feedback.domain_feedback["accepted_candidates"] == 0
+    assert feedback.domain_feedback["route_metrics"]["caption_entity"]["reserve"] == 1
+    assert feedback.score == 0.0

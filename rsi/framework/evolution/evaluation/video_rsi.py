@@ -44,6 +44,27 @@ def _hard_invalid_reason(row: Mapping[str, Any]) -> str | None:
     return None
 
 
+def _pool_disposition(row: Mapping[str, Any]) -> str:
+    """Return the effective pool disposition for a structurally valid row.
+
+    Early route-specific pipelines frequently omit ``pool_status`` while they
+    are still being authored.  Treating that omission as a rejection made a
+    fully hard-valid probe score zero, and therefore taught the controller
+    nothing.  The VideoRSI policy is that text-only and difficulty signals are
+    diagnostic, not hard gates: an otherwise valid, non-duplicate candidate is
+    admissible unless the pipeline *explicitly* places it in reserve/reject.
+    """
+    explicit = _normalise(row.get("pool_status") or row.get("status"))
+    if explicit:
+        return explicit
+    duplicate = _normalise(row.get("duplicate_outcome"))
+    if duplicate in {"duplicate", "near_duplicate"}:
+        return "rejected"
+    if row.get("rejection_reason"):
+        return "rejected"
+    return "accepted"
+
+
 class VideoRSICandidateEvaluator:
     """Aggregate VideoRSI hard validity and diagnostic feedback.
 
@@ -98,7 +119,7 @@ class VideoRSICandidateEvaluator:
                 rejections[str(enriched.get("rejection_reason") or invalid)] += 1
                 continue
             stats["hard_valid"] += 1
-            disposition = str(enriched.get("pool_status") or enriched.get("status") or "candidate")
+            disposition = _pool_disposition(enriched)
             if disposition == "accepted":
                 stats["accepted"] += 1
             elif disposition in {"reserve", "replayable"}:
@@ -122,7 +143,7 @@ class VideoRSICandidateEvaluator:
             1
             for row in reviewed_rows
             if _hard_invalid_reason(row) is None
-            and str(row.get("pool_status") or row.get("status") or "candidate") == "accepted"
+            and _pool_disposition(row) == "accepted"
             and str(row.get("duplicate_outcome") or "unique") in {"unique", "novel"}
         )
         score = round(accepted_frontier_novel / max(1, total), 6)

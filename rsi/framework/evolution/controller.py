@@ -85,6 +85,7 @@ class ReviewOnlyLoop:
         run_name: str,
         max_iterations: int,
         execution_repairs: int = 1,
+        accept_equal_score: bool = False,
         downstream_evaluator: DownstreamEvaluatorABC | None = None,
         downstream_attribution_agent: DownstreamAttributionAgent | None = None,
         downstream_interval: int = 2,
@@ -102,6 +103,11 @@ class ReviewOnlyLoop:
         self.run_name = _safe_run_name(run_name)
         self.max_iterations = max_iterations
         self.execution_repairs = max(0, execution_repairs)
+        # Some task profiles deliberately evolve a lineage under a fixed probe:
+        # a tied, passing candidate is still useful because its code becomes the
+        # parent for the next authoring turn.  Default best-so-far behaviour is
+        # retained for every other task.
+        self.accept_equal_score = bool(accept_equal_score)
         if downstream_evaluator is not None and downstream_interval < 1:
             raise ValueError("downstream_eval.interval must be at least 1")
         self.downstream_evaluator = downstream_evaluator
@@ -168,7 +174,7 @@ class ReviewOnlyLoop:
             candidate.parent_iteration = (
                 parent_incumbent.iteration if parent_incumbent is not None else None
             )
-            if _is_better(candidate, incumbent):
+            if _is_better(candidate, incumbent, accept_equal_score=self.accept_equal_score):
                 candidate.accepted_as_incumbent = True
                 incumbent = candidate
                 logger.info(
@@ -548,14 +554,19 @@ def select_best(candidates: list[Candidate]) -> Candidate | None:
     return max(reviewed, key=lambda c: (bool(c.review and c.review.passed), c.score))
 
 
-def _is_better(challenger: Candidate, incumbent: Candidate | None) -> bool:
+def _is_better(
+    challenger: Candidate,
+    incumbent: Candidate | None,
+    *,
+    accept_equal_score: bool = False,
+) -> bool:
     if challenger.review is None:
         return False
     if incumbent is None or incumbent.review is None:
         return True
     challenger_rank = (challenger.review.passed, challenger.score)
     incumbent_rank = (incumbent.review.passed, incumbent.score)
-    return challenger_rank > incumbent_rank
+    return challenger_rank >= incumbent_rank if accept_equal_score else challenger_rank > incumbent_rank
 
 
 def build_loop(
@@ -703,6 +714,7 @@ def build_loop(
         run_name=str(project.get("run_name", "run") or "run"),
         max_iterations=int(loop_cfg.get("max_iterations", 5)),
         execution_repairs=int(loop_cfg.get("execution_repairs", 1)),
+        accept_equal_score=_as_bool(loop_cfg.get("accept_equal_score", False)),
         downstream_evaluator=downstream_evaluator,
         downstream_attribution_agent=downstream_attribution_agent,
         downstream_interval=downstream_interval,

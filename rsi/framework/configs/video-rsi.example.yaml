@@ -49,6 +49,9 @@ agent:
 
 loop:
   max_iterations: ${VIDEO_RSI_MAX_ITERATIONS:5}
+  # A passing tie stays in the VideoRSI lineage so the next turn can improve
+  # the most recently authored route-specific pipeline.
+  accept_equal_score: true
   compile_timeout_sec: 120
   execution_timeout_sec: 900
   execution_repairs: 1

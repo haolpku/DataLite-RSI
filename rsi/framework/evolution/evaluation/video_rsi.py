@@ -144,7 +144,8 @@ class VideoRSICandidateEvaluator:
             for row in reviewed_rows
             if _hard_invalid_reason(row) is None
             and _pool_disposition(row) == "accepted"
-            and str(row.get("duplicate_outcome") or "unique") in {"unique", "novel"}
+            and _normalise(row.get("duplicate_outcome") or "unique")
+            in {"unique", "novel", "unique_within_source"}
         )
         score = round(accepted_frontier_novel / max(1, total), 6)
         passed = valid > 0

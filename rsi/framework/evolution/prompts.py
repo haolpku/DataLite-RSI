@@ -419,15 +419,11 @@ def _parent_block(
 
 def _parent_quality_block(review: ReviewResult, task: TaskSpec) -> str:
     criteria_feedback = review.domain_feedback if isinstance(review.domain_feedback, dict) else {}
-    if (
-        task.evaluator_kind == "review_agent"
-        and criteria_feedback.get("review_mode") == "criteria"
-    ):
+    if criteria_feedback.get("review_mode") == "criteria":
         lines = [
             "【当前最佳 incumbent 的质量标准评估反馈——本轮必须直接回应】",
             f"按质量标准计算的满足比例：{float(criteria_feedback.get('criteria_met_rate', review.review_score)):.3f}；"
             f"评审{'通过' if review.passed else '未通过'}",
-            "当前评审不使用固定四维分数；请逐条回应 task.quality_criteria 的证据和建议。",
         ]
         assessments = criteria_feedback.get("criteria_assessments", [])
         if isinstance(assessments, list):

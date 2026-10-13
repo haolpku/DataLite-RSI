@@ -191,6 +191,11 @@ def _build_options(
     thinking = {"type": "adaptive"} if thinking_mode == "adaptive" else None
     claude_cfg = backend_config(agent_cfg, "claude")
     permission_mode = claude_cfg.get("permission_mode", "bypassPermissions")
+    # A settings file's env block outranks the process environment, so a task
+    # sharing a host with another user's ~/.claude/settings.json cannot reach
+    # its own gateway through env vars alone. An explicit settings path wins.
+    # Absent -> None -> the SDK behaves exactly as before.
+    settings_path = str(claude_cfg.get("settings", "") or "").strip() or None
     if bool(agent_cfg.get("read_only", False)):
         permission_mode = "plan"
     env = _agent_env(agent_cfg, "claude")
@@ -207,6 +212,7 @@ def _build_options(
         tools={"type": "preset", "preset": "claude_code"},
         system_prompt={"type": "preset", "preset": "claude_code", "append": append_text},
         permission_mode=permission_mode,
+        settings=settings_path,
         setting_sources=(
             list(agent_cfg.get("setting_sources", ["project"]))
             if enable_project_skills

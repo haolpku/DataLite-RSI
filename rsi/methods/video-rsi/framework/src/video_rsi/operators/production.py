@@ -593,7 +593,7 @@ class FrozenTargetFrontierFilterOperator(Operator):
         self,
         backend: FrozenTargetBackend,
         trials: int = 4,
-        target_model_name: str = "qwen3-vl-8b-instruct",
+        target_model_name: str = "configured-frozen-target",
     ) -> None:
         if trials < 1:
             raise ValueError("trials must be positive")
@@ -604,7 +604,7 @@ class FrozenTargetFrontierFilterOperator(Operator):
     def config(self) -> dict[str, Any]:
         return {
             "backend": self.backend.name,
-            "target_model": self.target_model_name,
+            "evaluation_model": self.target_model_name,
             "trials": self.trials,
             "frozen": True,
         }

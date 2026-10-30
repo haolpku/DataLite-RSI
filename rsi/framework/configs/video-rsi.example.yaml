@@ -16,7 +16,9 @@ task:
   quality_criteria:
     - Every generated question cites source-video evidence intervals.
     - Question options must contain one unambiguous answer and three valid negatives.
-    - Keep text-only solvability and frozen-target difficulty as feedback signals.
+    - Label visual grounding, caption/subtitle shortcut risk, distractor quality, and training value for every hard-valid candidate.
+    - Use task lenses as candidate generators rather than fixed per-video quotas; limit correlated same-video variants in the training pool.
+    - Keep text-only solvability and frozen-target difficulty as calibrated feedback signals, not brittle binary gates.
     - Preserve rejected and reserve candidates with rejection provenance.
 
 llm:

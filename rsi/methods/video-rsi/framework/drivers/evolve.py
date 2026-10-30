@@ -27,6 +27,7 @@ if str(SOURCE_FOR_CONTROLLER) not in sys.path:
     sys.path.insert(0, str(SOURCE_FOR_CONTROLLER))
 
 from video_rsi.iteration import IterationConfig, RSIIterationController  # noqa: E402
+from video_rsi.model_policy import model_policy_for_evaluation_model  # noqa: E402
 from evaluation import EvaluationPolicy, evaluate_run  # noqa: E402
 
 
@@ -223,7 +224,8 @@ def _run_probe(source_root: Path, args: argparse.Namespace, version: str, root: 
         "--run-id", run_id,
         "--limit", str(args.limit), "--max-per-task", str(args.max_per_task),
         "--frontier-trials", str(args.frontier_trials),
-        "--frozen-target-model", args.frozen_target_model,
+        "--evaluation-model", args.frozen_target_model,
+        "--model-role", args.model_role,
         # Candidate probes are deliberately local-only.  This keeps RSI
         # iteration from repeatedly consuming the expensive remote chat API;
         # the local vLLM endpoint is still exercised with real probe videos.
@@ -237,6 +239,14 @@ def _run_probe(source_root: Path, args: argparse.Namespace, version: str, root: 
         command.extend(["--config-path", str(args.config_path)])
     env = dict(os.environ)
     env["RSI_SOURCE_ROOT"] = str(source_root)
+    # ``run_experiment.py`` imports ``video_rsi`` before it can honour
+    # RSI_SOURCE_ROOT and re-exec itself.  Candidate probes therefore need
+    # their versioned source tree on PYTHONPATH from process start; otherwise
+    # every isolated evolution workspace fails at module import time.
+    existing_pythonpath = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = str(source_root) + (
+        os.pathsep + existing_pythonpath if existing_pythonpath else ""
+    )
     completed = subprocess.run(command, cwd=str(HERE), env=env, text=True,
                                capture_output=True, check=False)
     log_root = root / "iteration_rounds" / f"{version}_probe"
@@ -246,12 +256,14 @@ def _run_probe(source_root: Path, args: argparse.Namespace, version: str, root: 
     if completed.returncode != 0:
         raise RuntimeError(f"probe failed with returncode={completed.returncode}")
     run_dir = root / "versions" / version / "outputs" / run_id
-    result = evaluate_run(run_dir, EvaluationPolicy(args.frozen_target_model))
+    result = evaluate_run(run_dir, EvaluationPolicy(args.frozen_target_model, args.model_role))
     result["raw_run_summary"] = json.loads((run_dir / "run_summary.json").read_text(encoding="utf-8"))
     return result
 
 
-def _load_completed_probe(root: Path, version: str, frozen_target_model: str) -> dict:
+def _load_completed_probe(
+    root: Path, version: str, evaluation_model: str, model_role: str
+) -> dict:
     """Load the newest completed fixed probe when resuming an evolution run."""
     outputs = root / "versions" / version / "outputs"
     candidates = [
@@ -261,7 +273,7 @@ def _load_completed_probe(root: Path, version: str, frozen_target_model: str) ->
     if not candidates:
         raise RuntimeError(f"no completed probe found for resume version {version}")
     run_dir = max(candidates, key=lambda path: path.stat().st_mtime)
-    result = evaluate_run(run_dir, EvaluationPolicy(frozen_target_model))
+    result = evaluate_run(run_dir, EvaluationPolicy(evaluation_model, model_role))
     result["raw_run_summary"] = json.loads(
         (run_dir / "run_summary.json").read_text(encoding="utf-8")
     )
@@ -310,7 +322,16 @@ def main() -> None:
     parser.add_argument("--max-per-task", type=int, default=1,
                         help="Maximum one candidate per task type and video by default.")
     parser.add_argument("--frontier-trials", type=int, default=4)
-    parser.add_argument("--frozen-target-model", default="qwen3-vl-8b-instruct")
+    parser.add_argument(
+        "--evaluation-model", "--frozen-target-model",
+        dest="frozen_target_model",
+        default=os.environ.get("RSI_EVALUATION_MODEL") or os.environ.get("RSI_FROZEN_TARGET_MODEL"),
+        help="Vision evaluator model ID; use reference on CPU/no-GPU setups or for general APIs. Target requires the exact downstream training model/checkpoint.",
+    )
+    parser.add_argument(
+        "--model-role", choices=("target", "reference"),
+        default=os.environ.get("RSI_MODEL_ROLE", "reference"),
+    )
     parser.add_argument("--allow-text-frozen-fallback", action="store_true")
     parser.add_argument("--config-path", type=Path)
     parser.add_argument("--coding-model", default="gpt-5.6-sol")
@@ -324,6 +345,9 @@ def main() -> None:
         help="Disable structural promotion when baseline and candidate both have zero primary samples.",
     )
     args = parser.parse_args()
+
+    if not args.frozen_target_model:
+        parser.error("set --evaluation-model or RSI_EVALUATION_MODEL; use role=target only for the intended downstream training model")
 
     root = args.experiment_root.resolve()
     root.mkdir(parents=True, exist_ok=True)
@@ -342,7 +366,9 @@ def main() -> None:
         active_tree = root / "iteration_rounds" / f"round_{last_index:03d}" / "candidate_workspace"
         if not (active_tree / "src").exists():
             raise RuntimeError(f"candidate workspace missing for {active_version}: {active_tree}")
-        baseline = _load_completed_probe(root, active_version, args.frozen_target_model)
+        baseline = _load_completed_probe(
+            root, active_version, args.frozen_target_model, args.model_role
+        )
         start_index = last_index + 1
         _write_state(
             root, phase="resumed", version=active_version,
@@ -371,6 +397,9 @@ def main() -> None:
         controller = RSIIterationController(IterationConfig(
             workspace=candidate_tree, coding_model=args.coding_model,
             reasoning_effort=args.reasoning_effort, max_rounds=1,
+            model_policy=model_policy_for_evaluation_model(
+                args.frozen_target_model, model_role=args.model_role
+            ),
             # Shared servers disallow unprivileged bwrap namespaces.  Use the
             # already-approved full-access mode for the isolated candidate
             # workspace; otherwise every proposal can be lost to infrastructure

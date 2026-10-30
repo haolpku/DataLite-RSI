@@ -4,9 +4,18 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from video_rsi.iteration import CodexCLI, IterationConfig, RSIIterationController
+from video_rsi.model_policy import model_policy_for_frozen_target
 
 
 class IterationTests(unittest.TestCase):
+    def test_evaluation_model_is_runtime_configured_and_fingerprinted(self):
+        remote_cpu = model_policy_for_frozen_target("vendor/vision-small")
+        another = model_policy_for_frozen_target("another-vlm")
+        target = next(item for item in remote_cpu.assignments if item.role == "evaluation_model")
+
+        self.assertEqual("vendor/vision-small", target.model)
+        self.assertNotEqual(remote_cpu.fingerprint, another.fingerprint)
+
     def test_acceptance_uses_single_frontier_novel_count(self):
         with tempfile.TemporaryDirectory() as tmp:
             controller = RSIIterationController(IterationConfig(Path(tmp)))

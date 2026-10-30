@@ -33,7 +33,7 @@ def build_task_centric_rsi_pipeline(
     max_per_task: int = 1,
     frontier_trials: int = 4,
     candidate_variants: int = 1,
-    target_model_name: str = "qwen3-vl-8b-instruct",
+    target_model_name: str = "configured-frozen-target",
 ) -> Pipeline:
     """Build the deliberately small direct-evidence v0 baseline.
 

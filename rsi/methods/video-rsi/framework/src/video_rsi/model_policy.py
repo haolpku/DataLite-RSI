@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from typing import Any
 
 
@@ -82,19 +82,47 @@ V0_MODEL_POLICY = ModelPolicy(
         ),
         ModelAssignment(
             "deduplication",
-            "qwen3-embedding-8b",
-            "local",
+            "configured-embedding-backend",
+            "runtime-configured",
             "text",
             True,
-            "Embedding plus deterministic similarity policy; no generative judge required.",
+            "Optional embedding service plus deterministic similarity policy; CPU-only lexical dedup remains available.",
         ),
         ModelAssignment(
-            "frozen_target",
-            "qwen3-vl-8b-instruct",
-            "local",
+            "evaluation_model",
+            "configured-frozen-target",
+            "runtime-configured",
             "video-text",
             True,
-            "Four trials; 0/4, 4/4 and mixed outcomes are retained with difficulty labels.",
+            "Selected per campaign as either target or reference; keep fixed during the campaign. Four trials; 0/4, 4/4 and mixed outcomes are retained with difficulty labels.",
         ),
     ),
 )
+
+
+def model_policy_for_evaluation_model(
+    model_name: str, *, model_role: str = "reference"
+) -> ModelPolicy:
+    """Bind the selected target/reference VLM into the campaign policy hash."""
+    normalized = model_name.strip()
+    if not normalized:
+        raise ValueError("evaluation model name must not be empty")
+    if model_role not in {"target", "reference"}:
+        raise ValueError("model_role must be 'target' or 'reference'")
+    assignments = tuple(
+        replace(
+            item,
+            model=normalized,
+            notes=(
+                f"Campaign role={model_role}; selected model and endpoint must remain fixed. "
+                "Use target only for the actual downstream training model; otherwise this is a reference."
+            ),
+        )
+        if item.role == "evaluation_model" else item
+        for item in V0_MODEL_POLICY.assignments
+    )
+    return ModelPolicy(V0_MODEL_POLICY.version, assignments)
+
+
+# Backward-compatible import for older experiment scripts.
+model_policy_for_frozen_target = model_policy_for_evaluation_model

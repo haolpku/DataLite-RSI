@@ -80,7 +80,18 @@ The framework owns comparison of `(passed, score)`, checkpoint, provenance,
 execution observation, and bounded repair. The evaluator owns visual evidence
 and domain gates. VideoRSI supplies a route-aware feedback adapter; callers
 inject its frozen-target or verifier signal provider for a concrete campaign.
-Policy IF/VC/VQ remains source-only.
+The evaluator does not load a model or require CUDA. Its optional signal
+provider can call a remote API, a model served on another machine, a CPU-only
+service, or an in-process heuristic. If no independent provider is configured,
+model-dependent row labels are reported as unverified and only deterministic
+checks are available for promotion feedback. If a candidate supplies quality
+claims without an independent audit, those claims do not earn promotion credit;
+configure a remote/CPU/GPU signal provider or leave the labels unknown. Choose
+and freeze any compatible vision model per campaign; Qwen is not a framework
+dependency. Mark an injected model `target` only when it is the actual
+downstream model being optimized. A general-purpose remote API is a `reference`;
+its judgments must not be reported as target-model gains. Policy IF/VC/VQ remains
+source-only.
 
 Provider authoring skills are stored in `skills/providers/` and copied into a
 run-local provider-native path only for PipelineAgent. PipelineDiagnosticAgent

@@ -8,7 +8,7 @@ diagnostics; they are never collapsed into a weighted score.
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -16,12 +16,24 @@ from typing import Any
 @dataclass(frozen=True)
 class EvaluationPolicy:
     version: str = "rsi-eval-v1"
-    frozen_target_model: str = "qwen3-vl-8b-instruct"
+    frozen_target_model: str | None = None
+    model_role: str = "target"
     require_no_text_fallback: bool = True
     require_zero_failures: bool = True
 
     def as_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        value = {
+            "version": self.version,
+            "evaluation_model": self.frozen_target_model,
+            "model_role": self.model_role,
+            "require_no_text_fallback": self.require_no_text_fallback,
+            "require_zero_failures": self.require_zero_failures,
+        }
+        # Keep legacy manifests readable, but never label a reference model as
+        # a frozen training target in newly written policy metadata.
+        if self.model_role == "target":
+            value["frozen_target_model"] = self.frozen_target_model
+        return value
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -46,10 +58,16 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
 def evaluate_run(run_dir: Path, policy: EvaluationPolicy | None = None) -> dict[str, Any]:
     """Evaluate an already completed run without calling any model."""
 
-    policy = policy or EvaluationPolicy()
     run_dir = run_dir.resolve()
     summary = _read_json(run_dir / "run_summary.json")
     manifest = _read_json(run_dir / "run_manifest.json")
+    if policy is None:
+        stored_policy = manifest.get("evaluation_policy") or {}
+        stored_model = stored_policy.get("evaluation_model") or stored_policy.get("frozen_target_model")
+        stored_role = stored_policy.get("model_role")
+        if stored_role is None:
+            stored_role = "target" if stored_policy.get("frozen_target_model") else "reference"
+        policy = EvaluationPolicy(frozen_target_model=stored_model, model_role=stored_role)
     errors = _read_jsonl(run_dir / "errors.jsonl")
     pool_rows = _read_jsonl(run_dir / "high_quality_pool.jsonl")
     results = [
@@ -88,7 +106,8 @@ def evaluate_run(run_dir: Path, policy: EvaluationPolicy | None = None) -> dict[
     configured_target = ""
     for operator in operators:
         if operator.get("name") == "frozen_target_frontier_filter":
-            configured_target = str((operator.get("config") or {}).get("target_model") or "")
+            config = operator.get("config") or {}
+            configured_target = str(config.get("evaluation_model") or config.get("target_model") or "")
             break
     if configured_target:
         target_models.add(configured_target)
@@ -99,9 +118,16 @@ def evaluate_run(run_dir: Path, policy: EvaluationPolicy | None = None) -> dict[
         difficulty_counts["too_easy"] / difficulty_total
         if difficulty_total else None
     )
+    observed_target_models = target_models | ({configured_target} if configured_target else set())
+    expected_target = policy.frozen_target_model
+    evaluation_model_fixed = (
+        expected_target in observed_target_models
+        and observed_target_models == {expected_target}
+        if expected_target
+        else len(observed_target_models) == 1
+    )
     gates = {
-        "target_model_frozen": bool(configured_target == policy.frozen_target_model)
-        if configured_target else policy.frozen_target_model in target_models,
+        "evaluation_model_fixed": evaluation_model_fixed,
         "no_text_fallback": not fallback_used if policy.require_no_text_fallback else True,
         "no_run_failures": not errors if policy.require_zero_failures else True,
         "lineage_complete": all(
@@ -109,9 +135,13 @@ def evaluate_run(run_dir: Path, policy: EvaluationPolicy | None = None) -> dict[
             for row in pool_rows
         ),
     }
+    if policy.model_role == "target":
+        gates["target_model_frozen"] = evaluation_model_fixed
     return {
         "schema_version": "video-rsi-evaluation-v1",
         "policy": policy.as_dict(),
+        "evaluation_model_role": policy.model_role,
+        "evaluation_model_name": expected_target or (next(iter(observed_target_models)) if len(observed_target_models) == 1 else None),
         "run_id": summary.get("run_id") or manifest.get("run_id") or run_dir.name,
         "version": summary.get("version") or manifest.get("version"),
         "primary_metric": "accepted_frontier_novel_count",

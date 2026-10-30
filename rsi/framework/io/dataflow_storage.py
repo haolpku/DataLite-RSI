@@ -184,7 +184,19 @@ class FileStorage(DataFlowStorage):
             else:
                 raise ValueError(f"Unsupported file type: {file_type}")
         except Exception as e:
-            raise ValueError(f"Failed to load {file_type} file: {str(e)}")
+            message = str(e)
+            # Pandas 3.0.6's oversized-integer JSONL parser may append a byte
+            # offset ("at position N") depending on which parser path it
+            # takes.  The replaced open-dataflow runtime exposes the stable
+            # error text without that incidental offset; keep the public
+            # storage contract deterministic across the two paths.
+            if (
+                file_type == "jsonl"
+                and message.startswith("Value is too big! at position ")
+                and message.rsplit(" ", 1)[-1].isdigit()
+            ):
+                message = "Value is too big!"
+            raise ValueError(f"Failed to load {file_type} file: {message}")
 
     def _convert_output(self, dataframe: pd.DataFrame, output_type: str) -> Any:
         """Convert the frame to the requested output type.

@@ -1,33 +1,8 @@
-"""Review-only scorer with sample, full-file, and optional dataset-distribution evidence.
+"""Criteria review with sampled evidence and deterministic full-file checks.
 
-The default ``four_dimensions`` mode keeps the general text-task rubric. A
-task can select ``criteria`` mode when its domain has a more useful rubric in
-``task.quality_criteria``. In that mode the LLM returns evidence for every
-criterion, and the framework computes the proportion satisfied.
-
-The four sample-level review dimensions are combined into one comparable score:
-- 四维 LLM-judge（各 0-1）：correctness / relevance / difficulty / schema。
-- 固定权重复合分：``llm_composite = 0.40·correctness + 0.25·relevance
-  + 0.15·difficulty + 0.20·schema``。
-- embedding quality（启用时）由已配置的归一化 DAS、normalized Vendi 和 NN-cosine p95 构成；
-  占比由 ``embedding_quality.review_score_weight`` 配置，剩余权重属于 sample-level 质量分。sample-level 分在
-  ``four_dimensions`` 模式是四维复合分，在 ``criteria`` 模式是 quality criteria 满足比例。
-- 硬指标（扫全份文件，不花 LLM）：``dup_rate`` / ``null_rate`` / ``parse_valid_rate``
-  / ``contamination_rate``。四维模式会将其作为混合质量分的惩罚；criteria 模式将其
-  作为独立的确定性通过门槛并保留具体 issues。
-  其中 ``dup_rate`` 取「整记录哈希」与「训练字段级」两种口径的较大值——只看整记录会漏掉
-  同一道题配不同措辞 CoT 的情形（详见 ``_scan_validation_metrics``）；``contamination_rate``
-  是与 benchmark 测试集的 n-gram 重合率，超阈值直接判 ``passed=False``（见 core/decontamination.py）。
-- 抽样从「取前 N 行」改为**随机蓄水池采样**（一趟遍历、O(k) 内存、全份等概率）。
-- ``passed`` 同时要求 correctness / relevance / schema 达到各自阈值，用于剔除答案错误、
-  任务偏离或结构不合格的节点。
-- 可选 EmbeddingQualityEvaluator 固定采样候选集并计算 Vendi Score 与近邻 cosine 分布；
-  仅在配置高质量代理集时计算 DAS=-MMD。启用后，这些指标先合成为 embedding quality，
-  再按 ``embedding_quality.review_score_weight`` 与 sample-level 分合并；原始指标也会随
-  ReviewResult 回传 PipelineAgent。
-
-Optional decontamination references are used only for n-gram overlap detection and are
-never included in an Agent prompt.
+The LLM assesses every task quality criterion. Optional embedding quality
+can be blended into the score; full-file metrics remain independent evidence
+and pass gates. Benchmark reference data never enters an Agent prompt.
 """
 from __future__ import annotations
 
@@ -46,24 +21,12 @@ from rsi.framework.evolution.agents.base import AgentABC
 from rsi.framework.evolution.evaluation.embedding_quality import EmbeddingQualityEvaluator
 from rsi.framework.evolution.evaluation.decontamination import ContaminationIndex
 from rsi.framework.evolution.models import ReviewResult, TaskSpec
-from rsi.framework.evolution.prompts import (
-    FAILURE_SIGNALS,
-    build_criteria_review_prompt,
-    build_review_prompt,
-)
+from rsi.framework.evolution.prompts import build_criteria_review_prompt
 from rsi.framework.evolution.telemetry.pipeline_usage import (
     write_combined_iteration_usage,
     write_pipeline_usage_summary,
     write_usage_payload,
 )
-
-# Review 复合分的固定权重。
-DEFAULT_REVIEW_WEIGHTS: dict[str, float] = {
-    "correctness": 0.40,
-    "relevance": 0.25,
-    "difficulty": 0.15,
-    "schema": 0.20,
-}
 
 DEFAULT_EMBEDDING_SCORE_WEIGHTS: dict[str, float] = {
     "das": 0.40,
@@ -78,11 +41,9 @@ class ReviewAgent(AgentABC):
     def __init__(
         self,
         serving,
-        four_dimension_thresholds: dict[str, float] | None = None,
         sampling_size: int = 80,
         sampling_seed: int | None = None,
         max_retries: int = 2,
-        four_dimension_weights: dict[str, float] | None = None,
         validation_enabled: bool = True,
         contamination: ContaminationIndex | None = None,
         max_null_rate: float = 0.5,
@@ -91,22 +52,14 @@ class ReviewAgent(AgentABC):
         embedding_review_score_weight: float | None = None,
         embedding_metric_weights: dict[str, float] | None = None,
         contamination_fields: list[str] | None = None,
-        mode: str = "four_dimensions",
         criteria_pass_rate: float = 0.6,
     ) -> None:
         super().__init__(serving, max_retries=max_retries)
-        if mode not in {"four_dimensions", "criteria"}:
-            raise ValueError("review.mode must be 'four_dimensions' or 'criteria'")
-        self.mode = mode
         self.criteria_pass_rate = _clip01(criteria_pass_rate)
-        self.four_dimension_thresholds = _normalize_four_dimension_thresholds(
-            four_dimension_thresholds
-        )
         self.sampling_size = int(sampling_size)
         if self.sampling_size < 1:
             raise ValueError("review.sampling.size 必须至少为 1")
         self.sampling_seed = sampling_seed
-        self.four_dimension_weights = _normalize_weights(four_dimension_weights)
         self.validation_enabled = bool(validation_enabled)
         self.max_null_rate = _clip01(max_null_rate)
         # 未配置基准参考集时是一个 disabled 的空索引，扫描恒返回干净——调用点无需分支。
@@ -131,55 +84,15 @@ class ReviewAgent(AgentABC):
         )
 
     def build_prompt(self, task: TaskSpec, samples_text: str) -> str:
-        if self.mode == "criteria":
-            return build_criteria_review_prompt(task, samples_text)
-        return build_review_prompt(task, samples_text)
+        return build_criteria_review_prompt(task, samples_text)
 
     def compute_composite(self, result: ReviewResult) -> float:
-        """Compute the LLM-derived score for the configured review mode."""
-        if self.mode == "criteria":
-            return _clip01(result.llm_composite)
-        w = self.four_dimension_weights
-        return (
-            w["correctness"] * result.correctness_score
-            + w["relevance"] * result.relevance_score
-            + w["difficulty"] * result.difficulty_score
-            + w["schema"] * result.schema_score
-        )
+        """The proportion of task criteria supported by sample evidence."""
+        return _clip01(result.llm_composite)
 
     def parse(self, raw: dict) -> ReviewResult:
         """Parse the LLM response before deterministic full-file checks."""
-        if self.mode == "criteria":
-            return self._parse_criteria(raw)
-        schema_score = _clip01(raw.get("schema_score", 0.0))
-        relevance_score = _clip01(raw.get("relevance_score", 0.0))
-        # 缺省回退保证部分返回不崩。
-        correctness_score = _clip01(raw.get("correctness_score", 0.0))
-        difficulty_score = _clip01(raw.get("difficulty_score", 0.0))
-        passed = (
-            correctness_score >= self.four_dimension_thresholds["correctness"]
-            and schema_score >= self.four_dimension_thresholds["schema"]
-            and relevance_score >= self.four_dimension_thresholds["relevance"]
-        )
-        # ANDES F1-F7 失败信号：只规整为合法编号并去重，**不并入 issues**。
-        # 两者是异质数据——issues 是针对本份数据的具体证据，信号是标准化标签。混进一个列表后，
-        # 每个消费点都得再把它们过滤出来（曾为此写了共享过滤函数 + 属性 + 四处调用）；
-        # 保持分离后，需要信号文本的渲染点自己查 FAILURE_SIGNALS 拼即可。
-        signals = _normalize_signals(raw.get("failure_signals", []))
-        issues = list(raw.get("issues", []))
-        result = ReviewResult(
-            schema_score=schema_score,
-            relevance_score=relevance_score,
-            passed=passed,
-            issues=issues,
-            correctness_score=correctness_score,
-            difficulty_score=difficulty_score,
-            failure_signals=signals,
-        )
-        result.llm_composite = self.compute_composite(result)
-        # 未叠加硬指标前，review_score 先等于复合分（review() 会用硬指标覆盖）。
-        self._update_review_score(result)
-        return result
+        return self._parse_criteria(raw)
 
     def _parse_criteria(self, raw: dict) -> ReviewResult:
         if not isinstance(raw, dict):
@@ -214,8 +127,6 @@ class ReviewAgent(AgentABC):
         # the proportion of covered criteria marked as met.
         score = sum(item["met"] for item in clean_assessments) / len(clean_assessments)
         result = ReviewResult(
-            schema_score=0.0,
-            relevance_score=0.0,
             passed=score >= self.criteria_pass_rate and not failures,
             issues=list(failures),
             llm_composite=score,
@@ -311,12 +222,10 @@ class ReviewAgent(AgentABC):
             if usage_root is not None
             else None
         )
-        if self.mode == "criteria" and not task.quality_criteria:
+        if not task.quality_criteria:
             result = ReviewResult(
-                0.0,
-                0.0,
-                False,
-                ["criteria review requires at least one task.quality_criteria entry"],
+                passed=False,
+                issues=["criteria review requires at least one task.quality_criteria entry"],
             )
             self._dump_evidence(evidence_path, phase, dataset_path, "", None, result)
             self._finalize_usage(usage_root, review_events, result)
@@ -324,7 +233,7 @@ class ReviewAgent(AgentABC):
 
         samples_text = _sample_jsonl(dataset_path, self.sampling_size, seed=self.sampling_seed)
         if not samples_text:
-            result = ReviewResult(0.0, 0.0, False, ["数据集为空或不可读"])
+            result = ReviewResult(passed=False, issues=["数据集为空或不可读"])
             self._dump_evidence(evidence_path, phase, dataset_path, "", None, result)
             self._finalize_usage(usage_root, review_events, result)
             return result
@@ -345,51 +254,33 @@ class ReviewAgent(AgentABC):
                     usage_root / "review_llm_token_usage.json",
                 )
         if raw is None:
-            result = ReviewResult(0.0, 0.0, False, ["评审 LLM 未返回有效 JSON"])
+            result = ReviewResult(passed=False, issues=["评审 LLM 未返回有效 JSON"])
         else:
             try:
                 result = self.parse(raw)
-                if self.mode == "criteria":
-                    expected = set(range(1, len(task.quality_criteria) + 1))
-                    actual = {
-                        item["criterion_index"]
-                        for item in result.domain_feedback["criteria_assessments"]
-                    }
-                    if actual != expected:
-                        result.passed = False
-                        result.issues.append(
-                            "评审 LLM 未逐条覆盖 task.quality_criteria"
-                        )
+                expected = set(range(1, len(task.quality_criteria) + 1))
+                actual = {
+                    item["criterion_index"]
+                    for item in result.domain_feedback["criteria_assessments"]
+                }
+                if actual != expected:
+                    result.passed = False
+                    result.issues.append("评审 LLM 未逐条覆盖 task.quality_criteria")
             except (TypeError, ValueError, KeyError) as exc:
                 result = ReviewResult(
-                    0.0, 0.0, False,
-                    [f"评审 LLM 返回的质量标准反馈无效：{exc}"],
+                    passed=False,
+                    issues=[f"评审 LLM 返回的质量标准反馈无效：{exc}"],
                 )
         if self.validation_enabled:
             self.apply_validation(result, dataset_path, task)
         self.apply_embedding_quality(result, dataset_path, parent_review)
-        if self.mode == "criteria":
-            self.logger.info(
-                "Review criteria：quality=%.3f | dup=%.2f null=%.2f parse=%.2f "
-                "contamination=%.2f | review_score=%.3f passed=%s",
-                result.llm_composite,
-                result.dup_rate,
-                result.null_rate,
-                result.parse_valid_rate,
-                result.contamination_rate,
-                result.review_score,
-                result.passed,
-            )
-        else:
-            self.logger.info(
-                "Review sample：corr=%.2f rel=%.2f diff=%.2f schema=%.2f "
-                "| dup=%.2f null=%.2f parse=%.2f | composite=%.3f review_score=%.3f passed=%s | signals=%s",
-                result.correctness_score, result.relevance_score, result.difficulty_score,
-                result.schema_score,
-                result.dup_rate, result.null_rate, result.parse_valid_rate,
-                result.llm_composite, result.review_score, result.passed,
-                ",".join(result.failure_signals) or "-",
-            )
+        self.logger.info(
+            "Review criteria：quality=%.3f | dup=%.2f null=%.2f parse=%.2f "
+            "contamination=%.2f | review_score=%.3f passed=%s",
+            result.llm_composite, result.dup_rate, result.null_rate,
+            result.parse_valid_rate, result.contamination_rate,
+            result.review_score, result.passed,
+        )
         dq = result.embedding_quality
         if dq.enabled:
             self.logger.info(
@@ -440,12 +331,7 @@ class ReviewAgent(AgentABC):
         dataset_path: str,
         parent_review: ReviewResult | None = None,
     ) -> ReviewResult:
-        """Run optional embedding evaluation and update the comparable score.
-
-        ``criteria`` replaces only the sample-level four-dimension rubric. It
-        still uses the same optional dataset-level embedding evidence and
-        configured ``embedding_review_score_weight`` as ``four_dimensions`` mode.
-        """
+        """Run optional embedding evaluation and update the criteria score."""
         if self.embedding_quality_evaluator is None:
             self._update_review_score(result)
             return result
@@ -474,13 +360,7 @@ class ReviewAgent(AgentABC):
         return result
 
     def _update_review_score(self, result: ReviewResult) -> None:
-        """Compute the comparable score for the selected review mode.
-
-        Criteria mode changes the sample-level component to the proportion of
-        satisfied task criteria. If embedding quality evaluation is enabled, that
-        component is blended with embedding quality using the same configured
-        weight as the default four-dimension mode.
-        """
+        """Blend criterion satisfaction and optional embedding quality."""
         embedding_score: float | None = None
         embedding_quality_enabled = self.embedding_quality_evaluator is not None
         embedding_review_score_weight = self.embedding_review_score_weight
@@ -512,12 +392,8 @@ class ReviewAgent(AgentABC):
             "hard_factor": hard_factor,
             "combined_before_hard_penalty": combined,
         }
-        # Criteria mode keeps deterministic full-file checks as gates/issues;
-        # its comparable score is the sample/embedding blend. The default
-        # four-dimension mode retains the historical hard-metric penalty.
-        result.review_score = _clip01(
-            combined if self.mode == "criteria" else combined * hard_factor
-        )
+        # Full-file checks remain separate gates/issues, not a score penalty.
+        result.review_score = _clip01(combined)
 
     def _compute_embedding_quality(self, result: ReviewResult) -> float | None:
         quality = result.embedding_quality
@@ -574,7 +450,7 @@ class ReviewAgent(AgentABC):
             "dataset_path": dataset_path,
             "sampling_size": self.sampling_size,
             "seed": self.sampling_seed,
-            "weights": self.four_dimension_weights,
+            "criteria_pass_rate": self.criteria_pass_rate,
             "samples_jsonl": samples_text,     # 抽样原文：LLM 实际看到的字节，本身即合法 JSONL
             "raw_response": self.last_raw_response,
             "parsed": parsed,                  # 抽取后的 JSON（None = 未返回有效 JSON）
@@ -587,28 +463,6 @@ class ReviewAgent(AgentABC):
                 f.write(json.dumps(record, ensure_ascii=False, default=str) + "\n")
         except (OSError, TypeError, ValueError) as exc:
             self.logger.warning("评审证据落盘失败（不影响主流程）：%s", exc)
-
-
-def _normalize_weights(weights: dict[str, float] | None) -> dict[str, float]:
-    """合并用户权重与默认权重（缺项回退默认）；不强制归一，保持固定权重语义。"""
-    merged = dict(DEFAULT_REVIEW_WEIGHTS)
-    if weights:
-        for k, v in weights.items():
-            if k in merged:
-                merged[k] = float(v)
-    return merged
-
-
-def _normalize_four_dimension_thresholds(
-    thresholds: dict[str, float] | None,
-) -> dict[str, float]:
-    merged = {"correctness": 0.6, "relevance": 0.6, "schema": 0.6}
-    if thresholds:
-        for key, value in thresholds.items():
-            if key not in merged:
-                raise ValueError(f"review.four_dimensions.pass_thresholds 未知字段：{key}")
-            merged[key] = _clip01(value)
-    return merged
 
 
 def _normalize_embedding_metric_weights(
@@ -627,18 +481,6 @@ def _normalize_embedding_metric_weights(
 def _format_metric(metrics: dict[str, float], key: str, precision: int) -> str:
     value = metrics.get(key)
     return f"{value:.{precision}f}" if value is not None else "-"
-
-
-def _normalize_signals(raw_signals) -> list[str]:
-    """把 LLM 返回的 failure_signals 规整为合法编号（F1-F7）、大写、去重、保序。"""
-    if not isinstance(raw_signals, (list, tuple)):
-        return []
-    out: list[str] = []
-    for x in raw_signals:
-        sid = str(x).strip().upper()
-        if sid in FAILURE_SIGNALS and sid not in out:
-            out.append(sid)
-    return out
 
 
 def _clip01(value) -> float:

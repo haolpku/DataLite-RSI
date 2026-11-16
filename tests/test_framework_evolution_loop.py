@@ -10,7 +10,9 @@ from rsi.framework.evolution.evaluation.downstream_eval import (
 )
 from rsi.framework.evolution.models import PipelineConfig, ReviewResult, TaskSpec
 from rsi.framework.evolution.execution.execution_wrapper import ExecutionResult
-from rsi.framework.evolution.controller import Candidate, ReviewOnlyLoop, select_best
+from rsi.framework.evolution.controller import (
+    Candidate, CommandFeedbackSource, ReviewOnlyLoop, select_best,
+)
 from rsi.framework.evolution.selection import SelectionPolicy, SelectionPolicyError
 
 
@@ -23,8 +25,7 @@ def _config(code: str) -> PipelineConfig:
 
 def _review(score: float, passed: bool, issue: str) -> ReviewResult:
     return ReviewResult(
-        schema_score=0.9, relevance_score=0.9, passed=passed, issues=[issue],
-        correctness_score=score, difficulty_score=0.7,
+        passed=passed, issues=[issue],
         llm_composite=score, review_score=score,
     )
 
@@ -208,6 +209,8 @@ def _loop(
     downstream_interval=3,
     pipeline_diagnostic_agent=None,
     selection_policy=None,
+    command_feedback_sources=None,
+    raw_input_path=None,
 ):
     workspace = tmp_path / "workspace"
     return ReviewOnlyLoop(
@@ -220,6 +223,8 @@ def _loop(
         downstream_attribution_agent=downstream_attribution_agent,
         downstream_interval=downstream_interval,
         selection_policy=selection_policy,
+        command_feedback_sources=command_feedback_sources,
+        raw_input_path=raw_input_path,
         pipeline_diagnostic_agent=pipeline_diagnostic_agent,
         pipeline_diagnostic_enabled=pipeline_diagnostic_agent is not None,
     )
@@ -551,3 +556,78 @@ def test_python_policy_change_is_detected_before_selection(tmp_path):
 
     with pytest.raises(SelectionPolicyError, match="policy changed"):
         loop.run()
+
+
+def test_named_feedback_sources_keep_independent_baselines_and_reach_next_agent(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    raw.write_text('{}\n', encoding="utf-8")
+    quality = FakeDownstreamEvaluator(baseline_enabled=True)
+    sft = FakeDownstreamEvaluator()
+    loop = _loop(
+        tmp_path, max_iterations=3, raw_input_path=raw,
+        command_feedback_sources=[
+            CommandFeedbackSource("quality", quality, interval=1, trains_model=False),
+            CommandFeedbackSource("sft", sft, interval=2, trains_model=True),
+        ],
+    )
+
+    loop.run()
+
+    assert [(request.stage, request.source) for request, _ in quality.requests] == [
+        ("baseline", "quality"), ("periodic", "quality"),
+        ("periodic", "quality"), ("periodic", "quality"),
+    ]
+    assert quality.requests[0][0].dataset_path == str(raw.resolve())
+    assert all(not request.training_performed for request, _ in quality.requests)
+    assert [(request.stage, request.source) for request, _ in sft.requests] == [
+        ("periodic", "sft")
+    ]
+    assert sft.requests[0][0].training_performed
+    quality_results = [item for item in loop.downstream_evaluations if item.source == "quality"]
+    sft_result = next(item for item in loop.downstream_evaluations if item.source == "sft")
+    assert quality_results[1].score_deltas["gsm8k"] == pytest.approx(0.1)
+    assert sft_result.score_deltas == {}  # no cross-source comparison
+    feedback = loop.pipeline_agent.downstream_feedback[1]
+    assert isinstance(feedback, list)
+    assert {item.source for item in feedback} == {"quality", "sft"}
+    manifest = json.loads((loop.run_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert {item["name"] for item in manifest["feedback_sources"]} == {
+        "criteria", "quality", "sft"
+    }
+    assert {item["source"] for item in manifest["feedback_evaluations"]} == {"quality", "sft"}
+    assert manifest["downstream_evaluation"]["enabled"] is False
+    assert (loop.run_dir / "feedback_evaluations.jsonl").is_file()
+
+
+def test_python_selection_can_target_one_named_feedback_source(tmp_path):
+    policy_file = tmp_path / "source_policy.py"
+    policy_file.write_text(
+        "def select(context):\n"
+        "    candidates = context['candidates']\n"
+        "    if not candidates:\n"
+        "        return {'iteration': None, 'reason': 'No candidate.'}\n"
+        "    quality = any(f['source'] == 'quality' and f['status'] == 'ok' "
+        "for f in context['feedback'])\n"
+        "    chosen = candidates[0] if quality else candidates[-1]\n"
+        "    return {'iteration': chosen['iteration'], 'reason': 'Use quality source.'}\n",
+        encoding="utf-8",
+    )
+    policy = SelectionPolicy.from_config(
+        {"kind": "python", "policy_file": str(policy_file)}, base_dir=tmp_path,
+    )
+    loop = _loop(
+        tmp_path, max_iterations=2, selection_policy=policy,
+        command_feedback_sources=[
+            CommandFeedbackSource("quality", FakeDownstreamEvaluator(), interval=1),
+            CommandFeedbackSource("sft", FakeDownstreamEvaluator(), interval=2),
+        ],
+    )
+    best = loop.run()
+    assert best is not None and best.iteration == 0
+    requests = [
+        json.loads(path.read_text(encoding="utf-8"))
+        for path in (loop.run_dir / "selection_history").glob("*/request.json")
+    ]
+    final = next(item for item in requests if item["event"] == "final")
+    assert {item["source"] for item in final["feedback"]} == {"quality", "sft"}
+    assert all("bad_cases" not in item for item in final["feedback"])

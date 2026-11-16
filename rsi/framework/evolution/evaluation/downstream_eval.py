@@ -31,6 +31,7 @@ class DownstreamEvaluationRequest:
     bad_cases_per_benchmark: int
     stage: str = "periodic"
     training_performed: bool = True
+    source: str = "downstream"
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
@@ -54,10 +55,10 @@ class DownstreamBadCase:
 class DownstreamBenchmarkResult:
     score: float
     metric: str
-    incorrect_count: int
-    wrong_answer_count: int
-    parse_failure_count: int
-    runaway_count: int
+    incorrect_count: int | None
+    wrong_answer_count: int | None
+    parse_failure_count: int | None
+    runaway_count: int | None
     bad_cases: list[DownstreamBadCase]
     correct_count: int | None = None
     total_count: int | None = None
@@ -91,6 +92,7 @@ class DownstreamEvaluationResult:
     dataset_path: str | None
     stage: str = "periodic"
     training_performed: bool = True
+    source: str = "downstream"
     model: str = ""
     benchmarks: dict[str, DownstreamBenchmarkResult] = field(default_factory=dict)
     score_deltas: dict[str, float] = field(default_factory=dict)
@@ -139,12 +141,16 @@ class CommandDownstreamEvaluator(DownstreamEvaluatorABC):
         bad_cases_per_benchmark: int = 3,
         timeout_sec: int = 86400,
         baseline_enabled: bool = False,
+        strict_counts: bool = True,
+        use_legacy_baseline_cache: bool = True,
     ) -> None:
         self.command = [str(part) for part in command if str(part)]
         self.expected_benchmarks = [str(name) for name in expected_benchmarks if str(name)]
         self.bad_cases_per_benchmark = int(bad_cases_per_benchmark)
         self.timeout_sec = int(timeout_sec)
         self.baseline_enabled = bool(baseline_enabled)
+        self.strict_counts = bool(strict_counts)
+        self.use_legacy_baseline_cache = bool(use_legacy_baseline_cache)
         if not self.command:
             raise ValueError("downstream_eval.command must contain at least one argv item")
         if not self.expected_benchmarks:
@@ -178,7 +184,7 @@ class CommandDownstreamEvaluator(DownstreamEvaluatorABC):
         ]
         started = time.perf_counter()
         try:
-            if request.stage == "baseline":
+            if request.stage == "baseline" and self.use_legacy_baseline_cache:
                 from os import environ
 
                 cache_path_value = environ.get(
@@ -195,6 +201,7 @@ class CommandDownstreamEvaluator(DownstreamEvaluatorABC):
                         raw,
                         expected_benchmarks=self.expected_benchmarks,
                         bad_cases_per_benchmark=self.bad_cases_per_benchmark,
+                        strict_counts=self.strict_counts,
                     )
                     result_path.write_bytes(cache_path.read_bytes())
                     stdout_path.write_text(
@@ -209,7 +216,8 @@ class CommandDownstreamEvaluator(DownstreamEvaluatorABC):
                         dataset_path=request.dataset_path,
                         stage=request.stage,
                         training_performed=request.training_performed,
-                        model=_nonempty_string(raw.get("model"), "model"),
+                        source=request.source,
+                        model=_result_model(raw, request.source, self.strict_counts),
                         benchmarks=benchmarks,
                         summary=str(raw.get("summary", "") or ""),
                         artifacts=_string_mapping(raw.get("artifacts", {}), "artifacts"),
@@ -251,6 +259,7 @@ class CommandDownstreamEvaluator(DownstreamEvaluatorABC):
                 raw,
                 expected_benchmarks=self.expected_benchmarks,
                 bad_cases_per_benchmark=self.bad_cases_per_benchmark,
+                strict_counts=self.strict_counts,
             )
             return DownstreamEvaluationResult(
                 status="ok",
@@ -259,7 +268,8 @@ class CommandDownstreamEvaluator(DownstreamEvaluatorABC):
                 dataset_path=request.dataset_path,
                 stage=request.stage,
                 training_performed=request.training_performed,
-                model=_nonempty_string(raw.get("model"), "model"),
+                source=request.source,
+                model=_result_model(raw, request.source, self.strict_counts),
                 benchmarks=benchmarks,
                 summary=str(raw.get("summary", "") or ""),
                 artifacts=_string_mapping(raw.get("artifacts", {}), "artifacts"),
@@ -301,6 +311,7 @@ class CommandDownstreamEvaluator(DownstreamEvaluatorABC):
             dataset_path=request.dataset_path,
             stage=request.stage,
             training_performed=request.training_performed,
+            source=request.source,
             wall_time_seconds=round(time.perf_counter() - started, 6),
             request_path=str(request_path),
             result_path=str(result_path),
@@ -318,9 +329,12 @@ def _validate_result(
     *,
     expected_benchmarks: Sequence[str],
     bad_cases_per_benchmark: int,
+    strict_counts: bool = True,
 ) -> dict[str, DownstreamBenchmarkResult]:
     if not isinstance(raw, dict):
         raise ValueError("result root must be a JSON object")
+    if raw.get("status", "ok") != "ok":
+        raise ValueError("result.status must be ok")
     raw_benchmarks = raw.get("benchmarks")
     if not isinstance(raw_benchmarks, dict):
         raise ValueError("benchmarks must be a JSON object")
@@ -339,6 +353,30 @@ def _validate_result(
         score = float(score)
         if not math.isfinite(score):
             raise ValueError(f"benchmark {name!r} score must be finite")
+        if not strict_counts:
+            cases = item.get("bad_cases", [])
+            if not isinstance(cases, list):
+                raise ValueError(f"{name}.bad_cases must be a list")
+            metric = item.get("metric", "score")
+            if not isinstance(metric, str) or not metric.strip():
+                raise ValueError(f"{name}.metric must be a non-empty string")
+            validated[name] = DownstreamBenchmarkResult(
+                score=score,
+                metric=metric,
+                incorrect_count=_optional_nonnegative_int(item.get("incorrect_count"), f"{name}.incorrect_count"),
+                wrong_answer_count=_optional_nonnegative_int(item.get("wrong_answer_count"), f"{name}.wrong_answer_count"),
+                parse_failure_count=_optional_nonnegative_int(item.get("parse_failure_count"), f"{name}.parse_failure_count"),
+                runaway_count=_optional_nonnegative_int(item.get("runaway_count"), f"{name}.runaway_count"),
+                bad_cases=[
+                    _validate_bad_case(name, index, value, require_correct_answer=False)
+                    for index, value in enumerate(cases[:bad_cases_per_benchmark])
+                ],
+                correct_count=_optional_nonnegative_int(item.get("correct_count"), f"{name}.correct_count"),
+                total_count=_optional_nonnegative_int(item.get("total_count"), f"{name}.total_count"),
+                question_count=_optional_nonnegative_int(item.get("question_count"), f"{name}.question_count"),
+                n_sampling=_optional_nonnegative_int(item.get("n_sampling"), f"{name}.n_sampling"),
+            )
+            continue
         incorrect_count = _nonnegative_int(
             item.get("incorrect_count"), f"{name}.incorrect_count"
         )
@@ -463,7 +501,9 @@ def _validate_result(
     return validated
 
 
-def _validate_bad_case(name: str, index: int, raw: Any) -> DownstreamBadCase:
+def _validate_bad_case(
+    name: str, index: int, raw: Any, *, require_correct_answer: bool = True,
+) -> DownstreamBadCase:
     if not isinstance(raw, dict):
         raise ValueError(f"{name}.bad_cases[{index}] must be a JSON object")
     return DownstreamBadCase(
@@ -474,8 +514,11 @@ def _validate_bad_case(name: str, index: int, raw: Any) -> DownstreamBadCase:
         parsed_answer=_string(
             raw.get("parsed_answer"), f"{name}.bad_cases[{index}].parsed_answer"
         ),
-        correct_answer=_nonempty_string(
-            raw.get("correct_answer"), f"{name}.bad_cases[{index}].correct_answer"
+        correct_answer=(
+            _nonempty_string(raw.get("correct_answer"), f"{name}.bad_cases[{index}].correct_answer")
+            if require_correct_answer else _string(
+                raw.get("correct_answer", ""), f"{name}.bad_cases[{index}].correct_answer"
+            )
         ),
         response_token_count=_optional_nonnegative_int(
             raw.get("response_token_count"),
@@ -492,6 +535,15 @@ def _validate_bad_case(name: str, index: int, raw: Any) -> DownstreamBadCase:
             raw.get("dimension", ""), f"{name}.bad_cases[{index}].dimension"
         ),
     )
+
+
+def _result_model(raw: dict[str, Any], source: str, strict_counts: bool) -> str:
+    if strict_counts:
+        return _nonempty_string(raw.get("model"), "model")
+    value = raw.get("model")
+    if value is not None and not isinstance(value, str):
+        raise ValueError("model must be a string")
+    return value.strip() if value and value.strip() else source
 
 
 def _nonempty_string(value: Any, field_name: str) -> str:

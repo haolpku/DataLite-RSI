@@ -102,6 +102,8 @@ selection_policy:
 # runs in its own environment and receives appended `--request` and `--result` paths.
 # With the default five iterations, interval=2 creates checkpoints after iterations 2 and 4.
 downstream_eval:
+  # Shortcut source name; must not duplicate a feedback_sources entry.
+  source_name: downstream
   enabled: ${DF_DOWNSTREAM_EVAL_ENABLED:false}
   interval: ${DF_DOWNSTREAM_EVAL_INTERVAL:2}
   command: []
@@ -121,24 +123,19 @@ downstream_eval:
     max_retries: ${DF_DOWNSTREAM_ATTRIBUTION_MAX_RETRIES:2}
     max_findings: 6
     max_actions: 8
+feedback_sources:
+  criteria:
+    kind: criteria
+
 review:
-  mode: four_dimensions
   sampling:
     size: ${DF_REVIEW_SAMPLE_SIZE:80}
     seed: ${DF_REVIEW_SAMPLE_SEED:42}
-  four_dimensions:
-    pass_thresholds:
-      correctness: 0.6
-      relevance: 0.6
-      schema: 0.6
-    weights:
-      correctness: 0.40
-      relevance: 0.25
-      difficulty: 0.15
-      schema: 0.20
+  criteria:
+    pass_rate: 0.6
   validation:
     enabled: true
-    # Required-schema empty slots; applies in both review modes.
+    # Required-schema empty slots are checked over the full output.
     max_null_rate: 0.5
   decontamination:
     reference_files: []

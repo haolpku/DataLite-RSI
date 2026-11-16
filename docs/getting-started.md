@@ -126,9 +126,7 @@ task:
     - Require a self-contained step-by-step output.
 
 review:
-  # Optional domain rubric mode. It replaces the default four-dimension
-  # ReviewAgent prompt with one criterion-by-criterion assessment.
-  mode: criteria
+  # The built-in reviewer checks task.quality_criteria item by item.
   criteria:
     pass_rate: 0.6
   embedding_quality:
@@ -137,6 +135,10 @@ review:
       das: {enabled: false, weight: 0.40}
       vendi: {enabled: false, weight: 0.30}
       nearest_neighbor: {enabled: false, weight: 0.30}
+
+feedback_sources:
+  criteria: {kind: criteria}          # runs for every completed candidate
+  # Add independently scheduled command sources; see feedback-sources.md.
 
 llm:
   api:                                # ReviewAgent's model

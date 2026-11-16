@@ -120,8 +120,7 @@ def test_dataflow_public_runner_preserves_incumbent_cache_and_diagnostic_boundar
                 encoding="utf-8").splitlines()]
             assert len(rows) == 1 and rows[0]["output"] == "offline answer"
             return ReviewResult(
-                schema_score=1.0, relevance_score=1.0, passed=True,
-                correctness_score=1.0, difficulty_score=0.5,
+                passed=True,
                 review_score=0.8 if self.calls == 1 else 0.7,
             )
 

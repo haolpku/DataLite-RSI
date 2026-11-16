@@ -33,6 +33,7 @@ from rsi.framework.evolution.evaluation.embedding_quality import (
 )
 from rsi.framework.evolution.models import PipelineConfig, ReviewResult, TaskSpec
 from rsi.framework.evolution.feedback import CandidateEvaluator, normalize_candidate_review
+from rsi.framework.evolution.feedback_sources import resolve_feedback_sources
 from rsi.framework.core.contracts import InputContract
 from rsi.framework.evolution.execution.execution_wrapper import (
     ExecutionResult,
@@ -66,10 +67,21 @@ class Candidate:
     accepted_as_incumbent: bool = False
     execution_repairs: int = 0
     wall_time_seconds: float = 0.0
+    review_source: str = "criteria"
 
     @property
     def score(self) -> float:
         return self.review.review_score if self.review is not None else 0.0
+
+
+@dataclass(frozen=True)
+class CommandFeedbackSource:
+    name: str
+    evaluator: DownstreamEvaluatorABC
+    interval: int
+    trains_model: bool = True
+    attribution_agent: DownstreamAttributionAgent | None = None
+    shortcut: bool = False
 
 
 class ReviewOnlyLoop:
@@ -91,6 +103,9 @@ class ReviewOnlyLoop:
         downstream_evaluator: DownstreamEvaluatorABC | None = None,
         downstream_attribution_agent: DownstreamAttributionAgent | None = None,
         downstream_interval: int = 2,
+        review_source_name: str = "criteria",
+        command_feedback_sources: list[CommandFeedbackSource] | None = None,
+        raw_input_path: Path | None = None,
         pipeline_diagnostic_agent: Any | None = None,
         pipeline_diagnostic_enabled: bool = False,
         pipeline_diagnostic_max_prompt_chars: int = 80000,
@@ -125,6 +140,18 @@ class ReviewOnlyLoop:
         self.downstream_evaluator = downstream_evaluator
         self.downstream_attribution_agent = downstream_attribution_agent
         self.downstream_interval = int(downstream_interval)
+        self.review_source_name = review_source_name
+        self.raw_input_path = raw_input_path
+        self.command_feedback_sources = (
+            list(command_feedback_sources) if command_feedback_sources is not None
+            else ([CommandFeedbackSource(
+                "downstream", downstream_evaluator, self.downstream_interval,
+                attribution_agent=downstream_attribution_agent,
+                shortcut=True,
+            )] if downstream_evaluator is not None else [])
+        )
+        if len({source.name for source in self.command_feedback_sources}) != len(self.command_feedback_sources):
+            raise ValueError("feedback source names must be unique")
         self.pipeline_diagnostic_agent = pipeline_diagnostic_agent
         self.pipeline_diagnostic_enabled = bool(pipeline_diagnostic_enabled)
         self.pipeline_diagnostic_max_prompt_chars = max(
@@ -133,6 +160,7 @@ class ReviewOnlyLoop:
         self.candidates: list[Candidate] = []
         self.downstream_evaluations: list[DownstreamEvaluationResult] = []
         self.latest_downstream_evaluation: DownstreamEvaluationResult | None = None
+        self.latest_feedback_by_source: dict[str, DownstreamEvaluationResult] = {}
         self.data_preparation_wall_time_seconds = 0.0
         self.downstream_evaluation_wall_time_seconds = 0.0
         self.total_wall_time_seconds = 0.0
@@ -152,16 +180,14 @@ class ReviewOnlyLoop:
             )
         self.run_dir.mkdir(parents=True, exist_ok=True)
 
-        if (
-            self.downstream_evaluator is not None
-            and self.downstream_evaluator.baseline_enabled
-        ):
-            self._run_downstream_baseline()
+        for source in self.command_feedback_sources:
+            if source.evaluator.baseline_enabled:
+                self._run_downstream_baseline(source)
 
         config = self.pipeline_agent.generate_initial(
             task=self.task,
             iteration_dir=self._iteration_dir(0),
-            downstream_feedback=self.latest_downstream_evaluation,
+            downstream_feedback=self._feedback_for_agent(),
         )
         if config is None:
             logger.error("初始 PipelineAgent 未产出有效流水线。")
@@ -215,15 +241,14 @@ class ReviewOnlyLoop:
                 self.current_incumbent = incumbent
             self._append_trace(candidate)
 
-            if (
-                self.downstream_evaluator is not None
-                and (iteration + 1) % self.downstream_interval == 0
-                and incumbent is not None
-                and incumbent.dataset_path
-            ):
-                self._run_downstream_checkpoint(iteration + 1, incumbent)
-                if self.selector is not None:
-                    incumbent = self._select_custom(incumbent, event="downstream")
+            ran_feedback = False
+            if incumbent is not None and incumbent.dataset_path:
+                for source in self.command_feedback_sources:
+                    if (iteration + 1) % source.interval == 0:
+                        self._run_downstream_checkpoint(source, iteration + 1, incumbent)
+                        ran_feedback = True
+            if ran_feedback and self.selector is not None:
+                incumbent = self._select_custom(incumbent, event="downstream")
 
             if iteration + 1 >= self.max_iterations:
                 break
@@ -242,7 +267,7 @@ class ReviewOnlyLoop:
                 parent_review=incumbent.review,
                 execution_observation_path=incumbent.execution_observation_path,
                 pipeline_diagnostic=_compact_diagnostic(incumbent.pipeline_diagnostic),
-                downstream_feedback=self.latest_downstream_evaluation,
+                downstream_feedback=self._feedback_for_agent(),
                 evolution_history=self._evolution_history(),
             )
             if config is None:
@@ -288,6 +313,11 @@ class ReviewOnlyLoop:
             event, chosen.iteration_dir.name if chosen else "none", record["reason"],
         )
         return chosen
+
+    def _feedback_for_agent(self):
+        """Pass each source's latest result without mixing score scales."""
+        items = list(self.latest_feedback_by_source.values())
+        return items[0] if len(items) == 1 else items or None
 
     def _iteration_dir(self, iteration: int) -> Path:
         return self.run_dir / f"iteration_{iteration + 1:03d}"
@@ -352,6 +382,7 @@ class ReviewOnlyLoop:
         )
         review = normalize_candidate_review(raw_review)
         review.evaluator_kind = self.task.evaluator_kind
+        review.source = self.review_source_name
         diagnostic = None
         if self.pipeline_diagnostic_enabled and self.pipeline_diagnostic_agent is not None:
             try:
@@ -376,6 +407,7 @@ class ReviewOnlyLoop:
             config=config,
             dataset_path=result.dataset_path,
             review=review,
+            review_source=self.review_source_name,
             execution_observation_path=result.observation_path,
             pipeline_diagnostic=diagnostic,
             execution_repairs=retries,
@@ -390,56 +422,67 @@ class ReviewOnlyLoop:
 
     def _run_downstream_checkpoint(
         self,
+        source: CommandFeedbackSource,
         checkpoint_iteration: int,
         incumbent: Candidate,
     ) -> None:
-        """Evaluate the current incumbent after a configured number of static rounds."""
-        assert self.downstream_evaluator is not None
+        """Evaluate the incumbent for one named source at its own interval."""
         assert incumbent.dataset_path is not None
-        checkpoint_dir = (
-            self.run_dir / "downstream_eval" / f"checkpoint_{checkpoint_iteration:03d}"
-        )
+        source_dir = (self.run_dir / "downstream_eval" if source.shortcut
+                      else self.run_dir / "feedback_sources" / source.name)
+        checkpoint_dir = source_dir / f"checkpoint_{checkpoint_iteration:03d}"
         request = DownstreamEvaluationRequest(
             checkpoint_iteration=checkpoint_iteration,
             incumbent_iteration=incumbent.iteration + 1,
             dataset_path=str(Path(incumbent.dataset_path).resolve()),
             pipeline_path=str((incumbent.iteration_dir / "pipeline.py").resolve()),
             task=self.task,
-            expected_benchmarks=list(self.downstream_evaluator.expected_benchmarks),
-            bad_cases_per_benchmark=self.downstream_evaluator.bad_cases_per_benchmark,
+            expected_benchmarks=list(source.evaluator.expected_benchmarks),
+            bad_cases_per_benchmark=source.evaluator.bad_cases_per_benchmark,
             stage="periodic",
-            training_performed=True,
+            training_performed=source.trains_model,
+            source=source.name,
         )
         logger.info(
-            "触发下游 SFT/评测检查点：完成轮次=%d incumbent=%s dataset=%s",
+            "触发反馈源 %s：完成轮次=%d incumbent=%s dataset=%s",
+            source.name,
             checkpoint_iteration,
             incumbent.iteration_dir.name,
             incumbent.dataset_path,
         )
-        result = self.downstream_evaluator.run(request, checkpoint_dir)
-        self._attach_downstream_attribution(result, checkpoint_dir, incumbent)
+        result = source.evaluator.run(request, checkpoint_dir)
+        result.source = source.name
+        self._attach_downstream_attribution(result, checkpoint_dir, incumbent, source.attribution_agent)
         self._record_downstream_result(result)
 
-    def _run_downstream_baseline(self) -> None:
-        """Evaluate the untrained downstream model before generating iteration zero."""
-        assert self.downstream_evaluator is not None
+    def _run_downstream_baseline(self, source: CommandFeedbackSource) -> None:
+        """Evaluate this source's starting point before the first pipeline."""
+        dataset_path = (
+            str(self.raw_input_path.resolve())
+            if not source.trains_model and self.raw_input_path is not None else None
+        )
         request = DownstreamEvaluationRequest(
             checkpoint_iteration=0,
             incumbent_iteration=None,
-            dataset_path=None,
+            dataset_path=dataset_path,
             pipeline_path=None,
             task=self.task,
-            expected_benchmarks=list(self.downstream_evaluator.expected_benchmarks),
-            bad_cases_per_benchmark=self.downstream_evaluator.bad_cases_per_benchmark,
+            expected_benchmarks=list(source.evaluator.expected_benchmarks),
+            bad_cases_per_benchmark=source.evaluator.bad_cases_per_benchmark,
             stage="baseline",
             training_performed=False,
+            source=source.name,
         )
-        checkpoint_dir = self.run_dir / "downstream_eval" / "checkpoint_000"
+        source_dir = (self.run_dir / "downstream_eval" if source.shortcut
+                      else self.run_dir / "feedback_sources" / source.name)
+        checkpoint_dir = source_dir / "checkpoint_000"
         logger.info(
-            "触发第 0 轮下游诊断：不训练模型，直接评测外部 runner 的固定诊断集",
+            "触发反馈源 %s 的第 0 轮 baseline",
+            source.name,
         )
-        result = self.downstream_evaluator.run(request, checkpoint_dir)
-        self._attach_downstream_attribution(result, checkpoint_dir, None)
+        result = source.evaluator.run(request, checkpoint_dir)
+        result.source = source.name
+        self._attach_downstream_attribution(result, checkpoint_dir, None, source.attribution_agent)
         self._record_downstream_result(result)
 
     def _attach_downstream_attribution(
@@ -447,14 +490,15 @@ class ReviewOnlyLoop:
         result: DownstreamEvaluationResult,
         checkpoint_dir: Path,
         incumbent: Candidate | None,
+        attribution_agent: DownstreamAttributionAgent | None,
     ) -> None:
         if (
             not result.succeeded
-            or self.downstream_attribution_agent is None
+            or attribution_agent is None
         ):
             return
         try:
-            result.attribution = self.downstream_attribution_agent.attribute(
+            result.attribution = attribution_agent.attribute(
                 task=self.task,
                 feedback=result,
                 pipeline_operators=(
@@ -476,7 +520,8 @@ class ReviewOnlyLoop:
         """Persist one result and compute deltas without mixing it into review_score."""
         if result.succeeded:
             previous = next(
-                (item for item in reversed(self.downstream_evaluations) if item.succeeded),
+                (item for item in reversed(self.downstream_evaluations)
+                 if item.succeeded and item.source == result.source),
                 None,
             )
             if previous is not None:
@@ -489,7 +534,7 @@ class ReviewOnlyLoop:
                 (
                     item
                     for item in self.downstream_evaluations
-                    if item.succeeded and item.stage == "baseline"
+                    if item.succeeded and item.stage == "baseline" and item.source == result.source
                 ),
                 None,
             )
@@ -500,12 +545,17 @@ class ReviewOnlyLoop:
                     if name in baseline.benchmarks
                 }
         self.downstream_evaluations.append(result)
-        self.latest_downstream_evaluation = result
-        trace_path = self.run_dir / "downstream_evaluations.jsonl"
+        if any(source.shortcut and source.name == result.source for source in self.command_feedback_sources):
+            self.latest_downstream_evaluation = result
+        self.latest_feedback_by_source[result.source] = result
+        trace_path = self.run_dir / "feedback_evaluations.jsonl"
         with trace_path.open("a", encoding="utf-8") as handle:
             handle.write(
                 json.dumps(result_to_dict(result), ensure_ascii=False, default=str) + "\n"
             )
+        if any(source.shortcut and source.name == result.source for source in self.command_feedback_sources):
+            with (self.run_dir / "downstream_evaluations.jsonl").open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(result_to_dict(result), ensure_ascii=False, default=str) + "\n")
         if result.succeeded:
             scores = ", ".join(
                 f"{name}={item.score:.6f}"
@@ -545,6 +595,11 @@ class ReviewOnlyLoop:
         return history
 
     def _write_manifest(self, best: Candidate | None) -> None:
+        shortcut = next((source for source in self.command_feedback_sources if source.shortcut), None)
+        shortcut_results = (
+            [item for item in self.downstream_evaluations if item.source == shortcut.name]
+            if shortcut is not None else []
+        )
         manifest = {
             "mode": "pipeline_review",
             "run_name": self.run_name,
@@ -562,23 +617,32 @@ class ReviewOnlyLoop:
             ),
             "selection_policy": asdict(self.selection_policy),
             "selection_history": self.selection_history,
+            "feedback_sources": [
+                {"name": self.review_source_name, "kind": "criteria", "interval": 1},
+                *[
+                    {"name": source.name, "kind": "command", "interval": source.interval,
+                     "trains_model": source.trains_model,
+                     "baseline": source.evaluator.baseline_enabled}
+                    for source in self.command_feedback_sources
+                ],
+            ],
+            "feedback_evaluations": [
+                result_to_dict(result) for result in self.downstream_evaluations
+            ],
             "downstream_evaluation": {
-                "enabled": self.downstream_evaluator is not None,
+                "enabled": shortcut is not None,
                 "interval": self.downstream_interval,
-                "completed_checkpoints": len(self.downstream_evaluations),
+                "completed_checkpoints": len(shortcut_results),
                 "completed_periodic_checkpoints": sum(
-                    item.stage == "periodic" for item in self.downstream_evaluations
+                    item.stage == "periodic" for item in shortcut_results
                 ),
-                "baseline_enabled": bool(
-                    self.downstream_evaluator is not None
-                    and self.downstream_evaluator.baseline_enabled
-                ),
+                "baseline_enabled": bool(shortcut and shortcut.evaluator.baseline_enabled),
                 "baseline_succeeded": any(
                     item.stage == "baseline" and item.succeeded
-                    for item in self.downstream_evaluations
+                    for item in shortcut_results
                 ),
                 "evaluations": [
-                    result_to_dict(result) for result in self.downstream_evaluations
+                    result_to_dict(result) for result in shortcut_results
                 ],
             },
             "best": _candidate_record(best) if best is not None else None,
@@ -658,12 +722,13 @@ def build_loop(
         evaluator_kind="task" if candidate_evaluator is not None else "review_agent",
     )
 
+    review_cfg = cfg.get("review") or Config({})
+    if review_cfg.get("mode", "criteria") != "criteria" or review_cfg.get("four_dimensions") is not None:
+        raise ValueError("four-dimensional review was removed; use criteria feedback")
     serving = build_serving(cfg.llm) if candidate_evaluator is None else None
     if candidate_evaluator is None:
-        review_cfg = cfg.review
         sampling_cfg = review_cfg.get("sampling") or Config({})
         criteria_cfg = review_cfg.get("criteria") or Config({})
-        four_cfg = review_cfg.get("four_dimensions") or Config({})
         validation_cfg = review_cfg.get("validation") or Config({})
         decon_cfg = review_cfg.get("decontamination") or Config({})
         embedding_quality_cfg = review_cfg.get("embedding_quality") or Config({})
@@ -680,12 +745,8 @@ def build_loop(
                 max_rate=float(decon_cfg.get("max_rate", decontamination.DEFAULT_MAX_RATE)),
                 fields=list(decon_cfg.get("reference_fields", []) or []) or None,
             ),
-            four_dimension_thresholds=_plain_dict(
-                four_cfg.get("pass_thresholds")
-            ) or None,
             sampling_size=int(sampling_cfg.get("size", 80)),
             sampling_seed=sampling_cfg.get("seed", None),
-            four_dimension_weights=_plain_dict(four_cfg.get("weights")) or None,
             validation_enabled=_as_bool(validation_cfg.get("enabled", True)),
             max_null_rate=float(validation_cfg.get("max_null_rate", 0.5)),
             embedding_quality_evaluator=embedding_quality_evaluator,
@@ -705,7 +766,6 @@ def build_loop(
             contamination_fields=(
                 list(decon_cfg.get("candidate_fields", []) or []) or None
             ),
-            mode=str(review_cfg.get("mode", "four_dimensions") or "four_dimensions"),
             criteria_pass_rate=float(criteria_cfg.get("pass_rate", 0.6)),
         )
     else:
@@ -758,21 +818,44 @@ def build_loop(
             loop_cfg.get("observation_max_sample_chars", 4000)
         ),
     )
-    downstream_cfg = cfg.get("downstream_eval") or Config({})
-    downstream_evaluator, downstream_interval = _build_downstream_evaluator(
-        downstream_cfg
+    source_configs = resolve_feedback_sources(
+        cfg.to_dict().get("feedback_sources"), cfg.to_dict().get("downstream_eval"),
     )
-    downstream_attribution_agent = None
-    attribution_cfg = downstream_cfg.get("attribution") or Config({})
-    if downstream_evaluator is not None and _as_bool(attribution_cfg.get("enabled", True)):
-        if serving is None:
-            serving = build_serving(cfg.llm)
-        downstream_attribution_agent = DownstreamAttributionAgent(
-            serving,
-            max_retries=int(attribution_cfg.get("max_retries", 2)),
-            max_findings=int(attribution_cfg.get("max_findings", 6)),
-            max_actions=int(attribution_cfg.get("max_actions", 8)),
+    review_source_name = next(item.name for item in source_configs if item.kind == "criteria")
+    command_sources: list[CommandFeedbackSource] = []
+    for source in source_configs:
+        if source.kind != "command":
+            continue
+        settings = dict(source.settings)
+        baseline = settings.get("baseline", False)
+        if not isinstance(baseline, dict):
+            baseline = {"enabled": _as_bool(baseline)}
+        settings["baseline"] = baseline
+        settings["enabled"] = True
+        evaluator, interval = _build_downstream_evaluator(
+            Config(settings), shortcut=source.shortcut,
         )
+        assert evaluator is not None
+        attribution = settings.get("attribution", False)
+        if not isinstance(attribution, dict):
+            attribution = {"enabled": _as_bool(attribution)}
+        attribution_agent = None
+        if _as_bool(attribution.get("enabled", False)):
+            if serving is None:
+                serving = build_serving(cfg.llm)
+            attribution_agent = DownstreamAttributionAgent(
+                serving,
+                max_retries=int(attribution.get("max_retries", 2)),
+                max_findings=int(attribution.get("max_findings", 6)),
+                max_actions=int(attribution.get("max_actions", 8)),
+            )
+        command_sources.append(CommandFeedbackSource(
+            source.name, evaluator, interval,
+            trains_model=_as_bool(settings.get("trains_model", False)),
+            attribution_agent=attribution_agent,
+            shortcut=source.shortcut,
+        ))
+    shortcut_source = next((source for source in command_sources if source.shortcut), None)
     return ReviewOnlyLoop(
         pipeline_agent=pipeline_agent,
         executor=executor,
@@ -784,9 +867,12 @@ def build_loop(
         execution_repairs=int(loop_cfg.get("execution_repairs", 1)),
         accept_equal_score=_as_bool(loop_cfg.get("accept_equal_score", False)),
         selection_policy=selection_policy,
-        downstream_evaluator=downstream_evaluator,
-        downstream_attribution_agent=downstream_attribution_agent,
-        downstream_interval=downstream_interval,
+        downstream_evaluator=shortcut_source.evaluator if shortcut_source else None,
+        downstream_attribution_agent=shortcut_source.attribution_agent if shortcut_source else None,
+        downstream_interval=shortcut_source.interval if shortcut_source else 2,
+        review_source_name=review_source_name,
+        command_feedback_sources=command_sources,
+        raw_input_path=corpus.entry_path,
         pipeline_diagnostic_agent=diagnostic_agent,
         pipeline_diagnostic_enabled=diagnostic_enabled,
         pipeline_diagnostic_max_prompt_chars=int(
@@ -809,6 +895,7 @@ def _candidate_record(candidate: Candidate) -> dict[str, Any]:
         "parent_iteration": candidate.parent_iteration,
         "accepted_as_incumbent": candidate.accepted_as_incumbent,
         "execution_repairs": candidate.execution_repairs,
+        "review_source": candidate.review_source,
         "wall_time_seconds": candidate.wall_time_seconds,
         "field_flow": candidate.config.field_flow,
         "operators": candidate.config.operators,
@@ -866,6 +953,8 @@ def _plain_dict(value: Any) -> dict[str, Any]:
 
 def _build_downstream_evaluator(
     value: Config,
+    *,
+    shortcut: bool = True,
 ) -> tuple[DownstreamEvaluatorABC | None, int]:
     """Build the optional process-isolated SFT/evaluation adapter."""
     interval = int(value.get("interval", 2))
@@ -888,6 +977,8 @@ def _build_downstream_evaluator(
             bad_cases_per_benchmark=int(value.get("bad_cases_per_benchmark", 3)),
             timeout_sec=int(value.get("timeout_sec", 86400)),
             baseline_enabled=_as_bool(baseline_cfg.get("enabled", False)),
+            strict_counts=shortcut,
+            use_legacy_baseline_cache=shortcut,
         ),
         interval,
     )
@@ -1094,11 +1185,11 @@ def main() -> None:
     print(f"运行清单：{loop.run_dir / 'manifest.json'}")
     if loop.downstream_evaluations:
         print(
-            f"周期性下游 SFT/评测检查点：{len(loop.downstream_evaluations)}；"
-            "最终训练和评测仍应基于 manifest 中的 best.dataset_path 单独执行。"
+            f"独立反馈检查点：{len(loop.downstream_evaluations)}；"
+            "各来源的结果见 manifest.feedback_evaluations。"
         )
     else:
-        print("训练和下游评测未执行；请根据清单中的 best.dataset_path 人工启动。")
+        print("未配置或未触发额外反馈源；请查看清单中的 best.dataset_path。")
 
 
 if __name__ == "__main__":

@@ -55,7 +55,7 @@ class PipelineAgent:
         self,
         task: TaskSpec,
         iteration_dir: Path,
-        downstream_feedback: DownstreamEvaluationResult | None = None,
+        downstream_feedback: DownstreamEvaluationResult | list[DownstreamEvaluationResult] | None = None,
     ) -> PipelineConfig | None:
         """Build the first pipeline over the fixed raw corpus."""
         iteration_dir = iteration_dir.resolve()
@@ -81,7 +81,7 @@ class PipelineAgent:
         parent_review: ReviewResult | None = None,
         execution_observation_path: str | None = None,
         pipeline_diagnostic: Any | None = None,
-        downstream_feedback: DownstreamEvaluationResult | None = None,
+        downstream_feedback: DownstreamEvaluationResult | list[DownstreamEvaluationResult] | None = None,
         evolution_history: list[dict[str, Any]] | None = None,
     ) -> PipelineConfig | None:
         """Challenge the incumbent using its review and compact attempt history."""

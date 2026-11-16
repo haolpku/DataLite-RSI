@@ -1,8 +1,8 @@
 # Review configuration
 
-`review` controls the static candidate review performed after a generated pipeline runs. It has two independent layers:
+`review` controls the built-in criteria source, which runs after every successful pipeline. It has two independent layers:
 
-1. a sample-level judge (`four_dimensions` or `criteria`);
+1. a sample-level judge that checks each `task.quality_criteria` item;
 2. deterministic full-file checks and optional embedding distribution evidence.
 
 The active runtime reads only the fields documented here. Older flat names are not accepted.
@@ -11,14 +11,12 @@ The active runtime reads only the fields documented here. Older flat names are n
 
 | Field | Meaning |
 |---|---|
-| `review.mode` | `four_dimensions` uses the general correctness/relevance/difficulty/schema rubric. `criteria` asks the LLM to assess every `task.quality_criteria` item and uses the satisfied-criteria rate. |
+| `review.mode` | Optional compatibility setting; the only supported value is `criteria`. |
 | `review.sampling.size` | Number of JSONL records placed in the judge prompt, sampled with a deterministic reservoir sampler. |
 | `review.sampling.seed` | Reservoir sampling seed. Use a fixed value for comparable iterations. |
-| `review.criteria.pass_rate` | In criteria mode, minimum fraction of criteria marked `met` for the sample-level pass gate. This is separate from the score blend. |
-| `review.four_dimensions.pass_thresholds.*` | Per-dimension pass gates for `correctness`, `relevance`, and `schema`. Used only in four-dimension mode. |
-| `review.four_dimensions.weights.*` | Weights for the four-dimension composite (`correctness`, `relevance`, `difficulty`, `schema`). Used only in four-dimension mode. |
+| `review.criteria.pass_rate` | Minimum fraction of criteria marked `met` for the sample-level pass gate. This is separate from the score blend. |
 
-Criteria mode does not produce or use the four dimension scores. It returns per-criterion `met`, evidence, and suggestions in `ReviewResult.domain_feedback`. `issues` remains reserved for deterministic failures or explicitly reported critical failures.
+The judge returns per-criterion `met`, evidence, and suggestions in `ReviewResult.domain_feedback`. `issues` is reserved for deterministic failures or explicitly reported critical failures. The former four-dimensional rubric and F1-F7 failure-signal taxonomy have been removed from the active runtime.
 
 ## Deterministic validation
 
@@ -27,7 +25,7 @@ Criteria mode does not produce or use the four dimension scores. It returns per-
 | `review.validation.enabled` | Run full-file validation. |
 | `review.validation.max_null_rate` | Maximum fraction of required schema slots that may be empty. |
 
-The full-file metrics are `dup_rate`, `null_rate`, `parse_valid_rate`, and `contamination_rate`. They remain observable validation evidence; four-dimension mode also uses them in its hard-metric score factor. Criteria mode uses the criteria satisfaction rate as its sample-level score and does not add duplicate or parse-rate thresholds.
+The full-file metrics are `dup_rate`, `null_rate`, `parse_valid_rate`, and `contamination_rate`. They remain observable validation evidence. The criteria satisfaction rate is the sample-level score; duplicate and parse-rate thresholds are not added.
 
 ## Decontamination
 
@@ -84,8 +82,7 @@ The final blend is:
 
 ```text
 embedding_score = weighted mean of enabled metric scores
-sample_score = criteria_met_rate                  # mode=criteria
-sample_score = weighted_four_dimension_score      # mode=four_dimensions
+sample_score = criteria_met_rate
 review_score = (1 - review_score_weight) * sample_score
              + review_score_weight * embedding_score
 ```

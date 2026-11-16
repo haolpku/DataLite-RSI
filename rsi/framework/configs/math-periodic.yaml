@@ -112,23 +112,14 @@ downstream_eval:
   bad_cases_per_benchmark: 2
   timeout_sec: 345600
 review:
-  mode: four_dimensions
   sampling:
     size: ${DF_REVIEW_SAMPLE_SIZE:80}
     seed: ${DF_REVIEW_SAMPLE_SEED:42}
-  four_dimensions:
-    pass_thresholds:
-      correctness: 0.6
-      relevance: 0.6
-      schema: 0.6
-    weights:
-      correctness: 0.40
-      relevance: 0.25
-      difficulty: 0.15
-      schema: 0.20
+  criteria:
+    pass_rate: 0.6
   validation:
     enabled: true
-    # Required-schema empty slots; applies in both review modes.
+    # Required-schema empty slots are checked over the full output.
     max_null_rate: 0.5
   decontamination:
     reference_files:

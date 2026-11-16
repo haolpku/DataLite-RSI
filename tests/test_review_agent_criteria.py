@@ -46,7 +46,6 @@ def _agent(**kwargs):
             ],
             "critical_failures": [],
         }),
-        mode="criteria",
         validation_enabled=True,
         **kwargs,
     )

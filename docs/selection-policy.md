@@ -59,14 +59,15 @@ The JSON `context` contains `schema_version` (currently 1), `event` (`review`,
 `downstream` or `final`), `workspace_dir`, `run_dir`, `task_description`,
 `quality_criteria`, `incumbent_iteration`, `policy`, `config`, `candidates` and
 `feedback`. Candidates have iteration, pipeline/dataset paths, review score,
-passed status, issues, score components, failure signals, domain feedback,
+passed status, issues, score components, domain feedback, review source,
 output row count when available, observation path and elapsed time. Only
 successfully executed and reviewed candidates with an existing dataset enter
 this list; a failed criteria review is still eligible.
 
-Each downstream feedback item has stage, status, checkpoint and evaluated
-iteration, benchmark scores and deltas. It contains no raw bad cases. Baseline
-feedback has a null iteration. Compare only compatible benchmark results.
+Each command feedback item has a source name, stage, status, checkpoint and
+evaluated iteration, benchmark scores and deltas. It contains no raw bad cases.
+Baseline feedback has a null iteration. Compare scores only within the same
+source and benchmark. See [feedback sources](feedback-sources.md).
 The policy receives new feedback after an already configured checkpoint; it
 does not schedule extra training or evaluation. See the working
 [example policy](../examples/selection_policy.py).

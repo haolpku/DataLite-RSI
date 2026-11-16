@@ -147,20 +147,11 @@ downstream_eval:
     max_actions: 4
 
 review:
-  mode: four_dimensions
   sampling:
     size: ${DF_REVIEW_SAMPLE_SIZE:10}
     seed: ${DF_REVIEW_SAMPLE_SEED:42}
-  four_dimensions:
-    pass_thresholds:
-      correctness: 0.6
-      relevance: 0.6
-      schema: 0.6
-    weights:
-      correctness: 0.40
-      relevance: 0.25
-      difficulty: 0.15
-      schema: 0.20
+  criteria:
+    pass_rate: 0.6
   validation:
     enabled: true
     max_null_rate: 0.5

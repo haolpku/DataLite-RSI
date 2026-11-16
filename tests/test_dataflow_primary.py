@@ -110,7 +110,7 @@ def test_task_evaluator_feedback_does_not_claim_text_review_metrics(tmp_path):
         evaluator_kind="task",
     )
     review = ReviewResult(
-        schema_score=0.0, relevance_score=0.0, passed=True,
+        passed=True,
         review_score=0.7, domain_feedback={"visual_consistency": 0.9},
     )
     prompt = build_pipeline_prompt(task, corpus, str(tmp_path / "iteration"), parent_review=review)

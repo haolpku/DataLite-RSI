@@ -258,7 +258,7 @@ def test_video_rsi_feedback_reports_pool_balance_and_does_not_promote_unknown_au
 
 def test_video_rsi_can_continue_a_passing_tie(tmp_path):
     config = object()
-    review = dict(schema_score=1.0, relevance_score=1.0, review_score=1.0, passed=True)
+    review = dict(review_score=1.0, passed=True)
     incumbent = Candidate(0, tmp_path / "v0", config, review=ReviewResult(**review))
     challenger = Candidate(1, tmp_path / "v1", config, review=ReviewResult(**review))
 

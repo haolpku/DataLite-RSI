@@ -49,8 +49,6 @@ class CandidateEvaluator(Protocol):
 def normalize_candidate_review(value: CandidateFeedback | ReviewResult) -> ReviewResult:
     if isinstance(value, CandidateFeedback):
         return ReviewResult(
-            schema_score=0.0,
-            relevance_score=0.0,
             passed=value.passed,
             review_score=float(value.score),
             issues=list(value.issues),

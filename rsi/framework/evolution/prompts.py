@@ -124,56 +124,6 @@ compile-only 或 smoke test。Agent 返回后，框架会重新执行 artifact �
 只修复执行问题，不改变任务目标，不联网取数，不进行交互或 git/gh 操作。"""
 
 
-FAILURE_SIGNALS: dict[str, str] = {
-    "F1": "抽样描述过窄：可见样本围绕极少数结构展开",
-    "F2": "抽样华而不实：表面变化很多但可见逻辑结构高度一致",
-    "F3": "抽样模板锁定：可见样本存在近重复或模板化雷同",
-    "F4": "抽样覆盖不足：可见样本缺少目标任务的关键能力维度",
-    "F5": "约束漂移：偏离目标任务、领域或答案格式",
-    "F6": "有形无实：形式满足但训练价值低",
-    "F7": "描述空泛：内容语义松散或逐渐跑题",
-}
-
-_DIM_LABELS: tuple[tuple[str, str], ...] = (
-    ("correctness_score", "正确性"),
-    ("relevance_score", "相关性"),
-    ("difficulty_score", "难度"),
-    ("schema_score", "schema 符合度"),
-)
-
-
-REVIEW_PROMPT = """你是数据质量评审员。下面是候选数据集的有界随机抽样。请评估该抽样中
-可直接观察到的微调质量，每个维度取 0.0-1.0。F1-F4 只能在抽样本身提供重复、模板化或覆盖不足
-的直接证据时报告，不能外推整个数据集；全量多样性由框架使用 dataset embedding 单独评估。
-
-目标任务：{task_description}
-期望 schema：{target_schema}
-质量要点：{quality_criteria}
-
-数据抽样（每行一条 JSON）：
-{samples}
-
-评分维度：
-- correctness_score：输出内容、标签或解答满足任务要求；如果包含解释或推理，内容应保持自洽。
-- relevance_score：与目标任务和领域相关。
-- difficulty_score：对目标任务具有适当的信息量、覆盖度和可学习挑战。
-- schema_score：必需字段齐全、非空且类型正确；额外元数据不扣分。
-
-失败信号：
-{failure_signal_block}
-
-只输出以下 JSON object：
-{{
-  "correctness_score": 0.0,
-  "relevance_score": 0.0,
-  "difficulty_score": 0.0,
-  "schema_score": 0.0,
-  "failure_signals": ["F3"],
-  "issues": ["具体问题及样本证据"]
-}}
-没有失败信号时使用空数组。不要输出 JSON 以外的内容。"""
-
-
 CRITERIA_REVIEW_PROMPT = """你是数据质量评审员。只依据当前任务列出的质量标准和下方的有界随机样本评估候选数据。
 只对样本中可观察到的情况作判断，不要把样本结论外推为整份数据的频率；全量结构、重复和污染由框架另行检查。
 
@@ -208,13 +158,9 @@ def build_pipeline_diagnostic_prompt(
     max_prompt_chars: int = 80_000,
 ) -> str:
     """Build the non-scoring, read-only Call B prompt."""
-    criteria_feedback = (
-        review.domain_feedback
-        if isinstance(review.domain_feedback, dict)
-        and review.domain_feedback.get("review_mode") == "criteria"
-        else None
-    )
     review_context = {
+        "quality_criteria_feedback": review.domain_feedback,
+        "issues": list(review.issues),
         "validation_metrics": {
             "dup_rate": review.dup_rate,
             "null_rate": review.null_rate,
@@ -222,21 +168,6 @@ def build_pipeline_diagnostic_prompt(
             "contamination_rate": review.contamination_rate,
         },
     }
-    if criteria_feedback is not None:
-        review_context.update({
-            "review_mode": "criteria",
-            "quality_criteria_feedback": criteria_feedback,
-            "issues": list(review.issues),
-        })
-    else:
-        review_context.update({
-            "correctness_score": review.correctness_score,
-            "relevance_score": review.relevance_score,
-            "difficulty_score": review.difficulty_score,
-            "schema_score": review.schema_score,
-            "failure_signals": list(review.failure_signals),
-            "issues": list(review.issues),
-        })
     declared_operators = [
         item for item in config.operators[:20] if isinstance(item, dict)
     ]
@@ -285,7 +216,7 @@ def build_pipeline_prompt(
     parent_review: ReviewResult | None = None,
     execution_observation_path: str | None = None,
     pipeline_diagnostic: object | None = None,
-    downstream_feedback: DownstreamEvaluationResult | None = None,
+    downstream_feedback: DownstreamEvaluationResult | list[DownstreamEvaluationResult] | None = None,
     evolution_history: list[dict] | None = None,
     is_init: bool = False,
 ) -> str:
@@ -350,17 +281,6 @@ def build_selfcorrect_prompt(
     return prompt[:_SELFCORRECT_PROMPT_MAX_CHARS - len(marker)] + marker
 
 
-def build_review_prompt(task: TaskSpec, samples_text: str) -> str:
-    signals = "\n".join(f"- {key}: {value}" for key, value in FAILURE_SIGNALS.items())
-    return REVIEW_PROMPT.format(
-        task_description=task.task_description,
-        target_schema=task.target_schema,
-        quality_criteria=task.quality_criteria,
-        samples=samples_text,
-        failure_signal_block=signals,
-    )
-
-
 def build_criteria_review_prompt(task: TaskSpec, samples_text: str) -> str:
     if not task.quality_criteria:
         raise ValueError("criteria review requires task.quality_criteria")
@@ -418,117 +338,50 @@ def _parent_block(
 
 
 def _parent_quality_block(review: ReviewResult, task: TaskSpec) -> str:
-    criteria_feedback = review.domain_feedback if isinstance(review.domain_feedback, dict) else {}
-    if criteria_feedback.get("review_mode") == "criteria":
-        lines = [
-            "【当前最佳 incumbent 的质量标准评估反馈——本轮必须直接回应】",
-            f"按质量标准计算的满足比例：{float(criteria_feedback.get('criteria_met_rate', review.review_score)):.3f}；"
-            f"评审{'通过' if review.passed else '未通过'}",
-        ]
-        assessments = criteria_feedback.get("criteria_assessments", [])
-        if isinstance(assessments, list):
-            lines.append("逐条质量标准反馈：")
-            for item in assessments:
-                if not isinstance(item, dict):
-                    continue
-                status = "满足" if item.get("met") else "未满足"
-                lines.append(
-                    f"- 标准 {item.get('criterion_index', '?')} [{status}]："
-                    f"{item.get('evidence', '')}"
-                    + (
-                        f"；建议：{item.get('suggestion', '')}"
-                        if item.get("suggestion")
-                        else ""
-                    )
-                )
-        failures = criteria_feedback.get("critical_failures", [])
-        if isinstance(failures, list) and failures:
-            lines.append("关键失败：")
-            lines.extend(f"- {failure}" for failure in failures)
-        if review.issues:
-            lines.append("确定性检查或评审错误：")
-            lines.extend(f"- {issue}" for issue in review.issues)
-        lines.append(
-            f"全量硬指标：重复率 {review.dup_rate:.2f} | 空值率 {review.null_rate:.2f} | "
-            f"可解析率 {review.parse_valid_rate:.2f} | 污染率 {review.contamination_rate:.2f}"
-        )
-        lines.append("只依据这些质量标准证据修改相应算子，并在 decision.json 的 reason 中说明对应关系。")
-        return "\n".join(lines) + "\n"
+    feedback = review.domain_feedback if isinstance(review.domain_feedback, dict) else {}
+    source = review.source
     if task.evaluator_kind != "review_agent":
         lines = [
-            "【当前最佳 incumbent 的任务评估反馈——本轮必须直接回应】",
+            f"【反馈源 {source}：当前最佳 incumbent 的任务评估——本轮必须直接回应】",
             f"候选得分：{review.review_score:.3f}；评估{'通过' if review.passed else '未通过'}",
         ]
         if review.issues:
-            lines.append("具体问题：")
-            lines.extend(f"- {issue}" for issue in review.issues)
-        if review.domain_feedback:
-            lines.append(
-                "领域反馈："
-                + json.dumps(review.domain_feedback, ensure_ascii=False, default=str)[:12000]
-            )
-        lines.append("只依据当前任务的评估证据修改相应算子，并在 decision.json.reason 中说明。")
+            lines.extend(["具体问题：", *(f"- {item}" for item in review.issues)])
+        if feedback:
+            lines.append("领域反馈：" + json.dumps(feedback, ensure_ascii=False, default=str)[:12000])
         return "\n".join(lines) + "\n"
-    dims = [
-        (label, float(getattr(review, attr, 0.0) or 0.0))
-        for attr, label in _DIM_LABELS
-    ]
+
     lines = [
-        "【当前最佳 incumbent 的候选评估反馈——本轮必须直接回应】",
-        f"Review：{review.review_score:.3f}；评审{'通过' if review.passed else '未通过'}",
-        "抽样四维：" + " | ".join(f"{label} {score:.2f}" for label, score in dims),
-        f"全量硬指标：重复率 {review.dup_rate:.2f} | 空值率 {review.null_rate:.2f} | "
-        f"可解析率 {review.parse_valid_rate:.2f} | 污染率 {review.contamination_rate:.2f}",
+        f"【反馈源 {source}：当前最佳 incumbent 的质量标准评估——本轮必须直接回应】",
+        f"按质量标准计算的满足比例：{float(feedback.get('criteria_met_rate', review.review_score)):.3f}；"
+        f"评审{'通过' if review.passed else '未通过'}",
+        "逐条质量标准反馈：",
     ]
-    embedding_quality = review.embedding_quality
-    if embedding_quality.enabled:
-        if embedding_quality.status == "ok":
-            diversity = embedding_quality.embedding_diversity
-            delta_diversity = embedding_quality.delta_embedding_diversity_vs_parent
-            metric_lines = [f"metrics={','.join(embedding_quality.enabled_metrics)}"]
-            if "das" in embedding_quality.enabled_metrics and embedding_quality.mmd is not None:
-                delta_mmd = (
-                    f"{embedding_quality.delta_mmd_vs_parent:+.6f}"
-                    if embedding_quality.delta_mmd_vs_parent is not None
-                    else "baseline"
-                )
-                metric_lines.append(f"ΔMMD {delta_mmd}")
-            if "vendi" in embedding_quality.enabled_metrics:
-                delta_vendi = (
-                    f"{delta_diversity['cosine_vendi_ratio']:+.6f}"
-                    if "cosine_vendi_ratio" in delta_diversity else "baseline"
-                )
-                metric_lines.append(
-                    f"normalized Vendi {diversity.get('cosine_vendi_ratio', 0.0):.6f} (Δ {delta_vendi})"
-                )
-            if "nearest_neighbor" in embedding_quality.enabled_metrics:
-                delta_p95 = (
-                    f"{delta_diversity['nearest_neighbor_cosine_p95']:+.6f}"
-                    if "nearest_neighbor_cosine_p95" in delta_diversity else "baseline"
-                )
-                metric_lines.append(
-                    f"NN cosine p95 {diversity.get('nearest_neighbor_cosine_p95', 0.0):.6f} (Δ {delta_p95})"
-                )
-            lines.append("Embedding quality：" + " | ".join(metric_lines))
-            lines.append("ΔMMD 越负越好；normalized Vendi 越高越好；NN cosine p95 越低越好。")
-        else:
-            lines.append(
-                f"Embedding quality：状态 {embedding_quality.status}；"
-                f"原因：{embedding_quality.error or '未知'}。"
-                "请优先保证输出至少含足够数量且字段可编码的有效记录。"
-            )
-    if review.issues:
-        lines.append("具体问题：")
-        lines.extend(f"- {issue}" for issue in review.issues)
-    if review.domain_feedback:
+    for item in feedback.get("criteria_assessments", [])[:30]:
+        if not isinstance(item, dict):
+            continue
+        status = "满足" if item.get("met") else "未满足"
         lines.append(
-            "领域反馈（由当前任务的 evaluator 提供）："
-            + json.dumps(review.domain_feedback, ensure_ascii=False, default=str)[:12000]
+            f"- 标准 {item.get('criterion_index', '?')} [{status}]：{item.get('evidence', '')}"
+            + (f"；建议：{item['suggestion']}" if item.get("suggestion") else "")
         )
+    if review.issues:
+        lines.extend(["具体问题：", *(f"- {item}" for item in review.issues)])
     lines.append(
-        "优先修改能够解释上述反馈的步骤，同时保留无关且有效的行为；若证据要求，可增加、拆分、"
-        "合并或替换算子。请在 decision.json 的 reason 中说明反馈、改动与预期作用的对应关系。"
+        f"全量硬指标：重复率 {review.dup_rate:.2f} | 空值率 {review.null_rate:.2f} | "
+        f"可解析率 {review.parse_valid_rate:.2f} | 污染率 {review.contamination_rate:.2f}"
     )
+    quality = review.embedding_quality
+    if quality.enabled:
+        if quality.status == "ok":
+            lines.append(
+                f"Embedding quality：score={quality.embedding_quality_score}; "
+                f"metrics={','.join(quality.enabled_metrics)}; MMD={quality.mmd}; "
+                f"diversity={json.dumps(quality.embedding_diversity, ensure_ascii=False)}"
+            )
+        else:
+            lines.append(f"Embedding quality：状态 {quality.status}；原因：{quality.error or '未知'}")
+    lines.append("只依据这些证据修改相应算子，并在 decision.json 的 reason 中说明对应关系。")
     return "\n".join(lines) + "\n"
 
 
@@ -594,65 +447,82 @@ def _pipeline_diagnostic_block(diagnostic: object | None) -> str:
 
 
 def _downstream_feedback_block(
-    feedback: DownstreamEvaluationResult | None,
+    feedback: DownstreamEvaluationResult | list[DownstreamEvaluationResult] | None,
 ) -> str:
     if feedback is None:
         return ""
+    if isinstance(feedback, list):
+        return "\n".join(_downstream_feedback_block(item) for item in feedback)
+    source = f"【反馈源：{feedback.source}】\n"
     if not feedback.succeeded:
-        return (
-            "【下游 SFT/评测检查点】外部评测未成功，因此本轮没有可用的下游质量信号。\n"
+        return source + (
+            "【反馈检查点】外部评估未成功，因此本轮没有该来源的可用质量信号。\n"
             f"失败原因：{feedback.error or 'unknown error'}。不要根据基础设施失败臆测数据问题。\n"
         )
 
     if feedback.stage == "baseline":
-        title = "【第 0 轮下游模型诊断——初始流水线必须分析并回应】"
+        title = "【第 0 轮来源基线反馈——初始流水线必须分析并回应】"
         checkpoint = (
-            "检查点：迭代开始前；未进行 SFT；"
-            f"下游模型：{feedback.model}"
+            "检查点：迭代开始前；未进行训练；"
+            f"评估对象：{feedback.model}"
         )
     else:
-        title = "【当前最佳 incumbent 的下游 SFT/评测反馈——本轮必须分析并回应】"
+        title = "【当前最佳 incumbent 的独立评估反馈——本轮必须分析并回应】"
         checkpoint = (
             f"检查点：完成第 {feedback.checkpoint_iteration} 轮后；"
             f"被评测 incumbent：第 {feedback.incumbent_iteration} 轮；"
-            f"下游模型：{feedback.model}"
+            f"训练模型：{'是' if feedback.training_performed else '否'}；"
+            f"评估对象：{feedback.model}"
         )
 
     lines = [
+        source.strip(),
         title,
         checkpoint,
-        "指标含义：delta_previous 是当前 checkpoint 相对上一个成功下游 checkpoint 的分数变化；"
-        "delta_baseline 是相对 checkpoint 000（未训练 backbone）的分数变化；正数表示提升，"
-        "负数表示下降，baseline 阶段因没有对照而显示 unknown。",
-        "下面只提供聚合指标和 Downstream Attribution Agent 生成的结构化归因报告。",
+        "指标含义：delta_previous 是相对同一来源上一个成功检查点的分数变化；"
+        "delta_baseline 是相对同一来源 checkpoint 000 的分数变化；正负仅表示数值变化，"
+        "是否改善取决于该指标的含义；baseline 阶段因没有对照而显示 unknown。",
+        "下面提供聚合指标；若启用归因，还会提供结构化归因报告。",
         "归因报告中的 Evidence ID 只是不可解析的审计引用，不代表可访问的数据源。"
-        "只能归纳可复用的能力缺口并改进 raw-data pipeline。",
+        "只能依据证据归纳可复用的缺口并改进 raw-data pipeline。",
     ]
     attribution = feedback.attribution
     for benchmark_name, benchmark in feedback.benchmarks.items():
         delta = feedback.score_deltas.get(benchmark_name)
         baseline_delta = feedback.score_deltas_vs_baseline.get(benchmark_name)
-        lines.append(
-            f"\n### {benchmark_name}: {benchmark.metric}={benchmark.score:.6f}; "
-            f"delta_previous={delta if delta is not None else 'unknown'}; "
-            f"delta_baseline={baseline_delta if baseline_delta is not None else 'unknown'}; "
-            f"correct_count={benchmark.correct_count}; total_count={benchmark.total_count}; "
-            f"question_count={benchmark.question_count}; n_sampling={benchmark.n_sampling}; "
-            f"incorrect={benchmark.incorrect_count}; wrong={benchmark.wrong_answer_count}; "
-            f"parse_failure={benchmark.parse_failure_count}; runaway={benchmark.runaway_count}"
-        )
+        parts = [
+            f"{benchmark.metric}={benchmark.score:.6f}",
+            f"delta_previous={delta if delta is not None else 'unknown'}",
+            f"delta_baseline={baseline_delta if baseline_delta is not None else 'unknown'}",
+        ]
+        for label, value in (
+            ("correct_count", benchmark.correct_count),
+            ("total_count", benchmark.total_count),
+            ("question_count", benchmark.question_count),
+            ("n_sampling", benchmark.n_sampling),
+            ("incorrect", benchmark.incorrect_count),
+            ("wrong", benchmark.wrong_answer_count),
+            ("parse_failure", benchmark.parse_failure_count),
+            ("runaway", benchmark.runaway_count),
+        ):
+            if value is not None:
+                parts.append(f"{label}={value}")
+        lines.append(f"\n### {benchmark_name}: " + "; ".join(parts))
     if feedback.summary:
         lines.extend(["", "外部评测摘要：", feedback.summary])
-    if attribution is None or attribution.status != "ok":
+    if attribution is None:
+        lines.append("\n没有可用的归因报告；聚合指标仍可作为独立反馈。")
+        return "\n".join(lines) + "\n"
+    if attribution.status != "ok":
         lines.extend(
             [
                 "",
-                "下游 bad case 归因报告不可用；本轮只保留 benchmark 统计，不向 PipelineAgent 暴露原始 bad case。",
+                "bad case 归因报告不可用；本轮只保留聚合指标，不向 PipelineAgent 暴露原始 bad case。",
                 f"归因失败原因：{attribution.error if attribution is not None else 'not generated'}。",
             ]
         )
         return "\n".join(lines) + "\n"
-    lines.extend(["", "下游 bad case 归因报告：", attribution.summary or "无总体结论。"])
+    lines.extend(["", "bad case 归因报告：", attribution.summary or "无总体结论。"])
     for index, finding in enumerate(attribution.findings, start=1):
         category = str(finding.get("category", "other"))
         confidence = finding.get("confidence", 0.0)
@@ -738,27 +608,11 @@ def build_downstream_attribution_prompt(
     ]
     review_text = "无静态 Review 记录。"
     if parent_review is not None:
-        criteria_feedback = parent_review.domain_feedback
-        if (
-            isinstance(criteria_feedback, dict)
-            and criteria_feedback.get("review_mode") == "criteria"
-        ):
-            review_text = (
-                f"review_mode=criteria; review_score={parent_review.review_score:.4f}; "
-                f"criteria_met_rate={float(criteria_feedback.get('criteria_met_rate', parent_review.review_score)):.3f}; "
-                f"criteria_assessments={json.dumps(criteria_feedback.get('criteria_assessments', []), ensure_ascii=False)}; "
-                f"critical_failures={json.dumps(criteria_feedback.get('critical_failures', []), ensure_ascii=False)}; "
-                f"issues={'；'.join(parent_review.issues[:4]) or 'none'}"
-            )
-        else:
-            review_text = (
-                f"review_score={parent_review.review_score:.4f}; "
-                f"correctness={parent_review.correctness_score:.3f}; "
-                f"relevance={parent_review.relevance_score:.3f}; "
-                f"difficulty={parent_review.difficulty_score:.3f}; "
-                f"schema={parent_review.schema_score:.3f}; "
-                f"issues={'；'.join(parent_review.issues[:4]) or 'none'}"
-            )
+        review_text = (
+            f"review_score={parent_review.review_score:.4f}; "
+            f"criteria_feedback={json.dumps(parent_review.domain_feedback, ensure_ascii=False)}; "
+            f"issues={'；'.join(parent_review.issues[:4]) or 'none'}"
+        )
     lines = [
         "你是下游评测归因器，负责把模型 benchmark 失败归因到“可由数据流水线改进的原因”。",
         "不要把单个 benchmark 题目当作训练数据，不要复述或硬编码题目/答案。",

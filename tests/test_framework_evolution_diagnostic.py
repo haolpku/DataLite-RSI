@@ -34,7 +34,7 @@ class Runtime:
 
 
 def _review():
-    return ReviewResult(schema_score=0.8, relevance_score=0.8, passed=True)
+    return ReviewResult(passed=True)
 
 
 def test_diagnostic_uses_independent_runtime_and_persists_json(tmp_path):
@@ -93,7 +93,7 @@ def test_diagnostic_prompt_builder_exposes_only_diagnostic_review_context():
         max_prompt_chars=4000,
     )
     assert "pipeline.py" in prompt
-    assert "correctness_score" in prompt
+    assert "correctness_score" not in prompt
     assert "0.77" not in prompt
     assert "不要给数据质量打分" in prompt
     assert "低基数字段分布" in prompt

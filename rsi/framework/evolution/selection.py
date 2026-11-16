@@ -142,11 +142,11 @@ class PolicySelector:
                 "pipeline_path": str(candidate.iteration_dir / "pipeline.py"),
                 "dataset_path": candidate.dataset_path,
                 "review_score": candidate.score,
+                "review_source": candidate.review_source,
                 "passed": bool(review.passed),
                 "issues": list(review.issues),
                 "review_feedback": {
                     "score_components": review.score_components,
-                    "failure_signals": review.failure_signals,
                     "domain_feedback": review.domain_feedback,
                 },
                 "output_rows": _read_observation_rows(
@@ -158,6 +158,7 @@ class PolicySelector:
         # Only summarized, validated benchmark scores enter the policy context.
         # Raw bad cases and attribution evidence remain outside this boundary.
         scores = [{
+            "source": item.source,
             "stage": item.stage,
             "status": item.status,
             "checkpoint_iteration": item.checkpoint_iteration,

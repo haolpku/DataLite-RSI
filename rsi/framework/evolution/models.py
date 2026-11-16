@@ -67,13 +67,8 @@ class EmbeddingQualityResult:
 class ReviewResult:
     """Comparable result, with text-review details or task-owned evidence."""
 
-    schema_score: float
-    relevance_score: float
     passed: bool
     issues: list[str] = field(default_factory=list)
-
-    correctness_score: float = 0.0
-    difficulty_score: float = 0.0
 
     dup_rate: float = 0.0
     null_rate: float = 0.0
@@ -83,9 +78,9 @@ class ReviewResult:
     llm_composite: float = 0.0
     review_score: float = 0.0
     score_components: dict[str, float] = field(default_factory=dict)
-    failure_signals: list[str] = field(default_factory=list)
     embedding_quality: EmbeddingQualityResult = field(default_factory=EmbeddingQualityResult)
     # A modality-specific evaluator may attach native IF/VC/VQ, frozen-target,
     # or other evidence without changing the incumbent comparison contract.
     domain_feedback: dict[str, Any] = field(default_factory=dict)
+    source: str = "criteria"
     evaluator_kind: str = "review_agent"

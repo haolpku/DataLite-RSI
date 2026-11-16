@@ -418,12 +418,95 @@ class PipelineLLMServing(LLMServingABC):
                     self.logger.exception("Worker crashed unexpectedly in threadpool")
         return responses
 
+
+    # ---- argument-shape validation -----------------------------------------
+    # The two generate_* methods take different shapes, and a wrong one is
+    # otherwise only detectable at the API, where it surfaces as a generic
+    # upstream error. Validating here turns a silent 90%-failure run into an
+    # immediate, actionable exception.
+
+    @staticmethod
+    def _describe(value, limit: int = 120) -> str:
+        text = repr(value)
+        return text if len(text) <= limit else text[:limit] + "..."
+
+    def _require_text_inputs(self, user_inputs, method: str) -> None:
+        if isinstance(user_inputs, (str, bytes)):
+            raise TypeError(
+                f"{method} expects a sequence of strings, not a single "
+                f"{type(user_inputs).__name__}; wrap it in a list."
+            )
+        for idx, item in enumerate(user_inputs):
+            if isinstance(item, str):
+                continue
+            hint = ""
+            if isinstance(item, (list, tuple)):
+                looks_like_dialogue = any(
+                    isinstance(turn, dict) and "role" in turn for turn in item
+                )
+                if looks_like_dialogue:
+                    hint = (
+                        " This looks like a message list: use "
+                        "generate_from_conversations() for dialogues, or pass "
+                        "the user text alone and give the system turn through "
+                        "the system_prompt argument."
+                    )
+            elif isinstance(item, dict) and "role" in item:
+                hint = (
+                    " This looks like a single message dict: pass "
+                    "item['content'] instead, or use "
+                    "generate_from_conversations()."
+                )
+            raise TypeError(
+                f"{method} item {idx} must be a string, got "
+                f"{type(item).__name__}: {self._describe(item)}.{hint}"
+            )
+
+    def _require_dialogue_inputs(self, conversations, method: str) -> None:
+        for idx, dialogue in enumerate(conversations):
+            if isinstance(dialogue, (str, bytes)):
+                raise TypeError(
+                    f"{method} item {idx} must be a list of message dicts, got "
+                    f"{type(dialogue).__name__}. Use generate_from_input() for "
+                    f"plain prompts."
+                )
+            if not isinstance(dialogue, (list, tuple)):
+                raise TypeError(
+                    f"{method} item {idx} must be a list of message dicts, got "
+                    f"{type(dialogue).__name__}: {self._describe(dialogue)}"
+                )
+            for turn_idx, turn in enumerate(dialogue):
+                if not isinstance(turn, dict):
+                    raise TypeError(
+                        f"{method} item {idx} turn {turn_idx} must be a dict "
+                        f"with role and content, got {type(turn).__name__}: "
+                        f"{self._describe(turn)}"
+                    )
+                missing = [k for k in ("role", "content") if k not in turn]
+                if missing:
+                    raise TypeError(
+                        f"{method} item {idx} turn {turn_idx} is missing "
+                        f"{missing}; keys present: {sorted(turn)}"
+                    )
+                if not isinstance(turn["content"], str):
+                    raise TypeError(
+                        f"{method} item {idx} turn {turn_idx} content must be a "
+                        f"string, got {type(turn['content']).__name__}: "
+                        f"{self._describe(turn['content'])}"
+                    )
+
     def generate_from_input(
         self,
         user_inputs: Sequence[str],
         system_prompt: str = DEFAULT_SYSTEM_PROMPT,
         json_schema: dict = None,
     ) -> list[str | None]:
+        # Each item becomes the `content` of one user message, so it must be
+        # text. Passing message dicts here produces a request whose `content`
+        # is an array of role/content objects; the gateway rejects that with a
+        # generic upstream error that looks like a server fault rather than a
+        # caller mistake. Fail here, naming the method that takes dialogues.
+        self._require_text_inputs(user_inputs, "generate_from_input")
         task_args_list = [
             dict(
                 id=idx,
@@ -443,6 +526,9 @@ class PipelineLLMServing(LLMServingABC):
     def generate_from_conversations(
         self, conversations: Sequence[Sequence[dict]]
     ) -> list[str | None]:
+        # The mirror-image mistake: a list of plain strings here would be sent
+        # as `messages` entries without roles.
+        self._require_dialogue_inputs(conversations, "generate_from_conversations")
         task_args_list = [
             dict(id=idx, payload=dialogue, model=self.model_name)
             for idx, dialogue in enumerate(conversations)

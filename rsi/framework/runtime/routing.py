@@ -36,6 +36,7 @@ def load_task_config(source: TaskEnvelope | Mapping[str, Any] | str | Path) -> T
         value = dict(source)
     else:
         path = Path(source)
+        envelope_dir = str(path.resolve().parent)
         text = path.read_text(encoding="utf-8")
         if path.suffix.lower() == ".json":
             value = json.loads(text)
@@ -49,4 +50,10 @@ def load_task_config(source: TaskEnvelope | Mapping[str, Any] | str | Path) -> T
             raise ValueError(f"unsupported task config extension {path.suffix!r}")
     if not isinstance(value, dict):
         raise ValueError("task config must be an object")
-    return TaskEnvelope.from_mapping(_expand(value))
+    expanded = _expand(value)
+    # Let a relative objective_file resolve against the envelope's own directory
+    # rather than the process cwd. Consumed and removed by from_mapping, so it
+    # never reaches a fingerprint or a serialised envelope.
+    if isinstance(expanded, dict) and "envelope_dir" in locals():
+        expanded.setdefault("__envelope_dir__", envelope_dir)
+    return TaskEnvelope.from_mapping(expanded)

@@ -1,4 +1,4 @@
-"""Dataset-level embedding evaluation with optional proxy MMD/DAS and diversity.
+"""Embedding quality evaluation with optional proxy MMD/DAS and diversity.
 
 The implementation follows Data-Preparation-Bench's DAS definition:
 ``DAS = -sqrt(max(0, biased_MMD_squared))`` with an RBF kernel.  Candidate
@@ -22,13 +22,13 @@ from typing import Any, Protocol
 
 import numpy as np
 
-from rsi.framework.evolution.models import DatasetQualityResult
+from rsi.framework.evolution.models import EmbeddingQualityResult
 from rsi.framework.evolution.telemetry.pipeline_usage import normalize_usage
 from rsi.framework.evolution.utils.logging import get_logger
 
 
 Conversation = list[dict[str, str]]
-logger = get_logger("core.dataset_quality")
+logger = get_logger("core.embedding_quality")
 
 
 @dataclass(frozen=True)
@@ -243,12 +243,13 @@ def _combine_embedding_usage(
     return combined
 
 
-class DatasetQualityEvaluator:
+class EmbeddingQualityEvaluator:
     """Evaluate candidate diversity and optionally compare with a quality proxy."""
 
     def __init__(
         self,
         *,
+        enabled_metrics: list[str],
         proxy: ProxyDatasetConfig | None,
         embedder: EmbeddingBackend,
         sample_size: int = 5000,
@@ -256,28 +257,30 @@ class DatasetQualityEvaluator:
         sigma: float = 1.0,
         biased: bool = True,
         normalize_embeddings: bool = True,
-        max_embedding_fail_rate: float = 0.02,
+        max_embedding_failure_rate: float = 0.02,
         cache_dir: str | Path | None = None,
-        require_full_sample: bool = True,
-        proxy_comparison_enabled: bool = True,
+        require_requested_size: bool = True,
     ) -> None:
         if sample_size < 1:
-            raise ValueError("dataset_quality.sample_size 必须至少为 1")
-        if sigma <= 0:
-            raise ValueError("dataset_quality.sigma 必须大于 0")
-        if proxy_comparison_enabled and proxy is None:
-            raise ValueError("DAS/MMD enabled but no proxy dataset was configured")
+            raise ValueError("embedding_quality.sampling.size 必须至少为 1")
+        if "das" in enabled_metrics and sigma <= 0:
+            raise ValueError("embedding_quality.metrics.das.mmd.sigma 必须大于 0")
+        allowed_metrics = {"das", "vendi", "nearest_neighbor"}
+        if not enabled_metrics or set(enabled_metrics) - allowed_metrics:
+            raise ValueError("embedding_quality.metrics 至少需要一个受支持的启用指标")
+        if "das" in enabled_metrics and proxy is None:
+            raise ValueError("embedding_quality.metrics.das 启用时必须配置 proxy")
+        self.enabled_metrics = tuple(dict.fromkeys(enabled_metrics))
         self.proxy = proxy
-        self.proxy_comparison_enabled = proxy_comparison_enabled
         self.embedder = embedder
         self.sample_size = sample_size
         self.seed = seed
         self.sigma = sigma
         self.biased = biased
         self.normalize_embeddings = normalize_embeddings
-        self.max_embedding_fail_rate = max_embedding_fail_rate
+        self.max_embedding_failure_rate = max_embedding_failure_rate
         self.cache_dir = Path(cache_dir).resolve() if cache_dir else None
-        self.require_full_sample = require_full_sample
+        self.require_requested_size = require_requested_size
         self._proxy_messages: list[Conversation] | None = None
         self._embedding_usage_events: list[dict[str, Any]] = []
 
@@ -295,14 +298,15 @@ class DatasetQualityEvaluator:
         *,
         candidate_user_field: str,
         candidate_assistant_field: str,
-    ) -> DatasetQualityResult:
+    ) -> EmbeddingQualityResult:
         self._embedding_usage_events = []
-        base = DatasetQualityResult(
+        base = EmbeddingQualityResult(
             enabled=True,
             status="error",
-            metric=("DAS" if self.proxy_comparison_enabled else "candidate_embedding_diversity"),
+            metric=",".join(self.enabled_metrics),
+            enabled_metrics=list(self.enabled_metrics),
             proxy_name=self.proxy_name,
-            proxy_sample_size=(self.sample_size if self.proxy_comparison_enabled else 0),
+            proxy_sample_size=(self.sample_size if "das" in self.enabled_metrics else 0),
             embedding_model=self.embedder.model_name,
             normalized=self.normalize_embeddings,
             sigma=self.sigma,
@@ -319,17 +323,17 @@ class DatasetQualityEvaluator:
             base.candidate_total = total
             base.candidate_sample_size = len(candidate_messages)
             logger.info(
-                "DAS 候选采样：path=%s total=%d valid=%d sampled=%d target=%d",
+                "Embedding 候选采样：path=%s total=%d valid=%d sampled=%d target=%d",
                 candidate_path,
                 total,
                 valid,
                 len(candidate_messages),
                 self.sample_size,
             )
-            if self.require_full_sample and valid < self.sample_size:
+            if self.require_requested_size and valid < self.sample_size:
                 base.status = "insufficient_samples"
                 base.error = (
-                    f"候选数据只有 {valid} 条可编码记录，DAS 配置要求固定采样 "
+                    f"候选数据只有 {valid} 条可编码记录，embedding_quality.sampling 配置要求固定采样 "
                     f"{self.sample_size} 条"
                 )
                 return base
@@ -341,10 +345,10 @@ class DatasetQualityEvaluator:
             candidate_batch = self._embed_cached(candidate_messages, scope="candidate")
             base.embedding_fail_rate = candidate_batch.fail_rate
             proxy_batch = None
-            if self.proxy_comparison_enabled:
+            if "das" in self.enabled_metrics:
                 proxy_messages = self._load_proxy_messages()
                 base.proxy_sample_size = len(proxy_messages)
-                if self.require_full_sample and len(proxy_messages) < self.sample_size:
+                if self.require_requested_size and len(proxy_messages) < self.sample_size:
                     base.status = "insufficient_proxy_samples"
                     base.error = (
                         f"代理数据只有 {len(proxy_messages)} 条可编码记录，配置要求 "
@@ -355,17 +359,19 @@ class DatasetQualityEvaluator:
                 base.embedding_fail_rate = max(
                     candidate_batch.fail_rate, proxy_batch.fail_rate
                 )
-            if base.embedding_fail_rate > self.max_embedding_fail_rate:
+            if base.embedding_fail_rate > self.max_embedding_failure_rate:
                 base.error = (
                     f"embedding 失败率 {base.embedding_fail_rate:.2%} 超过上限 "
-                    f"{self.max_embedding_fail_rate:.2%}"
+                    f"{self.max_embedding_failure_rate:.2%}"
                 )
                 return base
 
             base.status = "ok"
             base.embedding_dim = int(candidate_batch.vectors.shape[1])
             base.embedding_diversity = compute_embedding_diversity(
-                candidate_batch.vectors
+                candidate_batch.vectors,
+                compute_vendi="vendi" in self.enabled_metrics,
+                compute_nearest_neighbor="nearest_neighbor" in self.enabled_metrics,
             )
             if proxy_batch is not None:
                 mmd, terms = compute_rbf_mmd(
@@ -379,7 +385,7 @@ class DatasetQualityEvaluator:
                 base.das = -mmd
                 base.kernel_terms = terms
             logger.info(
-                "Dataset embedding 完成：proxy=%s candidate=%d "
+                "Embedding quality 完成：proxy=%s candidate=%d "
                 "MMD=%s DAS=%s Vendi=%.3f NN-cos-mean=%.4f",
                 self.proxy_name,
                 len(candidate_batch.vectors),
@@ -391,7 +397,7 @@ class DatasetQualityEvaluator:
             return base
         except Exception as exc:  # Evidence must survive service/data failures.
             base.error = f"{type(exc).__name__}: {exc}"
-            logger.exception("DAS 计算失败：%s", base.error)
+            logger.exception("Embedding quality 计算失败：%s", base.error)
             return base
         finally:
             base.embedding_usage = _combine_embedding_usage(
@@ -406,7 +412,7 @@ class DatasetQualityEvaluator:
         if self._proxy_messages is not None:
             return self._proxy_messages
         if self.proxy is None:
-            raise ValueError("proxy comparison is disabled")
+            raise ValueError("DAS proxy is not configured")
         source = self.proxy.source.strip().lower()
         if source in {"local", "jsonl", "json"}:
             messages, _, _ = _sample_local_proxy(
@@ -561,7 +567,12 @@ def compute_rbf_mmd(
     }
 
 
-def compute_embedding_diversity(embeddings: np.ndarray) -> dict[str, float]:
+def compute_embedding_diversity(
+    embeddings: np.ndarray,
+    *,
+    compute_vendi: bool = True,
+    compute_nearest_neighbor: bool = True,
+) -> dict[str, float]:
     """Compute threshold-free semantic-diversity evidence from one embedding batch.
 
     Vendi Score is the exponential entropy of the eigenvalues of the normalized
@@ -572,42 +583,43 @@ def compute_embedding_diversity(embeddings: np.ndarray) -> dict[str, float]:
     values = np.asarray(embeddings, dtype=np.float64)
     if values.ndim != 2 or not len(values):
         raise ValueError("多样性指标输入必须是非空二维 embedding 数组")
+    # DAS-only runs still need candidate embeddings for MMD, but should not
+    # allocate the O(n²) cosine Gram matrix used by the candidate-only metrics.
+    if not compute_vendi and not compute_nearest_neighbor:
+        return {}
     normalized = _l2_normalize(values)
     cosine = normalized @ normalized.T
     cosine = np.clip((cosine + cosine.T) * 0.5, -1.0, 1.0)
 
-    eigenvalues = np.linalg.eigvalsh(cosine)
-    eigenvalues = np.clip(eigenvalues, 0.0, None)
-    total = float(eigenvalues.sum())
-    if total <= 0.0:
-        raise ValueError("cosine Gram matrix 没有正特征值")
-    probabilities = eigenvalues / total
-    positive = probabilities[probabilities > np.finfo(np.float64).eps]
-    vendi = float(np.exp(-np.sum(positive * np.log(positive))))
     sample_count = len(normalized)
-    vendi = min(max(vendi, 1.0), float(sample_count))
-
-    metrics = {
-        "cosine_vendi_score": vendi,
-        "cosine_vendi_ratio": vendi / sample_count,
-    }
-    if sample_count == 1:
-        return metrics
-
-    off_diagonal = cosine[~np.eye(sample_count, dtype=bool)]
-    nearest = cosine.copy()
-    np.fill_diagonal(nearest, -np.inf)
-    nearest = nearest.max(axis=1)
-    metrics.update(
-        {
+    metrics: dict[str, float] = {}
+    if compute_vendi:
+        eigenvalues = np.linalg.eigvalsh(cosine)
+        eigenvalues = np.clip(eigenvalues, 0.0, None)
+        total = float(eigenvalues.sum())
+        if total <= 0.0:
+            raise ValueError("cosine Gram matrix 没有正特征值")
+        probabilities = eigenvalues / total
+        positive = probabilities[probabilities > np.finfo(np.float64).eps]
+        vendi = float(np.exp(-np.sum(positive * np.log(positive))))
+        vendi = min(max(vendi, 1.0), float(sample_count))
+        metrics.update({
+            "cosine_vendi_score": vendi,
+            "cosine_vendi_ratio": vendi / sample_count,
+        })
+    if compute_nearest_neighbor and sample_count > 1:
+        off_diagonal = cosine[~np.eye(sample_count, dtype=bool)]
+        nearest = cosine.copy()
+        np.fill_diagonal(nearest, -np.inf)
+        nearest = nearest.max(axis=1)
+        metrics.update({
             "mean_pairwise_cosine": float(off_diagonal.mean()),
             "nearest_neighbor_cosine_mean": float(nearest.mean()),
             "nearest_neighbor_cosine_p50": float(np.quantile(nearest, 0.50)),
             "nearest_neighbor_cosine_p90": float(np.quantile(nearest, 0.90)),
             "nearest_neighbor_cosine_p95": float(np.quantile(nearest, 0.95)),
             "nearest_neighbor_cosine_p99": float(np.quantile(nearest, 0.99)),
-        }
-    )
+        })
     return metrics
 
 
@@ -762,7 +774,7 @@ def _sample_local_proxy(
             from datasets import load_dataset
         except ImportError as exc:
             raise RuntimeError(
-                "读取本地 Parquet 代理集需要安装 dataset-quality 可选依赖"
+                "读取本地 Parquet 代理集需要安装 embedding-quality 可选依赖"
             ) from exc
         dataset = load_dataset(
             "parquet",
@@ -807,7 +819,7 @@ def _sample_huggingface_proxy(
         from datasets import load_dataset
     except ImportError as exc:
         raise RuntimeError(
-            "HuggingFace 代理数据需要安装 datasets；请安装项目 dataset-quality 可选依赖"
+            "HuggingFace 代理数据需要安装 datasets；请安装项目 embedding-quality 可选依赖"
         ) from exc
     kwargs: dict[str, Any] = {"path": proxy.path, "split": proxy.split}
     if proxy.name:

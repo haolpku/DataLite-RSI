@@ -78,9 +78,9 @@ way to see what that contract requires.
 
 - **A coding-agent backend must be installed** (`codex`, `claude`, or
   `opencode`); see the getting-started guide.
-- **Embedding dataset-quality review is off in this config.** That path speaks
+- **Embedding quality review is off in this config.** That path speaks
   the vLLM chat-embedding form (`messages`), not standard OpenAI `input`, so it
   needs a vLLM-compatible embedding server. Enable it only when
-  `DF_DAS_EMBEDDING_URL` points at one.
+  `DF_EMBEDDING_URL` points at one.
 - **The ReviewAgent model must accept an explicit `temperature`.** Its serving
   always sends one, so a model that rejects it will fail every review call.

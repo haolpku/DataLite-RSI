@@ -12,6 +12,8 @@ Use this skill only for the `pipeline_builder` and `pipeline_repairer` roles. Th
 diagnostic agent uses a separate read-only system prompt and must never load this
 skill. The framework owns compile, execution, observation, cache selection,
 candidate evaluation, and best-so-far acceptance. Text tasks use ReviewAgent;
+the default rubric is four dimensions, while a domain config may select
+criteria mode so the agent receives task.quality_criteria evidence instead;
 image/video tasks require a task-specific evaluator. Do not execute
 `pipeline.py` yourself.
 
@@ -253,6 +255,44 @@ class LLMAssistedOperator(OperatorABC):
             output_rows.append(self.consume_response(row, str(response)))
         storage.write(output_rows)
 ```
+
+### Choosing the serving call, and the shape it expects
+
+`generate_from_input` and `generate_from_conversations` differ in the type of
+each list item, and passing the wrong one produces a request the API rejects
+with a generic upstream error rather than a clear complaint, so pick
+deliberately:
+
+| call | each item must be | sent as |
+|---|---|---|
+| `generate_from_input(prompts, system_prompt=...)` | a **string** | one system turn from `system_prompt`, then the string as the user turn |
+| `generate_from_conversations(dialogues)` | a **list of `{"role", "content"}` dicts**, every `content` a string | the list verbatim as `messages` |
+
+So for a single instruction plus one record, build a string and give the system
+turn through the `system_prompt` argument:
+
+```python
+prompts = [self.build_prompt(row) for row in rows]   # build_prompt returns str
+responses = self.llm_serving.generate_from_input(
+    prompts, system_prompt=_SYSTEM_PROMPT)
+```
+
+Only reach for `generate_from_conversations` when a record genuinely needs
+several turns, and then pass message dicts whose `content` values are strings:
+
+```python
+dialogues = [
+    [{"role": "system", "content": _SYSTEM_PROMPT},
+     {"role": "user", "content": self.build_prompt(row)}]
+    for row in rows
+]
+responses = self.llm_serving.generate_from_conversations(dialogues)
+```
+
+Passing message dicts to `generate_from_input` nests them inside `content` and
+every call fails; passing plain strings to `generate_from_conversations` sends
+turns with no role. Both are now refused locally with an error naming the method
+to use instead, but the point is to choose correctly rather than rely on that.
 
 - Do not construct `PipelineLLMServing` inside an operator module or `run()`.
 - Do not make an operator read API-key variables or declare URL, model, worker,

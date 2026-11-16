@@ -112,62 +112,69 @@ downstream_eval:
     max_retries: ${DF_DOWNSTREAM_ATTRIBUTION_MAX_RETRIES:2}
     max_findings: 6
     max_actions: 8
-
 review:
-  sample_size: ${DF_REVIEW_SAMPLE_SIZE:80}
-  sample_seed: 42
-  correctness_threshold: 0.6
-  schema_threshold: 0.6
-  relevance_threshold: 0.6
-  null_threshold: 0.5
-  hard_metrics: true
-  weights:
-    correctness: 0.40
-    relevance: 0.25
-    difficulty: 0.15
-    schema: 0.20
+  mode: four_dimensions
+  sampling:
+    size: ${DF_REVIEW_SAMPLE_SIZE:80}
+    seed: ${DF_REVIEW_SAMPLE_SEED:42}
+  four_dimensions:
+    pass_thresholds:
+      correctness: 0.6
+      relevance: 0.6
+      schema: 0.6
+    weights:
+      correctness: 0.40
+      relevance: 0.25
+      difficulty: 0.15
+      schema: 0.20
+  validation:
+    enabled: true
+    # Required-schema empty slots; applies in both review modes.
+    max_null_rate: 0.5
   decontamination:
     reference_files: []
-    ngram: 8
+    ngram_size: 8
     max_rate: 0.01
-  # Optional deterministic dataset-level review. It compares a fixed-size sample of
-  # each candidate with a high-quality proxy set using DAS = -RBF-MMD. Candidate
-  # embeddings are reused for threshold-free Vendi and nearest-neighbour cosine
-  # diversity metrics. All embedding evidence remains separate from the 0-1 LLM
-  # review_score and is fed directly to the next PipelineAgent prompt.
-  dataset_quality:
-    enabled: ${DF_EMBEDDING_REVIEW_ENABLED:true}
-    # When enabled, review_score blends sample-level LLM quality with embedding quality,
-    # then applies full-file duplicate/null/parse/contamination penalties.
-    score_weight: ${DF_DATASET_QUALITY_SCORE_WEIGHT:0.25}
-    score_weights:
-      das: 0.40
-      vendi: 0.30
-      nearest_neighbor: 0.30
-    sample_size: ${DF_DAS_SAMPLE_SIZE:5000}
-    sample_seed: ${DF_DAS_SAMPLE_SEED:42}
-    require_full_sample: true
-    rbf_sigma: 1.0
-    biased: true
-    normalize_embeddings: true
-    max_embedding_fail_rate: 0.02
-    cache_dir: ${DF_DAS_CACHE_DIR:}
+    reference_fields: []
+    candidate_fields: []
+  embedding_quality:
+    review_score_weight: ${DF_EMBEDDING_REVIEW_SCORE_WEIGHT:0.25}
+    metrics:
+      das:
+        enabled: ${DF_EMBEDDING_DAS_ENABLED:true}
+        weight: 0.40
+        mmd:
+          sigma: 1.0
+          estimator: biased
+        proxy:
+          source: ${DF_EMBEDDING_DAS_PROXY_SOURCE:local}
+          path: ${DF_EMBEDDING_DAS_PROXY_PATH:./data/ODA-Math-460k}
+          name: ${DF_EMBEDDING_DAS_PROXY_NAME:}
+          split: ${DF_EMBEDDING_DAS_PROXY_SPLIT:train}
+          user_field: question
+          assistant_field: response
+      vendi:
+        enabled: ${DF_EMBEDDING_VENDI_ENABLED:true}
+        weight: 0.30
+      nearest_neighbor:
+        enabled: ${DF_EMBEDDING_NEAREST_NEIGHBOR_ENABLED:true}
+        weight: 0.30
+    sampling:
+      size: ${DF_EMBEDDING_SAMPLE_SIZE:5000}
+      seed: ${DF_EMBEDDING_SAMPLE_SEED:42}
+      require_requested_size: true
+    embedding:
+      normalize_embeddings: true
+      max_failure_rate: 0.02
+      cache_dir: ${DF_EMBEDDING_CACHE_DIR:}
     candidate:
       user_field: instruction
       assistant_field: output
-    proxy:
-      # Runtime is local-only. Prepare the proxy snapshot under data/ before launch.
-      source: ${DF_DAS_PROXY_SOURCE:local}
-      path: ${DF_DAS_PROXY_PATH:./data/ODA-Math-460k}
-      name: ${DF_DAS_PROXY_NAME:}
-      split: ${DF_DAS_PROXY_SPLIT:train}
-      user_field: question
-      assistant_field: response
-    embedding:
-      model_name: ${DF_DAS_EMBEDDING_MODEL:./model/Qwen3-Embedding-8B}
-      base_url: ${DF_DAS_EMBEDDING_URL:http://127.0.0.1:8000/v1}
-      api_key: ${DF_DAS_EMBEDDING_API_KEY:EMPTY}
-      max_concurrent_requests: ${DF_DAS_EMBEDDING_CONCURRENCY:128}
+    service:
+      model_name: ${DF_EMBEDDING_MODEL:./model/Qwen3-Embedding-8B}
+      base_url: ${DF_EMBEDDING_URL:http://127.0.0.1:8000/v1}
+      api_key: ${DF_EMBEDDING_API_KEY:EMPTY}
+      max_concurrent_requests: ${DF_EMBEDDING_CONCURRENCY:128}
       max_retries: 3
       truncate_prompt_tokens: 40960
       truncation_side: right

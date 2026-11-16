@@ -37,7 +37,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# ReviewAgent and the embedding-based dataset-quality review.
+# ReviewAgent and the embedding-based embedding quality review.
 review = ["openai>=1,<3"]
 # Coding-agent backends. Only Claude ships a Python package; Codex and OpenCode
 # are Node CLIs the runtime shells out to, so they cannot be pip-installed:

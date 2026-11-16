@@ -111,22 +111,25 @@ downstream_eval:
     enabled: true
   bad_cases_per_benchmark: 2
   timeout_sec: 345600
-
 review:
-  sample_size: 80
-  sample_seed: 42
-  # Hard gates. A violation zeroes review_score.
-  correctness_threshold: 0.6
-  schema_threshold: 0.6
-  relevance_threshold: 0.6
-  null_threshold: 0.5
-  hard_metrics: true
-  weights:
-    correctness: 0.40
-    relevance: 0.25
-    difficulty: 0.15
-    schema: 0.20
-  # Exact normalised 13-gram overlap against every benchmark test file.
+  mode: four_dimensions
+  sampling:
+    size: ${DF_REVIEW_SAMPLE_SIZE:80}
+    seed: ${DF_REVIEW_SAMPLE_SEED:42}
+  four_dimensions:
+    pass_thresholds:
+      correctness: 0.6
+      relevance: 0.6
+      schema: 0.6
+    weights:
+      correctness: 0.40
+      relevance: 0.25
+      difficulty: 0.15
+      schema: 0.20
+  validation:
+    enabled: true
+    # Required-schema empty slots; applies in both review modes.
+    max_null_rate: 0.5
   decontamination:
     reference_files:
       - ${DF_BENCHMARK_DATA_DIR}/gsm8k/test.jsonl
@@ -137,42 +140,47 @@ review:
       - ${DF_BENCHMARK_DATA_DIR}/minerva_math/test.jsonl
       - ${DF_BENCHMARK_DATA_DIR}/gaokao2024_mix/test.jsonl
       - ${DF_BENCHMARK_DATA_DIR}/olympiadbench/test.jsonl
-    ngram: 13
+    ngram_size: 13
     max_rate: 0.01
-    fields:
-      - question
-      - problem
-    candidate_fields:
-      - instruction
-  # Dataset-level embedding signals, contributing 0.25 of review_score.
-  dataset_quality:
-    enabled: true
-    score_weight: 0.25
-    score_weights:
-      das: 0.40
-      vendi: 0.30
-      nearest_neighbor: 0.30
-    sample_size: 3000
-    sample_seed: 42
-    require_full_sample: false
-    rbf_sigma: 1.0
-    biased: true
-    normalize_embeddings: true
-    max_embedding_fail_rate: 0.02
-    cache_dir: ${DF_DAS_CACHE_DIR}
+    reference_fields: [question, problem]
+    candidate_fields: [instruction]
+  embedding_quality:
+    review_score_weight: ${DF_EMBEDDING_REVIEW_SCORE_WEIGHT:0.25}
+    metrics:
+      das:
+        enabled: ${DF_EMBEDDING_DAS_ENABLED:true}
+        weight: 0.40
+        mmd:
+          sigma: 1.0
+          estimator: biased
+        proxy:
+          source: local
+          path: ${DF_EMBEDDING_DAS_PROXY_PATH}
+          name: math-proxy
+          split: train
+          user_field: question
+          assistant_field: response
+      vendi:
+        enabled: ${DF_EMBEDDING_VENDI_ENABLED:true}
+        weight: 0.30
+      nearest_neighbor:
+        enabled: ${DF_EMBEDDING_NEAREST_NEIGHBOR_ENABLED:true}
+        weight: 0.30
+    sampling:
+      size: 3000
+      seed: 42
+      require_requested_size: false
+    embedding:
+      normalize_embeddings: true
+      max_failure_rate: 0.02
+      cache_dir: ${DF_EMBEDDING_CACHE_DIR:}
     candidate:
       user_field: instruction
       assistant_field: output
-    proxy:
-      source: local
-      path: ${DF_DAS_PROXY_PATH}
-      split: train
-      user_field: question
-      assistant_field: response
-    embedding:
-      model_name: ${DF_DAS_EMBEDDING_MODEL}
-      base_url: ${DF_DAS_EMBEDDING_URL}
-      api_key: ${DF_DAS_EMBEDDING_API_KEY}
+    service:
+      model_name: ${DF_EMBEDDING_MODEL}
+      base_url: ${DF_EMBEDDING_URL}
+      api_key: ${DF_EMBEDDING_API_KEY}
       max_concurrent_requests: 64
       max_retries: 3
       truncate_prompt_tokens: 40960

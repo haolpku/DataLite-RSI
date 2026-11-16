@@ -200,9 +200,52 @@ class TaskEnvelope:
         method_id = str(value["method_id"]).strip()
         if method_id not in METHOD_IDS:
             raise ValueError(f"unknown method_id {method_id!r}; expected {sorted(METHOD_IDS)}")
-        for key in ("task_id", "objective"):
-            if not str(value.get(key, "")).strip():
-                raise ValueError(f"task config requires {key}")
+        if not str(value.get("task_id", "")).strip():
+            raise ValueError("task config requires task_id")
+        # The objective may be inlined, or kept in a sibling text file so that a
+        # long contract stays readable instead of becoming one JSON line full of
+        # escaped newlines. Inline wins when both are present.
+        objective_text = str(value.get("objective", "") or "")
+        objective_file = str(value.get("objective_file", "") or "").strip()
+        if not objective_text.strip() and objective_file:
+            given = Path(objective_file)
+            # Bases tried in order; the loader's hint is preferred when present,
+            # but a mapping built in code (no hint) must still resolve, so the
+            # tasks directory and the repository root follow.
+            tasks_dir = Path(__file__).resolve().parents[1] / "tasks"
+            repo_root = Path(__file__).resolve().parents[3]
+            bases = [
+                value.get("__envelope_dir__"),
+                tasks_dir,
+                repo_root,
+                Path.cwd(),
+            ]
+            tried: list[str] = []
+            resolved = None
+            if given.is_absolute():
+                tried.append(str(given))
+                if given.is_file():
+                    resolved = given
+            else:
+                for base in bases:
+                    if not base:
+                        continue
+                    candidate = Path(str(base)) / given
+                    tried.append(str(candidate))
+                    if candidate.is_file():
+                        resolved = candidate
+                        break
+            if resolved is None:
+                raise ValueError(
+                    "task config objective_file does not exist; tried: "
+                    + ", ".join(tried)
+                )
+            objective_text = resolved.read_text(encoding="utf-8")
+        if not objective_text.strip():
+            raise ValueError(
+                "task config requires objective, or objective_file naming a "
+                "readable text file"
+            )
         data = value.get("data")
         output = value.get("output", value.get("output_contract"))
         metadata = value.get("metadata", {})
@@ -215,10 +258,13 @@ class TaskEnvelope:
             raise ValueError("task config metadata must be an object")
         if value.get("schema_version", "0.1") != "0.1":
             raise ValueError("unsupported task schema_version")
+        # Internal hint from the loader; must never reach a fingerprint or a
+        # serialised envelope.
+        value = {k: v for k, v in value.items() if k != "__envelope_dir__"}
         return cls(
             task_id=str(value["task_id"]),
             method_id=method_id,
-            objective=str(value["objective"]),
+            objective=objective_text,
             data=dict(data),
             output_contract=OutputContract.from_mapping(output),
             input_contract=(

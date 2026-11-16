@@ -1,0 +1,2 @@
+-r core.txt
+openai>=1,<3

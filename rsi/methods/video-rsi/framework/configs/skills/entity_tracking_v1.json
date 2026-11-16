@@ -1,0 +1,14 @@
+{
+  "skill_id": "entity_tracking",
+  "version": "1",
+  "task_types": ["entity_tracking"],
+  "instructions": "Track a visually grounded person or object across observations. Use appearance, attributes, location, actions, names when explicitly visible, and relations to other entities; re-observe each interval instead of copying prior actions.",
+  "preferred_operators": ["EvidenceSelectionOperator", "QuestionGenerationOperator"],
+  "required_capabilities": ["same_entity_identity", "attribute_tracking"],
+  "evaluation_checks": [
+    "the referenced entity is identifiable in every selected observation",
+    "the answer depends on cross-observation identity or attribute evidence",
+    "no option relies on an unobserved name, profession, or relationship"
+  ],
+  "forbidden_shortcuts": ["single-caption answer", "identity inferred only from position"]
+}

@@ -1,3 +1,7 @@
-pytest>=8.3,<9
-pydantic>=2.10,<3
-Pillow>=10,<13
+# Kept for `pip install -r requirements-dev.txt`. The authoritative dependency
+# lists live in pyproject.toml; this installs the repository plus its `dev`
+# extra, which covers the offline test suite for the framework, the benchmark
+# evaluators, and the method trees under rsi/methods/.
+#
+# Equivalent to: pip install -e ".[dev]"
+-e .[dev]

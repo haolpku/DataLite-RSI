@@ -1,0 +1,12 @@
+numpy>=1.24,<3
+PyYAML>=6,<7
+# Storage read/write type semantics are defined by pandas inference. The active
+# runtime reproduces open-dataflow 1.0.10 behavior by calling the same library
+# rather than reimplementing its coercion rules.
+pandas>=2.2,<4
+# Transport for the pipeline-owned serving contract; imported lazily so the
+# framework still imports without network libraries present.
+requests>=2.31,<3
+# Progress and log presentation parity with the reference runtime.
+tqdm>=4.66,<5
+colorlog>=6,<7

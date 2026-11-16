@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "video-rsi"
+version = "0.1.0"
+description = "Composable Data RSI pipelines for long-video understanding and reasoning"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+video-rsi = "video_rsi.cli:main"
+
+[tool.setuptools.package-data]
+video_rsi = ["prompts/*.txt"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

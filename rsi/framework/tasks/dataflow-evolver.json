@@ -1,0 +1,12 @@
+{
+  "schema_version": "0.1",
+  "task_id": "dataflow-example",
+  "method_id": "dataflow-evolver",
+  "objective": "Improve a fixed raw corpus with an incumbent-challenger pipeline loop.",
+  "data": {"input_path": "${DF_INPUT_PATH}"},
+  "output": {"required_keys": ["evolution_result"], "artifact_types": ["structured_records"]},
+  "metadata": {"method_config_ref": "math-periodic.yaml"},
+  "workspace": "outputs/rsi",
+  "provider": "codex",
+  "role": "pipeline_builder"
+}

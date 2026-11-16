@@ -1,0 +1,17 @@
+{
+  "schema_version": "0.1",
+  "task_id": "dataflow-mixed-example",
+  "method_id": "dataflow-evolver",
+  "objective": "Improve a fixed corpus whose records pair text, image, and video evidence.",
+  "data": {"input_path": "${DF_INPUT_PATH}"},
+  "input_contract": {
+    "modalities": ["text", "image", "video"],
+    "required_fields": ["instruction", "image", "video"],
+    "artifact_fields": {"image": "image", "video": "video_reference"}
+  },
+  "output": {"required_keys": ["evolution_result"], "artifact_types": ["structured_records", "image", "video_reference"]},
+  "metadata": {"method_config_ref": "multimodal.example.yaml"},
+  "workspace": "outputs/rsi",
+  "provider": "codex",
+  "role": "pipeline_builder"
+}

@@ -30,6 +30,8 @@ outputs/
 checkpoints/
 models/
 wandb/
+workspace/
+validation-runs/
 *.safetensors
 *.ckpt
 *.pt

@@ -1,0 +1,90 @@
+# Portable template matching the formal periodic-math SFT/evaluation protocol.
+# Export every DFE_* path variable before passing this file to the runner.
+base_model: $DFE_BASE_MODEL
+
+sft:
+  llamafactory_cli: $DFE_SFT_CONDA/bin/llamafactory-cli
+  # GPU 7 is reserved for the embedding service in the reference deployment.
+  cuda_visible_devices: "0,1,2,3,4,5,6"
+  timeout_sec: 172800
+  user_field: instruction
+  assistant_field: output
+  expected_eos_token: <|endoftext|>
+  expected_eos_token_id: 151643
+  fail_on_truncation: false
+  env:
+    PYTHONPATH: $DFE_REPO/scripts/downstream/llamafactory_qwen2_5_base_site
+    TOKENIZERS_PARALLELISM: "false"
+    TRITON_CACHE_DIR: $DFE_TRITON_CACHE_DIR
+    HF_HOME: $DFE_HF_HOME
+  trainer:
+    deepspeed: $DFE_REPO/configs/deepspeed/ds_z2_config.json
+    template: qwen2_5_base
+    cutoff_len: 16384
+    packing: false
+    preprocessing_num_workers: 16
+    dataloader_num_workers: 4
+    per_device_train_batch_size: 1
+    gradient_accumulation_steps: 4
+    learning_rate: 5.0e-6
+    num_train_epochs: 1.0
+    lr_scheduler_type: cosine
+    warmup_ratio: 0.1
+    bf16: true
+    tf32: true
+    flash_attn: sdpa
+    disable_gradient_checkpointing: false
+    optim: adamw_torch_fused
+    logging_steps: 1
+    save_strategy: "no"
+    save_only_model: true
+    plot_loss: true
+    overwrite_output_dir: true
+    report_to: none
+    seed: 42
+    data_seed: 42
+    ddp_timeout: 180000000
+
+evaluation:
+  python: $DFE_EVAL_CONDA/bin/python
+  local_cache_root: $DFE_EVAL_CACHE_ROOT
+  diagnostic_manifest: $DFE_DIAGNOSTIC_ROOT/manifest.json
+  # Four independent 7B replicas. Keep GPU 7 free when it hosts DAS embeddings.
+  cuda_visible_devices: "0,1,2,3"
+  data_parallel_size: 4
+  tensor_parallel_size: 1
+  pipeline_parallel_size: 1
+  timeout_sec: 172800
+  groups:
+    - name: greedy_core
+      data_dir: $DFE_DIAGNOSTIC_ROOT/shared_data
+      benchmarks:
+        gsm8k: gsm8k
+        math: math
+        minerva_math: minerva_math
+        gaokao2024_mix: gaokao2024_mix
+        olympiadbench: olympiadbench
+      metric: accuracy
+      prompt_type: qwen25-math-cot
+      temperature: 0.0
+      top_p: 1.0
+      n_sampling: 1
+      max_tokens_per_call: 16384
+      max_model_len: 32768
+      seed: 0
+      apply_chat_template: false
+    - name: sampled_competition
+      data_dir: $DFE_DIAGNOSTIC_ROOT/shared_data
+      benchmarks:
+        amc23: amc23
+        aime24: aime24
+        aime25: aime25
+      metric: avg@4
+      prompt_type: qwen25-math-cot
+      temperature: 0.6
+      top_p: 1.0
+      n_sampling: 4
+      max_tokens_per_call: 16384
+      max_model_len: 32768
+      seed: 0
+      apply_chat_template: false

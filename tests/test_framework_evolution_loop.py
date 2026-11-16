@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from threading import Barrier
 
 import pytest
 
@@ -597,6 +598,43 @@ def test_named_feedback_sources_keep_independent_baselines_and_reach_next_agent(
     assert {item["source"] for item in manifest["feedback_evaluations"]} == {"quality", "sft"}
     assert manifest["downstream_evaluation"]["enabled"] is False
     assert (loop.run_dir / "feedback_evaluations.jsonl").is_file()
+
+
+def test_due_sources_run_concurrently_and_commit_results_in_source_order(tmp_path):
+    barrier = Barrier(2, timeout=10)
+
+    class RendezvousEvaluator(FakeDownstreamEvaluator):
+        def run(self, request, checkpoint_dir):
+            barrier.wait()
+            return super().run(request, checkpoint_dir)
+
+    raw = tmp_path / "raw.jsonl"
+    raw.write_text('{}\n', encoding="utf-8")
+    loop = _loop(
+        tmp_path, max_iterations=2, raw_input_path=raw,
+        command_feedback_sources=[
+            CommandFeedbackSource(
+                "quality", RendezvousEvaluator(baseline_enabled=True),
+                interval=1, trains_model=False,
+            ),
+            CommandFeedbackSource(
+                "sft", RendezvousEvaluator(baseline_enabled=True),
+                interval=1, trains_model=True,
+            ),
+        ],
+    )
+    assert loop.run() is not None
+    initial = loop.pipeline_agent.initial_downstream_feedback
+    next_round = loop.pipeline_agent.downstream_feedback[0]
+    assert [item.source for item in initial] == ["quality", "sft"]
+    assert [item.source for item in next_round] == ["quality", "sft"]
+    assert [(item.stage, item.source) for item in loop.downstream_evaluations] == [
+        ("baseline", "quality"), ("baseline", "sft"),
+        ("periodic", "quality"), ("periodic", "sft"),
+        ("periodic", "quality"), ("periodic", "sft"),
+    ]
+    assert loop.downstream_evaluations[2].score_deltas["gsm8k"] == pytest.approx(0.1)
+    assert loop.downstream_evaluations[3].score_deltas["gsm8k"] == pytest.approx(0.1)
 
 
 def test_python_selection_can_target_one_named_feedback_source(tmp_path):

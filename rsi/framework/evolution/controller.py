@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -180,9 +181,11 @@ class ReviewOnlyLoop:
             )
         self.run_dir.mkdir(parents=True, exist_ok=True)
 
-        for source in self.command_feedback_sources:
-            if source.evaluator.baseline_enabled:
-                self._run_downstream_baseline(source)
+        self._run_feedback_sources(
+            [source for source in self.command_feedback_sources if source.evaluator.baseline_enabled],
+            checkpoint_iteration=0,
+            incumbent=None,
+        )
 
         config = self.pipeline_agent.generate_initial(
             task=self.task,
@@ -243,10 +246,12 @@ class ReviewOnlyLoop:
 
             ran_feedback = False
             if incumbent is not None and incumbent.dataset_path:
-                for source in self.command_feedback_sources:
-                    if (iteration + 1) % source.interval == 0:
-                        self._run_downstream_checkpoint(source, iteration + 1, incumbent)
-                        ran_feedback = True
+                ran_feedback = self._run_feedback_sources(
+                    [source for source in self.command_feedback_sources
+                     if (iteration + 1) % source.interval == 0],
+                    checkpoint_iteration=iteration + 1,
+                    incumbent=incumbent,
+                )
             if ran_feedback and self.selector is not None:
                 incumbent = self._select_custom(incumbent, event="downstream")
 
@@ -279,7 +284,7 @@ class ReviewOnlyLoop:
         best = incumbent if self.selector is not None else incumbent or select_best(self.candidates)
         self.total_wall_time_seconds = round(time.perf_counter() - run_started, 6)
         self.downstream_evaluation_wall_time_seconds = round(
-            sum(result.wall_time_seconds for result in self.downstream_evaluations), 6
+            self.downstream_evaluation_wall_time_seconds, 6
         )
         self.data_preparation_wall_time_seconds = round(
             max(
@@ -420,12 +425,39 @@ class ReviewOnlyLoop:
         with path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(record, ensure_ascii=False, default=str) + "\n")
 
+    def _run_feedback_sources(
+        self,
+        sources: list[CommandFeedbackSource],
+        *,
+        checkpoint_iteration: int,
+        incumbent: Candidate | None,
+    ) -> bool:
+        """Run due sources together, then record results in configuration order."""
+        if not sources:
+            return False
+        started = time.perf_counter()
+
+        def evaluate(source: CommandFeedbackSource) -> DownstreamEvaluationResult:
+            if incumbent is None:
+                return self._run_downstream_baseline(source)
+            return self._run_downstream_checkpoint(source, checkpoint_iteration, incumbent)
+
+        if len(sources) == 1:
+            results = [evaluate(sources[0])]
+        else:
+            with ThreadPoolExecutor(max_workers=len(sources), thread_name_prefix="feedback") as pool:
+                results = list(pool.map(evaluate, sources))
+        for result in results:
+            self._record_downstream_result(result)
+        self.downstream_evaluation_wall_time_seconds += time.perf_counter() - started
+        return True
+
     def _run_downstream_checkpoint(
         self,
         source: CommandFeedbackSource,
         checkpoint_iteration: int,
         incumbent: Candidate,
-    ) -> None:
+    ) -> DownstreamEvaluationResult:
         """Evaluate the incumbent for one named source at its own interval."""
         assert incumbent.dataset_path is not None
         source_dir = (self.run_dir / "downstream_eval" if source.shortcut
@@ -453,9 +485,11 @@ class ReviewOnlyLoop:
         result = source.evaluator.run(request, checkpoint_dir)
         result.source = source.name
         self._attach_downstream_attribution(result, checkpoint_dir, incumbent, source.attribution_agent)
-        self._record_downstream_result(result)
+        return result
 
-    def _run_downstream_baseline(self, source: CommandFeedbackSource) -> None:
+    def _run_downstream_baseline(
+        self, source: CommandFeedbackSource,
+    ) -> DownstreamEvaluationResult:
         """Evaluate this source's starting point before the first pipeline."""
         dataset_path = (
             str(self.raw_input_path.resolve())
@@ -483,7 +517,7 @@ class ReviewOnlyLoop:
         result = source.evaluator.run(request, checkpoint_dir)
         result.source = source.name
         self._attach_downstream_attribution(result, checkpoint_dir, None, source.attribution_agent)
-        self._record_downstream_result(result)
+        return result
 
     def _attach_downstream_attribution(
         self,

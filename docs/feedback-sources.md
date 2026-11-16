@@ -37,8 +37,14 @@ feedback_sources:
 
 Exactly one enabled `criteria` source is required. Its quality criteria come
 from `task.quality_criteria` and its sampling, validation and optional embedding
-settings come from `review`. The injected `candidate_evaluator` for image/video
-tasks still replaces the built-in reviewer and occupies this primary source.
+settings come from `review`. `candidate_evaluator` is an optional Python object
+passed to `build_loop`, not another YAML source. Without one, this primary
+source uses the built-in `ReviewAgent`; with one, the custom evaluator replaces
+`ReviewAgent` for each candidate. Its `passed`, `review_score`, `issues`, and
+`domain_feedback` become the primary review result, so no separate criteria
+review is run. This is how image/video tasks provide task-specific scoring.
+Named command sources are additive: they evaluate the selected incumbent at
+their configured intervals and do not replace this primary review.
 The primary review's `(passed, review_score)` comparison remains the default
 selection rule; use `selection_policy.kind: python` to select using other
 sources. Source names must be unique. Disabled sources may set `enabled: false`.
@@ -56,8 +62,11 @@ bad-case attribution remain separate by source. A no-training
 source's baseline receives the raw input corpus; a training source's baseline
 receives no candidate dataset. A failed external evaluation is recorded as an
 infrastructure failure, not a negative quality score. Current loop execution
-invokes due sources sequentially; `resources` documents requirements but does
-not allocate GPUs or start concurrent jobs.
+starts all sources due at the same checkpoint concurrently, including enabled
+baselines. It waits for all results before selection or the next PipelineAgent
+call, then records them in configuration order. There are no cross-iteration
+background jobs. `resources` documents requirements but does not allocate
+GPUs or prevent competing sources from using the same device.
 
 Within a run, `delta_previous` and `delta_baseline` are computed only against
 results from the **same source**. Audit files live under

@@ -55,7 +55,14 @@ class Config:
 
 def load_config(path: str | Path) -> Config:
     """读取 YAML 配置文件并展开环境变量。"""
-    path = Path(path)
+    path = Path(path).expanduser().resolve()
     with path.open("r", encoding="utf-8") as f:
         raw = yaml.safe_load(f) or {}
-    return Config(_expand_env(raw))
+    expanded = _expand_env(raw)
+    selection = expanded.get("selection_policy") if isinstance(expanded, dict) else None
+    if isinstance(selection, dict) and selection.get("policy_file"):
+        policy_file = Path(str(selection["policy_file"])).expanduser()
+        if not policy_file.is_absolute():
+            policy_file = path.parent / policy_file
+        selection["policy_file"] = str(policy_file.resolve())
+    return Config(expanded)

@@ -11,6 +11,7 @@ from rsi.framework.evolution.evaluation.downstream_eval import (
 from rsi.framework.evolution.models import PipelineConfig, ReviewResult, TaskSpec
 from rsi.framework.evolution.execution.execution_wrapper import ExecutionResult
 from rsi.framework.evolution.controller import Candidate, ReviewOnlyLoop, select_best
+from rsi.framework.evolution.selection import SelectionPolicy, SelectionPolicyError
 
 
 def _config(code: str) -> PipelineConfig:
@@ -206,6 +207,7 @@ def _loop(
     downstream_attribution_agent=None,
     downstream_interval=3,
     pipeline_diagnostic_agent=None,
+    selection_policy=None,
 ):
     workspace = tmp_path / "workspace"
     return ReviewOnlyLoop(
@@ -217,6 +219,7 @@ def _loop(
         downstream_evaluator=downstream_evaluator,
         downstream_attribution_agent=downstream_attribution_agent,
         downstream_interval=downstream_interval,
+        selection_policy=selection_policy,
         pipeline_diagnostic_agent=pipeline_diagnostic_agent,
         pipeline_diagnostic_enabled=pipeline_diagnostic_agent is not None,
     )
@@ -433,3 +436,118 @@ def test_pipeline_diagnosis_failure_does_not_stop_review_loop(tmp_path):
     assert best is not None
     assert best.review is not None
     assert best.pipeline_diagnostic["status"] == "failed"
+
+
+def test_python_selection_controls_parent_checkpoint_and_export_without_losing_review(tmp_path):
+    path = tmp_path / "pick_latest.py"
+    path.write_text(
+        "def select(context):\n"
+        "    best = context['candidates'][-1] if context['candidates'] else None\n"
+        "    return {'iteration': best['iteration'] if best else None, "
+        "'reason': 'Use newest reviewed dataset.'}\n",
+        encoding="utf-8",
+    )
+    policy = SelectionPolicy.from_config(
+        {"kind": "python", "policy_file": str(path)}, base_dir=tmp_path,
+    )
+    reviewer = FakeReviewer([
+        _review(0.8, True, "best criteria"),
+        _review(0.3, True, "worse criteria"),
+        _review(0.2, True, "still worse"),
+    ])
+    downstream = FakeDownstreamEvaluator()
+    loop = _loop(
+        tmp_path, reviewer=reviewer, downstream_evaluator=downstream,
+        downstream_interval=2, selection_policy=policy,
+    )
+
+    best = loop.run()
+
+    assert best is not None and best.iteration == 2 and best.score == 0.2
+    assert loop.pipeline_agent.parent_codes == ["0", "1"]
+    assert [review.review_score for review in loop.pipeline_agent.feedback] == [0.8, 0.3]
+    assert downstream.requests[0][0].incumbent_iteration == 2
+    assert [item["event"] for item in loop.selection_history] == [
+        "review", "review", "downstream", "review", "final"
+    ]
+    manifest = json.loads((loop.run_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["best"]["iteration"] == 2
+    assert manifest["selection_policy"]["kind"] == "python"
+    requests = [
+        json.loads(path.read_text(encoding="utf-8"))
+        for path in (loop.run_dir / "selection_history").glob("*/request.json")
+    ]
+    checkpoint = next(item for item in requests if item["event"] == "downstream")
+    assert checkpoint["feedback"][0]["scores"]["gsm8k"] == pytest.approx(0.6)
+    assert "bad_cases" not in checkpoint["feedback"][0]
+    assert checkpoint["candidates"][1]["review_score"] == 0.3
+
+
+def test_python_policy_can_reselect_after_downstream_feedback(tmp_path):
+    path = tmp_path / "feedback_policy.py"
+    path.write_text(
+        "def select(context):\n"
+        "    candidates = context['candidates']\n"
+        "    if not candidates:\n"
+        "        return {'iteration': None, 'reason': 'No candidate.'}\n"
+        "    feedback = [f for f in context['feedback'] if f['stage'] == 'periodic']\n"
+        "    chosen = candidates[0] if feedback else candidates[-1]\n"
+        "    return {'iteration': chosen['iteration'], 'reason': 'Use feedback when ready.'}\n",
+        encoding="utf-8",
+    )
+    policy = SelectionPolicy.from_config(
+        {"kind": "python", "policy_file": str(path)}, base_dir=tmp_path,
+    )
+    loop = _loop(
+        tmp_path, selection_policy=policy, downstream_interval=2,
+        downstream_evaluator=FakeDownstreamEvaluator(),
+    )
+
+    best = loop.run()
+
+    assert best is not None and best.iteration == 0
+    assert loop.pipeline_agent.parent_codes == ["0", "0"]
+    assert loop.pipeline_agent.histories[1][1]["review_score"] == pytest.approx(0.8)
+    assert loop.pipeline_agent.histories[1][1]["issues"] == ["good"]
+    assert loop.selection_history[2]["event"] == "downstream"
+    assert loop.selection_history[2]["iteration"] == 1
+
+
+def test_invalid_python_selection_never_falls_back_to_criteria(tmp_path):
+    path = tmp_path / "invalid_policy.py"
+    path.write_text(
+        "def select(context):\n"
+        "    return {'iteration': True, 'reason': 'Invalid boolean iteration.'}\n",
+        encoding="utf-8",
+    )
+    policy = SelectionPolicy.from_config(
+        {"kind": "python", "policy_file": str(path)}, base_dir=tmp_path,
+    )
+    loop = _loop(tmp_path, selection_policy=policy)
+
+    with pytest.raises(SelectionPolicyError, match="eligible integer"):
+        loop.run()
+
+    audit = next((loop.run_dir / "selection_history").glob("*/selection.json"))
+    assert json.loads(audit.read_text(encoding="utf-8"))["status"] == "error"
+    assert len(loop.candidates) == 1 and loop.candidates[0].review is not None
+    assert (loop.run_dir / "iterations.jsonl").is_file()
+
+
+def test_python_policy_change_is_detected_before_selection(tmp_path):
+    path = tmp_path / "changed_policy.py"
+    path.write_text(
+        "def select(context): return {'iteration': None, 'reason': 'Initial.'}\n",
+        encoding="utf-8",
+    )
+    policy = SelectionPolicy.from_config(
+        {"kind": "python", "policy_file": str(path)}, base_dir=tmp_path,
+    )
+    path.write_text(
+        "def select(context): return {'iteration': None, 'reason': 'Changed.'}\n",
+        encoding="utf-8",
+    )
+    loop = _loop(tmp_path, selection_policy=policy)
+
+    with pytest.raises(SelectionPolicyError, match="policy changed"):
+        loop.run()

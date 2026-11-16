@@ -88,6 +88,15 @@ loop:
   execution_repairs: ${DF_EXECUTION_REPAIRS:1}
   python_exe: ${DF_AGENT_PYTHON:}
 
+# Criteria review always runs and remains PipelineAgent feedback. Selection
+# decides which reviewed pipeline/dataset is inherited, evaluated and exported.
+# For a user/Agent-authored policy, set kind: python and policy_file to a trusted
+# Python file defining select(context). Relative paths use this YAML file's folder.
+selection_policy:
+  kind: criteria
+  timeout_sec: 30
+  config: {}
+
 # Optional process-isolated SFT/evaluation feedback. After every N static Review
 # iterations, the framework evaluates the current best-so-far dataset. The command
 # runs in its own environment and receives appended `--request` and `--result` paths.

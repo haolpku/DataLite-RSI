@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     folders = {ROOT/'tests'}
-    for tree in ('benchmarks', 'evaluation', 'rsi/methods'):
+    for tree in ('benchmarks', 'evaluation', 'rsi/methods', 'rsi/framework'):
         folders.update(p.parent for p in (ROOT/tree).rglob('test_*.py'))
     failed = []
     for folder in sorted(folders):

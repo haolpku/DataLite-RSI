@@ -16,6 +16,7 @@ from rsi.framework.core.operator import Operator
 from rsi.framework.core.pipeline import Pipeline, RunContext
 from rsi.framework.runtime.registry import MethodPlugin
 from rsi.framework.evolution.providers.agent_sdk import default_diagnostic_system_prompt_append
+from rsi.framework.evolution.selection import SelectionPolicy
 from .media import resolve_local_input_artifact
 
 
@@ -152,7 +153,7 @@ def _mirror_artifact_refs(
 
 class _EvolutionOperator(Operator):
     name = "dataflow_evolution"
-    version = "datalite-multimodal-1"
+    version = "datalite-selection-1"
     input_keys = ("input_path",)
     output_keys = ("evolution_result",)
 
@@ -162,6 +163,12 @@ class _EvolutionOperator(Operator):
 
     def config(self) -> dict[str, Any]:
         config_text = self.config_path.read_text(encoding="utf-8")
+        from .utils.config import load_config
+
+        selection = SelectionPolicy.from_config(
+            load_config(self.config_path).to_dict().get("selection_policy"),
+            base_dir=self.config_path.parent,
+        )
         return {
             "baseline_commit": "ba6e489524bbf5835a06cccad555c5182e4ce4f4",
             "config_ref": self.config_path.relative_to(FRAMEWORK_ROOT / "configs").as_posix(),
@@ -169,6 +176,7 @@ class _EvolutionOperator(Operator):
             "environment_fingerprint": _config_environment_identity(config_text),
             "fixed_input": _input_file_identity(self.task.data["input_path"]),
             "input_contract": self.task.input_contract.to_dict() if self.task.input_contract else None,
+            "selection_policy": selection.identity(),
         }
 
     def run(self, state: dict[str, Any], context: RunContext) -> Mapping[str, Any]:
@@ -242,6 +250,9 @@ class _EvolutionOperator(Operator):
                     candidate.pipeline_diagnostic,
                 )
         context.storage.records.write_jsonl("dataflow/candidates", candidates)
+        context.storage.records.write_jsonl(
+            "dataflow/selection_history", loop.selection_history,
+        )
         if best and best.dataset_path:
             dataset_path = Path(best.dataset_path)
             generated_run = best.iteration_dir / "runs" / "generated"
@@ -260,8 +271,11 @@ class _EvolutionOperator(Operator):
         return {
             "evolution_result": {
                 "best_iteration": best.iteration if best else None,
+                "selected_iteration": best.iteration + 1 if best else None,
                 "best_score": best.score if best else None,
                 "best_review": asdict(best.review) if best and best.review else None,
+                "selection_policy": asdict(loop.selection_policy),
+                "selection_history_ref": "records/dataflow/selection_history.jsonl",
                 "dataset_ref": "records/dataflow/final_dataset.jsonl" if best and best.dataset_path else None,
                 "candidate_history_ref": "records/dataflow/candidates.jsonl",
                 "candidates": candidates,
@@ -349,6 +363,7 @@ class DataFlowPlugin(MethodPlugin):
         return {
             "dataset": result["dataset_ref"],
             "candidate_history": result["candidate_history_ref"],
+            "selection_history": result["selection_history_ref"],
             "native_run": result["native_run_ref"],
         }
 
@@ -360,18 +375,25 @@ class DataFlowPlugin(MethodPlugin):
             "review": result["best_review"],
             "review_score": result["best_score"],
             "candidates": result["candidates"],
+            "selected_iteration": result["selected_iteration"],
+            "selection_policy": result["selection_policy"],
         }
 
     def acceptance_logic(
         self, task: TaskEnvelope, feedback: Mapping[str, Any], context: RunContext
     ) -> Mapping[str, Any]:
-        # The native loop already selected by (ReviewAgent passed, review_score).
-        # Diagnostics stay outside that comparison.
+        # Criteria feedback is recorded independently of the selection rule.
         candidates = feedback["candidates"]
         accepted = [item for item in candidates if item["accepted_as_incumbent"]]
         return {
-            "decision": "native_best_so_far",
+            "decision": (
+                "native_best_so_far"
+                if feedback["selection_policy"]["kind"] == "criteria"
+                else "configured_selection_policy"
+            ),
             "accepted_iterations": [item["iteration"] for item in accepted],
+            "selected_iteration": feedback["selected_iteration"],
+            "selection_policy_kind": feedback["selection_policy"]["kind"],
             "best_score": feedback["review_score"],
             "diagnostic_used_for_score": False,
         }

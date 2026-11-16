@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -304,3 +305,104 @@ def test_repair_budget_is_bounded(tmp_path, corpus, monkeypatch):
     assert manifest["status"] in {"completed", "failed"}
     if manifest["status"] == "completed":
         assert manifest["acceptance"]["accepted_iterations"] == []
+
+
+def test_custom_selection_reaches_outer_export_and_checkpoint_identity(
+    tmp_path, corpus, monkeypatch
+):
+    from rsi.framework.evolution import runner
+    from rsi.framework.runtime.routing import load_task_config
+
+    original_root = runner.FRAMEWORK_ROOT
+    private_root = tmp_path / "framework"
+    config_dir = private_root / "configs"
+    config_dir.mkdir(parents=True)
+    config_text = (original_root / "configs" / CONFIG_REF).read_text(encoding="utf-8")
+    (config_dir / CONFIG_REF).write_text(
+        config_text.replace(
+            "selection_policy:\n  kind: criteria",
+            "selection_policy:\n  kind: python\n  policy_file: selection.py",
+            1,
+        ),
+        encoding="utf-8",
+    )
+    policy_file = config_dir / "selection.py"
+    policy_file.write_text(
+        "def select(context):\n"
+        "    candidates = context['candidates']\n"
+        "    return {'iteration': candidates[-1]['iteration'] if candidates else None, "
+        "'reason': 'Use the latest reviewed dataset.'}\n",
+        encoding="utf-8",
+    )
+    skill = "providers/codex/dataflow-evolver-pipeline"
+    shutil.copytree(original_root / "skills" / skill, private_root / "skills" / skill)
+    monkeypatch.setattr(runner, "FRAMEWORK_ROOT", private_root)
+    monkeypatch.setenv("DF_MAX_ITERATIONS", "2")
+
+    class VersionedAgent(_Agent):
+        def __init__(self, entry):
+            super().__init__(entry)
+            self.parent_scores = []
+
+        def _write(self, iteration_dir, operator, crash):
+            config = super()._write(
+                iteration_dir, f"{operator}V{self.generated}", crash
+            )
+            config.code = config.code.replace(
+                '"source": "gsm8k"', f'"source": "round-{self.generated}"'
+            )
+            (iteration_dir / "pipeline.py").write_text(config.code, encoding="utf-8")
+            return config
+
+        def generate(self, *, iteration_dir, **kwargs):
+            self.parent_scores.append(kwargs["parent_review"].review_score)
+            return super().generate(iteration_dir=iteration_dir, **kwargs)
+
+    class DecreasingEvaluator(_Evaluator):
+        def review(self, dataset_path, task, **kwargs):
+            super().review(dataset_path, task, **kwargs)
+            return CandidateFeedback(score=1.0 - 0.8 * (self.calls - 1), passed=True)
+
+    task = _task(corpus, tmp_path / "ws", "selection-outer")
+    envelope = load_task_config(task)
+    identity = runner._EvolutionOperator(envelope, config_dir / CONFIG_REF).config()
+    assert identity["selection_policy"]["source_sha256"]
+    agent, evaluator = VersionedAgent(corpus), DecreasingEvaluator()
+    manifest = run(
+        task, resources={"pipeline_agent": agent, "candidate_evaluator": evaluator},
+        run_id="selection-outer",
+    )
+
+    assert manifest["status"] == "completed", manifest.get("failure")
+    assert agent.parent_scores == [1.0]
+    result = json.loads(
+        (tmp_path / "ws" / "runs" / "selection-outer" / "records" / "output.json")
+        .read_text(encoding="utf-8")
+    )["evolution_result"]
+    assert result["selected_iteration"] == 2
+    assert result["best_score"] == pytest.approx(0.2)
+    assert result["selection_policy"]["sha256"] == identity["selection_policy"]["source_sha256"]
+    assert manifest["acceptance"]["decision"] == "configured_selection_policy"
+    root = tmp_path / "ws" / "runs" / "selection-outer"
+    rows = [
+        json.loads(line) for line in
+        (root / "records" / "dataflow" / "final_dataset.jsonl")
+        .read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
+    assert len(rows) == 8 and {row["source"] for row in rows} == {"round-2"}
+    decisions = [
+        json.loads(line) for line in
+        (root / "records" / "dataflow" / "selection_history.jsonl")
+        .read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
+    assert [item["event"] for item in decisions] == ["review", "review", "final"]
+    assert decisions[-1]["iteration"] == 2
+
+    policy_file.write_text(
+        policy_file.read_text(encoding="utf-8") + "# changed\n", encoding="utf-8"
+    )
+    changed = runner._EvolutionOperator(envelope, config_dir / CONFIG_REF).config()
+    assert (
+        changed["selection_policy"]["source_sha256"]
+        != identity["selection_policy"]["source_sha256"]
+    )

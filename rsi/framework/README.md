@@ -115,6 +115,13 @@ separately installed CLIs. None of these lists requires `open-dataflow`.
 For which behaviors are verified equivalent to the reference runtime and which
 are not, see [the parity audit](../../docs/dataflow-serving-parity.md).
 
+Iteration selection is configurable through `selection_policy` in the task's
+private YAML. The default `criteria` rule preserves existing incumbent
+behavior. A user or Agent can provide a trusted Python `select(context)` file
+to choose the inherited pipeline, periodic evaluation dataset, and final
+export independently of criteria review. Review feedback still reaches
+PipelineAgent. See [selection policy configuration](../../docs/selection-policy.md).
+
 The task and private configuration templates are under `tasks/` and `configs/`.
 The task's `metadata.method_config_ref` names a file in `configs/`. Real inputs,
 model services, and credentials are supplied by the caller or environment and

@@ -42,6 +42,7 @@ from rsi.framework.evolution.execution.execution_wrapper import (
 from rsi.framework.evolution.providers.agent_runtime import build_pipeline_diagnostic_runtime
 from rsi.framework.evolution.providers.serving import build_serving
 from rsi.framework.evolution.providers.skill_paths import skill_root_for_backend
+from rsi.framework.evolution.selection import PolicySelector, SelectionPolicy, SelectionPolicyError
 from rsi.framework.evolution.utils.config import Config, load_config
 from rsi.framework.evolution.utils.logging import get_logger, setup_logging
 
@@ -86,6 +87,7 @@ class ReviewOnlyLoop:
         max_iterations: int,
         execution_repairs: int = 1,
         accept_equal_score: bool = False,
+        selection_policy: SelectionPolicy | None = None,
         downstream_evaluator: DownstreamEvaluatorABC | None = None,
         downstream_attribution_agent: DownstreamAttributionAgent | None = None,
         downstream_interval: int = 2,
@@ -108,6 +110,16 @@ class ReviewOnlyLoop:
         # parent for the next authoring turn.  Default best-so-far behaviour is
         # retained for every other task.
         self.accept_equal_score = bool(accept_equal_score)
+        self.selection_policy = selection_policy or SelectionPolicy()
+        self.selector = (
+            PolicySelector(
+                self.selection_policy, run_dir=self.run_dir,
+                workspace=self.workspace, task=self.task,
+            )
+            if self.selection_policy.kind == "python" else None
+        )
+        self.selection_history: list[dict[str, Any]] = []
+        self.current_incumbent: Candidate | None = None
         if downstream_evaluator is not None and downstream_interval < 1:
             raise ValueError("downstream_eval.interval must be at least 1")
         self.downstream_evaluator = downstream_evaluator
@@ -174,20 +186,33 @@ class ReviewOnlyLoop:
             candidate.parent_iteration = (
                 parent_incumbent.iteration if parent_incumbent is not None else None
             )
-            if _is_better(candidate, incumbent, accept_equal_score=self.accept_equal_score):
-                candidate.accepted_as_incumbent = True
-                incumbent = candidate
-                logger.info(
-                    "接受 challenger 为 incumbent：%s score=%.4f",
-                    candidate.iteration_dir.name,
-                    candidate.score,
-                )
-            else:
-                logger.info(
-                    "拒绝 challenger，保留 incumbent=%s",
-                    incumbent.iteration_dir.name if incumbent is not None else "none",
-                )
             self.candidates.append(candidate)
+            if self.selector is not None:
+                try:
+                    incumbent = self._select_custom(incumbent, event="review")
+                except SelectionPolicyError:
+                    self._append_trace(candidate)
+                    raise
+            else:
+                if _is_better(candidate, incumbent, accept_equal_score=self.accept_equal_score):
+                    candidate.accepted_as_incumbent = True
+                    incumbent = candidate
+                    logger.info(
+                        "接受 challenger 为 incumbent：%s score=%.4f",
+                        candidate.iteration_dir.name,
+                        candidate.score,
+                    )
+                else:
+                    logger.info(
+                        "拒绝 challenger，保留 incumbent=%s",
+                        incumbent.iteration_dir.name if incumbent is not None else "none",
+                    )
+                self.selection_history.append({
+                    "status": "ok", "event": "review", "policy_kind": "criteria",
+                    "iteration": incumbent.iteration + 1 if incumbent else None,
+                    "reason": "Compare passed, then review_score; tie handling follows accept_equal_score.",
+                })
+                self.current_incumbent = incumbent
             self._append_trace(candidate)
 
             if (
@@ -197,6 +222,8 @@ class ReviewOnlyLoop:
                 and incumbent.dataset_path
             ):
                 self._run_downstream_checkpoint(iteration + 1, incumbent)
+                if self.selector is not None:
+                    incumbent = self._select_custom(incumbent, event="downstream")
 
             if iteration + 1 >= self.max_iterations:
                 break
@@ -222,7 +249,9 @@ class ReviewOnlyLoop:
                 logger.error("第 %d 轮 PipelineAgent 未产出有效流水线。", iteration + 2)
                 break
 
-        best = incumbent or select_best(self.candidates)
+        if self.selector is not None:
+            incumbent = self._select_custom(incumbent, event="final")
+        best = incumbent if self.selector is not None else incumbent or select_best(self.candidates)
         self.total_wall_time_seconds = round(time.perf_counter() - run_started, 6)
         self.downstream_evaluation_wall_time_seconds = round(
             sum(result.wall_time_seconds for result in self.downstream_evaluations), 6
@@ -235,8 +264,8 @@ class ReviewOnlyLoop:
             ),
             6,
         )
+        self._write_manifest(best)
         if best is not None:
-            self._write_manifest(best)
             logger.info(
                 "Review-only 最优候选：%s review_score=%.4f passed=%s",
                 best.iteration_dir.name,
@@ -244,6 +273,21 @@ class ReviewOnlyLoop:
                 best.review.passed if best.review else False,
             )
         return best
+
+    def _select_custom(self, incumbent: Candidate | None, *, event: str) -> Candidate | None:
+        assert self.selector is not None
+        chosen, record = self.selector.select(
+            self.candidates, incumbent, self.downstream_evaluations, event=event,
+        )
+        self.selection_history.append(record)
+        if chosen is not None:
+            chosen.accepted_as_incumbent = True
+        self.current_incumbent = chosen
+        logger.info(
+            "Selection policy (%s) selected %s: %s",
+            event, chosen.iteration_dir.name if chosen else "none", record["reason"],
+        )
+        return chosen
 
     def _iteration_dir(self, iteration: int) -> Path:
         return self.run_dir / f"iteration_{iteration + 1:03d}"
@@ -481,6 +525,7 @@ class ReviewOnlyLoop:
                     "outcome": (
                         "accepted" if candidate.accepted_as_incumbent else "rejected"
                     ),
+                    "selected": candidate is self.current_incumbent,
                     "review_score": candidate.score if candidate.review is not None else None,
                     "passed": candidate.review.passed if candidate.review is not None else False,
                     "operators": [
@@ -499,7 +544,7 @@ class ReviewOnlyLoop:
             )
         return history
 
-    def _write_manifest(self, best: Candidate) -> None:
+    def _write_manifest(self, best: Candidate | None) -> None:
         manifest = {
             "mode": "pipeline_review",
             "run_name": self.run_name,
@@ -511,7 +556,12 @@ class ReviewOnlyLoop:
                 self.downstream_evaluation_wall_time_seconds
             ),
             "total_wall_time_seconds": self.total_wall_time_seconds,
-            "selection_rule": "best-so-far incumbent: passed first, then highest review_score",
+            "selection_rule": (
+                "best-so-far incumbent: passed first, then highest review_score"
+                if self.selection_policy.kind == "criteria" else "configured python selection policy"
+            ),
+            "selection_policy": asdict(self.selection_policy),
+            "selection_history": self.selection_history,
             "downstream_evaluation": {
                 "enabled": self.downstream_evaluator is not None,
                 "interval": self.downstream_interval,
@@ -531,12 +581,13 @@ class ReviewOnlyLoop:
                     result_to_dict(result) for result in self.downstream_evaluations
                 ],
             },
-            "best": _candidate_record(best),
+            "best": _candidate_record(best) if best is not None else None,
             "evolution_history": self._evolution_history(),
             "all_candidates": [_candidate_record(c) for c in self.candidates],
             "manual_next_step": (
                 "Use best.dataset_path for final downstream training/evaluation. "
                 "Periodic checkpoints are optimization feedback, not the final report."
+                if best is not None else "No iteration was selected; inspect selection_history."
             ),
         }
         path = self.run_dir / "manifest.json"
@@ -691,6 +742,9 @@ def build_loop(
         )
 
     loop_cfg = cfg.loop
+    selection_policy = SelectionPolicy.from_config(
+        cfg.to_dict().get("selection_policy"), base_dir=workspace,
+    )
     executor = SubprocessExecutionWrapper(
         workspace_dir=str(workspace),
         pipeline_filename=str(agent_cfg.get("pipeline_filename", "pipeline.py")),
@@ -729,6 +783,7 @@ def build_loop(
         max_iterations=int(loop_cfg.get("max_iterations", 5)),
         execution_repairs=int(loop_cfg.get("execution_repairs", 1)),
         accept_equal_score=_as_bool(loop_cfg.get("accept_equal_score", False)),
+        selection_policy=selection_policy,
         downstream_evaluator=downstream_evaluator,
         downstream_attribution_agent=downstream_attribution_agent,
         downstream_interval=downstream_interval,

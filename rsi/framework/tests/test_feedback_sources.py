@@ -22,15 +22,15 @@ def test_legacy_shortcut_adds_one_named_command_source():
         "baseline": {"enabled": True},
     })
     assert [(source.name, source.kind) for source in sources] == [
-        ("criteria", "criteria"), ("downstream", "command"),
+        ("downstream", "command"),
     ]
-    assert sources[1].shortcut
-    assert sources[1].settings["trains_model"] is True
+    assert sources[0].shortcut
+    assert sources[0].settings["trains_model"] is True
+    assert resolve_feedback_sources(None, None) == ()
 
 
 def test_multiple_named_sources_are_kept_separate():
     sources = resolve_feedback_sources({
-        "quality": {"kind": "criteria"},
         "api-judge": {
             "kind": "command", "command": ["python", "api.py"],
             "benchmarks": ["quality"], "interval": 1, "trains_model": False,
@@ -40,22 +40,24 @@ def test_multiple_named_sources_are_kept_separate():
             "benchmarks": ["math500"], "interval": 3, "trains_model": True,
         },
     }, None)
-    assert [source.name for source in sources] == ["quality", "api-judge", "sft-math"]
+    assert [source.name for source in sources] == ["api-judge", "sft-math"]
     assert not any(source.shortcut for source in sources)
 
 
 @pytest.mark.parametrize("sources,shortcut", [
-    ({"quality": {"kind": "command", "command": ["x"], "benchmarks": ["x"]}}, None),
-    ({"quality": {"kind": "criteria"}, "other": {"kind": "criteria"}}, None),
-    ({"criteria": {"kind": "criteria"}, "bad/name": {"kind": "criteria"}}, None),
-    ({"criteria": {"kind": "criteria"}}, {"enabled": True, "source_name": "criteria"}),
+    ({"quality": {"kind": "criteria"}}, None),
+    ({"bad/name": {"kind": "command", "command": ["x"], "benchmarks": ["x"]}}, None),
+    ({"criteria": {"kind": "command", "command": ["x"], "benchmarks": ["x"]}}, None),
+    ({}, {"enabled": True, "source_name": "criteria"}),
+    ({"quality": {"kind": "command", "command": ["x"], "benchmarks": ["x"]}},
+     {"enabled": True, "source_name": "quality"}),
 ])
 def test_invalid_source_registry_is_rejected(sources, shortcut):
     with pytest.raises(ValueError):
         resolve_feedback_sources(sources, shortcut)
 
 
-def test_build_loop_combines_named_source_and_downstream_shortcut(tmp_path):
+def test_build_loop_combines_named_source_and_downstream_shortcut(tmp_path, monkeypatch):
     workspace = tmp_path / "workspace"
     skill = workspace / ".agents/skills/dataflow-evolver-pipeline/SKILL.md"
     skill.parent.mkdir(parents=True)
@@ -70,7 +72,6 @@ def test_build_loop_combines_named_source_and_downstream_shortcut(tmp_path):
         "review": {},
         "loop": {"max_iterations": 2},
         "feedback_sources": {
-            "criteria": {"kind": "criteria"},
             "quality": {
                 "kind": "command", "command": ["python", "quality.py"],
                 "benchmarks": ["quality"], "interval": 1,
@@ -86,7 +87,7 @@ def test_build_loop_combines_named_source_and_downstream_shortcut(tmp_path):
     loop = build_loop(
         Config(config), candidate_evaluator=object(), pipeline_agent_override=object(),
     )
-    assert loop.review_source_name == "criteria"
+    assert loop.review_source_name == "candidate_evaluator"
     assert [(source.name, source.interval, source.trains_model, source.shortcut)
             for source in loop.command_feedback_sources] == [
         ("quality", 1, False, False), ("sft", 2, True, True),
@@ -99,6 +100,15 @@ def test_build_loop_combines_named_source_and_downstream_shortcut(tmp_path):
         build_loop(
             Config(config), candidate_evaluator=object(), pipeline_agent_override=object(),
         )
+
+    config["review"] = {}
+    del config["feedback_sources"]
+    monkeypatch.setattr(
+        "rsi.framework.evolution.controller.build_serving", lambda _: object(),
+    )
+    built_in_loop = build_loop(Config(config), pipeline_agent_override=object())
+    assert built_in_loop.review_source_name == "criteria"
+    assert [source.name for source in built_in_loop.command_feedback_sources] == ["sft"]
 
 
 def test_named_command_accepts_score_only_result_but_shortcut_keeps_strict_contract(tmp_path):

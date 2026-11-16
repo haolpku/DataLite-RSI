@@ -652,7 +652,9 @@ class ReviewOnlyLoop:
             "selection_policy": asdict(self.selection_policy),
             "selection_history": self.selection_history,
             "feedback_sources": [
-                {"name": self.review_source_name, "kind": "criteria", "interval": 1},
+                {"name": self.review_source_name,
+                 "kind": "criteria" if self.task.evaluator_kind == "review_agent"
+                 else "candidate_evaluator", "interval": 1},
                 *[
                     {"name": source.name, "kind": "command", "interval": source.interval,
                      "trains_model": source.trains_model,
@@ -855,11 +857,9 @@ def build_loop(
     source_configs = resolve_feedback_sources(
         cfg.to_dict().get("feedback_sources"), cfg.to_dict().get("downstream_eval"),
     )
-    review_source_name = next(item.name for item in source_configs if item.kind == "criteria")
+    review_source_name = "candidate_evaluator" if candidate_evaluator is not None else "criteria"
     command_sources: list[CommandFeedbackSource] = []
     for source in source_configs:
-        if source.kind != "command":
-            continue
         settings = dict(source.settings)
         baseline = settings.get("baseline", False)
         if not isinstance(baseline, dict):

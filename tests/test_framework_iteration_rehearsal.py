@@ -319,11 +319,7 @@ def test_custom_selection_reaches_outer_export_and_checkpoint_identity(
     config_dir.mkdir(parents=True)
     config_text = (original_root / "configs" / CONFIG_REF).read_text(encoding="utf-8")
     (config_dir / CONFIG_REF).write_text(
-        config_text.replace(
-            "selection_policy:\n  kind: criteria",
-            "selection_policy:\n  kind: python\n  policy_file: selection.py",
-            1,
-        ),
+        config_text + "\nselection_policy:\n  kind: python\n  policy_file: selection.py\n",
         encoding="utf-8",
     )
     policy_file = config_dir / "selection.py"

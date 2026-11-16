@@ -1,19 +1,17 @@
 # Named feedback sources
 
-The evolution loop keeps feedback sources independent. A criteria review runs
+The evolution loop keeps feedback sources independent. A primary review runs
 after every successful candidate. Any number of command sources may evaluate
 the selected dataset at their own intervals. Their scores are never averaged
-into the criteria `review_score`; a Python selection policy may inspect each
+into the primary `review_score`; a Python selection policy may inspect each
 source explicitly. The next PipelineAgent receives the latest result of every
 configured command source, labeled by name, plus the selected candidate's
-criteria evidence and issues.
+primary review evidence and issues.
 
-Configure sources in the task's private YAML:
+Configure additional command sources in the task's private YAML:
 
 ```yaml
 feedback_sources:
-  criteria:
-    kind: criteria
   api-quality:
     kind: command
     command: [python, /absolute/path/to/quality_eval.py]
@@ -35,12 +33,13 @@ feedback_sources:
     resources: 2 GPUs
 ```
 
-Exactly one enabled `criteria` source is required. Its quality criteria come
-from `task.quality_criteria` and its sampling, validation and optional embedding
-settings come from `review`. `candidate_evaluator` is an optional Python object
-passed to `build_loop`, not another YAML source. Without one, this primary
-source uses the built-in `ReviewAgent`; with one, the custom evaluator replaces
-`ReviewAgent` for each candidate. Its `passed`, `review_score`, `issues`, and
+No `feedback_sources.criteria` entry is needed or accepted. With no injected
+evaluator, the primary review is the built-in `ReviewAgent`. Its quality
+criteria come from `task.quality_criteria`, and sampling, validation and
+optional embedding settings come from `review`. `candidate_evaluator` is an
+optional Python object supplied by the caller, not another YAML source. When
+present, it replaces `ReviewAgent` for each candidate. Its `passed`,
+`review_score`, `issues`, and
 `domain_feedback` become the primary review result, so no separate criteria
 review is run. This is how image/video tasks provide task-specific scoring.
 Named command sources are additive: they evaluate the selected incumbent at

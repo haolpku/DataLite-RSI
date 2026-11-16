@@ -136,10 +136,6 @@ review:
       vendi: {enabled: false, weight: 0.30}
       nearest_neighbor: {enabled: false, weight: 0.30}
 
-feedback_sources:
-  criteria: {kind: criteria}          # runs for every completed candidate
-  # Add independently scheduled command sources; see feedback-sources.md.
-
 llm:
   api:                                # ReviewAgent's model
     api_url: ${DF_API_URL:}           # .../v1/chat/completions

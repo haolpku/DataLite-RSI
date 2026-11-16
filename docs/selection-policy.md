@@ -2,7 +2,7 @@
 
 Selection chooses the pipeline and dataset inherited by the next iteration,
 used by periodic downstream evaluation, and exported at the end of a run.
-Every candidate still receives criteria review. Its score, issues and domain
+Every candidate still receives a primary review. Its score, issues and domain
 feedback still reach PipelineAgent even if selection uses another objective.
 
 The default `criteria` rule preserves existing behavior: passed candidates

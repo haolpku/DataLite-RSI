@@ -18,7 +18,7 @@ _NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]{0,63}\Z")
 @dataclass(frozen=True)
 class FeedbackSourceConfig:
     name: str
-    kind: str  # criteria | command
+    kind: str  # command
     settings: dict[str, Any]
     shortcut: bool = False
 
@@ -35,44 +35,46 @@ def resolve_feedback_sources(
 ) -> tuple[FeedbackSourceConfig, ...]:
     """Validate names and translate the old downstream block to one source."""
     if raw_sources is None:
-        raw_sources = {"criteria": {"kind": "criteria"}}
+        raw_sources = {}
     if not isinstance(raw_sources, Mapping):
         raise ValueError("feedback_sources must be a mapping of names to settings")
     resolved: list[FeedbackSourceConfig] = []
     for name, raw in raw_sources.items():
         if not isinstance(name, str) or not _NAME.fullmatch(name):
             raise ValueError(f"invalid feedback source name: {name!r}")
+        if name in {"criteria", "candidate_evaluator"}:
+            raise ValueError(f"feedback source name {name!r} is reserved for the primary reviewer")
         if not isinstance(raw, Mapping):
             raise ValueError(f"feedback_sources.{name} must be a mapping")
         settings = dict(raw)
         if not _enabled(settings.pop("enabled", True)):
             continue
         kind = str(settings.pop("kind", "")).lower()
-        if kind not in {"criteria", "command"}:
-            raise ValueError(f"feedback_sources.{name}.kind must be criteria or command")
-        if kind == "criteria":
-            if settings:
-                raise ValueError(f"feedback_sources.{name} has unknown criteria settings: {sorted(settings)}")
-        else:
-            allowed = {
-                "command", "benchmarks", "interval", "trains_model", "baseline",
-                "attribution", "timeout_sec", "bad_cases_per_benchmark", "resources",
-            }
-            unknown = set(settings) - allowed
-            if unknown:
-                raise ValueError(f"feedback_sources.{name} has unknown settings: {sorted(unknown)}")
-            if not isinstance(settings.get("command"), list) or not settings["command"]:
-                raise ValueError(f"feedback_sources.{name}.command must be a nonempty argv list")
-            if not isinstance(settings.get("benchmarks"), list) or not settings["benchmarks"]:
-                raise ValueError(f"feedback_sources.{name}.benchmarks must be a nonempty list")
-            if int(settings.get("interval", 1)) < 1:
-                raise ValueError(f"feedback_sources.{name}.interval must be at least 1")
+        if kind != "command":
+            raise ValueError(
+                f"feedback_sources.{name}.kind must be command; "
+                "the primary candidate reviewer is configured separately"
+            )
+        allowed = {
+            "command", "benchmarks", "interval", "trains_model", "baseline",
+            "attribution", "timeout_sec", "bad_cases_per_benchmark", "resources",
+        }
+        unknown = set(settings) - allowed
+        if unknown:
+            raise ValueError(f"feedback_sources.{name} has unknown settings: {sorted(unknown)}")
+        if not isinstance(settings.get("command"), list) or not settings["command"]:
+            raise ValueError(f"feedback_sources.{name}.command must be a nonempty argv list")
+        if not isinstance(settings.get("benchmarks"), list) or not settings["benchmarks"]:
+            raise ValueError(f"feedback_sources.{name}.benchmarks must be a nonempty list")
+        if int(settings.get("interval", 1)) < 1:
+            raise ValueError(f"feedback_sources.{name}.interval must be at least 1")
         resolved.append(FeedbackSourceConfig(name, kind, settings))
 
     shortcut = dict(downstream_shortcut or {})
     if _enabled(shortcut.get("enabled", False)):
         name = str(shortcut.get("source_name", "downstream"))
-        if not _NAME.fullmatch(name) or any(source.name == name for source in resolved):
+        if (not _NAME.fullmatch(name) or name in {"criteria", "candidate_evaluator"}
+                or any(source.name == name for source in resolved)):
             raise ValueError(f"downstream_eval source name is invalid or duplicated: {name!r}")
         settings = {
             key: value for key, value in shortcut.items()
@@ -84,6 +86,4 @@ def resolve_feedback_sources(
         settings["trains_model"] = True
         resolved.append(FeedbackSourceConfig(name, "command", settings, shortcut=True))
 
-    if sum(source.kind == "criteria" for source in resolved) != 1:
-        raise ValueError("exactly one enabled criteria feedback source is required")
     return tuple(resolved)

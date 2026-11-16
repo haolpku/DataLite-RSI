@@ -209,9 +209,7 @@ def _sample_frames(video_path: Path, start: float, end: float, count: int = 16) 
 class APIFrozenTarget:
     """Vision target adapter; sends sampled frames through the same API."""
 
-    name = "api:qwen3-vl-8b-instruct"
-
-    def __init__(self, client: OpenAICompatibleJSONClient, model_name: str = "qwen3-vl-8b-instruct", allow_text_fallback: bool = False) -> None:
+    def __init__(self, client: OpenAICompatibleJSONClient, model_name: str, allow_text_fallback: bool = False) -> None:
         self.client = client
         self.allow_text_fallback = allow_text_fallback
         suffix = ":text-fallback" if allow_text_fallback else ""

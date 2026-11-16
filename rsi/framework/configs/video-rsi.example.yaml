@@ -1,0 +1,67 @@
+# Private runtime template for a VideoRSI router task.
+# Supply VIDEO_RSI_INPUT_PATH, pipeline endpoint settings, credentials, and a
+# task-owned candidate_evaluator via rsi.framework.run(resources=...).
+project:
+  workspace_dir: ${VIDEO_RSI_WORKSPACE:./workspace}
+  input_path: ${VIDEO_RSI_INPUT_PATH:}
+  run_name: ${VIDEO_RSI_RUN_NAME:run}
+
+task:
+  target_schema:
+    video: object
+    question: str
+    choices: list
+    answer: str
+    evidence: list
+  quality_criteria:
+    - Every generated question cites source-video evidence intervals.
+    - Question options must contain one unambiguous answer and three valid negatives.
+    - Label visual grounding, caption/subtitle shortcut risk, distractor quality, and training value for every hard-valid candidate.
+    - Use task lenses as candidate generators rather than fixed per-video quotas; limit correlated same-video variants in the training pool.
+    - Keep text-only solvability and frozen-target difficulty as calibrated feedback signals, not brittle binary gates.
+    - Preserve rejected and reserve candidates with rejection provenance.
+
+llm:
+  api:
+    api_url: ${VIDEO_RSI_PIPELINE_API_URL:}
+    model_name: ${VIDEO_RSI_PIPELINE_MODEL:}
+    api_key: ${VIDEO_RSI_PIPELINE_API_KEY:}
+    max_workers: ${VIDEO_RSI_MAX_WORKERS:16}
+
+agent:
+  backend: ${AGENT_BACKEND:codex}
+  pipeline_filename: pipeline.py
+  # A long authoring turn can be interrupted by an upstream stream reset.
+  # Resume the same Codex thread instead of discarding its inspected context.
+  max_retries: ${VIDEO_RSI_CODEX_MAX_RETRIES:3}
+  run_timeout_sec: ${VIDEO_RSI_CODEX_RUN_TIMEOUT_SEC:600}
+  codex:
+    binary: ${CODEX_BIN:codex}
+    model: ${CODEX_MODEL:}
+    effort: ${CODEX_EFFORT:high}
+    # Optional OpenAI-compatible endpoint for the authoring agent.  Keep the
+    # credential and endpoint in the private runtime environment rather than
+    # in a task file or repository checkout.
+    api_key_env: ${VIDEO_RSI_CODEX_API_KEY:}
+    base_url: ${VIDEO_RSI_CODEX_BASE_URL:}
+    model_provider: ${VIDEO_RSI_CODEX_MODEL_PROVIDER:}
+    # Set only in a private run on hosts where user namespaces are unavailable.
+    # The framework otherwise retains the default workspace-write sandbox.
+    bypass_sandbox: ${VIDEO_RSI_CODEX_BYPASS_SANDBOX:false}
+
+loop:
+  max_iterations: ${VIDEO_RSI_MAX_ITERATIONS:5}
+  # A passing tie stays in the VideoRSI lineage so the next turn can improve
+  # the most recently authored route-specific pipeline.
+  accept_equal_score: true
+  compile_timeout_sec: 120
+  execution_timeout_sec: 900
+  execution_repairs: 1
+  python_exe: ${DF_AGENT_PYTHON:}
+
+pipeline_diagnostic:
+  enabled: true
+  read_only: true
+
+downstream_eval:
+  enabled: false

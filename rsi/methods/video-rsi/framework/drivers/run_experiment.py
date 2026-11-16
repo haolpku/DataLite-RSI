@@ -66,7 +66,7 @@ def _build_backends(
         # the endpoint/model are explicit so a missing local service fails
         # loudly instead of silently falling back to the remote provider.
         probe_base = os.environ.get("RSI_LOCAL_PROBE_BASE_URL") or os.environ.get(
-            "RSI_FROZEN_TARGET_BASE_URL"
+            "RSI_EVALUATION_MODEL_BASE_URL", os.environ.get("RSI_FROZEN_TARGET_BASE_URL")
         )
         if not probe_base:
             raise RuntimeError(
@@ -85,13 +85,18 @@ def _build_backends(
             api_key=probe_key,
             timeout_sec=api_timeout_sec,
         )
-    # The frozen vision target may be served locally (for example, Qwen3-VL on
-    # the experiment GPU), while question/verifier/text operators use the
+    # The frozen vision target may be served locally or remotely, while question/verifier/text operators use the
     # external API.  Keep these endpoints independent so the real RSI loop can
     # evaluate against the intended frozen model instead of silently calling the
     # external provider for every backend.
-    frozen_base = probe_base if local_only_api else os.environ.get("RSI_FROZEN_TARGET_BASE_URL", base_url)
-    frozen_key = probe_key if local_only_api else os.environ.get("RSI_FROZEN_TARGET_API_KEY", "EMPTY")
+    frozen_base = probe_base if local_only_api else os.environ.get(
+        "RSI_EVALUATION_MODEL_BASE_URL",
+        os.environ.get("RSI_FROZEN_TARGET_BASE_URL", base_url),
+    )
+    frozen_key = probe_key if local_only_api else os.environ.get(
+        "RSI_EVALUATION_MODEL_API_KEY",
+        os.environ.get("RSI_FROZEN_TARGET_API_KEY", api_key),
+    )
     frozen_client = OpenAICompatibleJSONClient(
         model=probe_model or frozen_target_model,
         base_url=frozen_base, api_key=frozen_key,
@@ -132,6 +137,7 @@ def run(args: argparse.Namespace) -> dict:
     version_root.mkdir(parents=True, exist_ok=True)
     evaluation_policy = EvaluationPolicy(
         frozen_target_model=args.frozen_target_model,
+        model_role=args.model_role,
         require_no_text_fallback=not args.allow_text_frozen_fallback,
     )
     (version_root / "manifest.json").write_text(
@@ -150,10 +156,19 @@ def run(args: argparse.Namespace) -> dict:
         args.allow_text_frozen_fallback,
         args.local_only_api,
     )
-    pipeline = build_task_centric_rsi_pipeline(
+    if args.pipeline == "challenge":
+        # This import must occur after main() has re-execed with the requested
+        # versioned source on PYTHONPATH.  The base framework intentionally
+        # need not ship every experimental graph.
+        from video_rsi.pipelines import build_task_centric_challenge_pipeline
+        pipeline_builder = build_task_centric_challenge_pipeline
+    else:
+        pipeline_builder = build_task_centric_rsi_pipeline
+    pipeline = pipeline_builder(
         generator_backend=generator, text_only_backend=text_only, frozen_target_backend=frozen,
         distractor_backend=distractor,
         max_per_task=args.max_per_task, frontier_trials=args.frontier_trials,
+        target_model_name=args.frozen_target_model,
     )
     records = list(iter_caption_corpus(args.caption_root.resolve(), limit=args.limit))
     pipeline.compile(records[0].state.keys()) if records else None
@@ -164,6 +179,7 @@ def run(args: argparse.Namespace) -> dict:
                           "pipeline": pipeline.description(), "videos_total": len(records),
                           "question_limit": args.question_limit,
                           "evaluation_policy": evaluation_policy.as_dict(),
+                          "evaluation_model_role": args.model_role,
                           "local_only_api": bool(args.local_only_api),
                           "runtime": {"ffmpeg_bin": os.environ.get("RSI_FFMPEG_BIN", "ffmpeg"),
                                       "source_root": str(ACTIVE_SOURCE)}})
@@ -245,6 +261,10 @@ def main() -> None:
     parser.add_argument("--experiment-root", type=Path, default=HERE)
     parser.add_argument("--source-root", type=Path, default=DEFAULT_SOURCE)
     parser.add_argument("--version", default="v0")
+    parser.add_argument(
+        "--pipeline", choices=("v0", "challenge"), default="v0",
+        help="Select the immutable v0 graph or an explicitly versioned challenge graph.",
+    )
     parser.add_argument("--run-id")
     parser.add_argument("--limit", type=int, default=10)
     parser.add_argument("--question-limit", type=int,
@@ -254,8 +274,17 @@ def main() -> None:
     parser.add_argument("--max-per-task", type=int, default=1,
                         help="Maximum one candidate per task type and video by default.")
     parser.add_argument("--frontier-trials", type=int, default=4)
-    parser.add_argument("--frozen-target-model", default="qwen3-vl-8b-instruct",
-                        help="Production default is qwen3-vl-8b-instruct; use an explicitly marked API substitute only for smoke tests.")
+    parser.add_argument(
+        "--evaluation-model", "--frozen-target-model",
+        dest="frozen_target_model",
+        default=os.environ.get("RSI_EVALUATION_MODEL") or os.environ.get("RSI_FROZEN_TARGET_MODEL"),
+        help="Vision model ID exposed by the configured compatible endpoint (legacy alias: --frozen-target-model).",
+    )
+    parser.add_argument(
+        "--model-role", choices=("target", "reference"),
+        default=os.environ.get("RSI_MODEL_ROLE", "reference"),
+        help="Use reference on CPU/no-GPU setups or for general APIs. Target requires an endpoint serving the exact downstream training model/checkpoint.",
+    )
     parser.add_argument("--allow-text-frozen-fallback", action="store_true",
                         help="Smoke-only fallback when server has no ffmpeg: sends evidence text, never use for quality evaluation.")
     parser.add_argument(
@@ -267,6 +296,8 @@ def main() -> None:
     args = parser.parse_args()
     if args.workers < 1:
         parser.error("--workers must be at least 1")
+    if not args.frozen_target_model:
+        parser.error("set --evaluation-model or RSI_EVALUATION_MODEL; choose a reference model unless this exactly represents the intended training target")
 
     # ``video_rsi`` is imported at module load time, while ``--source-root``
     # is parsed only here.  Without this hand-off, a caller could snapshot a

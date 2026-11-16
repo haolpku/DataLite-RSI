@@ -82,6 +82,20 @@ def _config_environment_identity(config_text: str) -> str:
     return fingerprint({name: os.environ.get(name) for name in names})
 
 
+def _authoring_task_description(task: TaskEnvelope) -> str:
+    """Expose non-secret task routing metadata to the generated-pipeline agent."""
+    profile = task.metadata.get("pipeline_skill_profile")
+    if not isinstance(profile, str) or not profile.strip():
+        return task.objective
+    contract = task.input_contract.to_dict() if task.input_contract else None
+    return (
+        f"{task.objective}\n\n"
+        f"Pipeline skill profile: {profile.strip()}\n"
+        f"Input contract: {json.dumps(contract, ensure_ascii=False, sort_keys=True)}\n"
+        "Apply the matching provider-native skill reference before authoring the pipeline."
+    )
+
+
 def _skill_tree_identity(root: Path) -> str:
     digest = hashlib.sha256()
     for path in sorted(root.rglob("*")):
@@ -204,7 +218,7 @@ class _EvolutionOperator(Operator):
             loop = build_loop(config_cls(config), **loop_options)
         except ImportError as exc:
             raise RuntimeError(f"the evolution loop is missing an optional runtime dependency: {exc}") from exc
-        loop.task.task_description = self.task.objective
+        loop.task.task_description = _authoring_task_description(self.task)
         best = loop.run()
         root = context.storage.root
         candidates = []

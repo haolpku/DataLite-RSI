@@ -1,0 +1,24 @@
+{
+  "schema_version": "0.1",
+  "task_id": "video-rsi-router-example",
+  "method_id": "dataflow-evolver",
+  "objective": "Construct grounded multiple-choice video training records by routing each fixed source record to an evidence-first VideoRSI data path.",
+  "data": {"input_path": "${VIDEO_RSI_INPUT_PATH}"},
+  "input_contract": {
+    "modalities": ["text", "video"],
+    "required_fields": ["video"],
+    "artifact_fields": {"video": "video_reference"}
+  },
+  "output": {
+    "required_keys": ["evolution_result"],
+    "artifact_types": ["structured_records", "video_reference"]
+  },
+  "metadata": {
+    "method_config_ref": "video-rsi.example.yaml",
+    "pipeline_skill_profile": "video-rsi-router",
+    "candidate_evaluator": "video-rsi"
+  },
+  "workspace": "outputs/rsi",
+  "provider": "codex",
+  "role": "pipeline_builder"
+}

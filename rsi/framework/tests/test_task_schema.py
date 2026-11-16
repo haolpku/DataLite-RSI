@@ -21,3 +21,12 @@ def test_schema_and_task_templates_use_only_the_active_method():
         template = json.loads(path.read_text(encoding="utf-8"))
         assert template["method_id"] == "dataflow-evolver"
         assert TaskEnvelope.from_mapping(template).method_id == "dataflow-evolver"
+
+
+def test_video_rsi_router_template_declares_video_contract_and_skill_profile():
+    template = json.loads(
+        (FRAMEWORK_ROOT / "tasks" / "video-rsi-router.json").read_text(encoding="utf-8")
+    )
+    assert template["input_contract"]["artifact_fields"]["video"] == "video_reference"
+    assert template["metadata"]["pipeline_skill_profile"] == "video-rsi-router"
+    assert template["metadata"]["candidate_evaluator"] == "video-rsi"

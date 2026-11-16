@@ -59,7 +59,11 @@ def test_provider_skills_stay_byte_identical():
     providers = FRAMEWORK / "skills" / "providers"
     names = sorted(path.name for path in providers.iterdir() if path.is_dir())
     assert names == ["claude", "codex", "opencode"], names
-    for relative in ("SKILL.md", "references/serving-contract.md"):
+    for relative in (
+        "SKILL.md",
+        "references/serving-contract.md",
+        "references/video-rsi-router.md",
+    ):
         variants = {
             name: (providers / name / "dataflow-evolver-pipeline" / relative).read_bytes()
             for name in names

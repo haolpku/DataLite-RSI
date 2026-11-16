@@ -20,6 +20,10 @@ Run from the repository root after installing the package or setting
 `PYTHONPATH=src`:
 
 ```bash
+# No local target-model GPU/service: use a general API only as reference feedback.
+export RSI_EVALUATION_MODEL=provider/general-vlm
+export RSI_MODEL_ROLE=reference
+
 # Create one immutable v0 run. Use a separate, writable experiment root.
 PYTHONPATH=src python drivers/run_experiment.py \
   --caption-root /path/to/caption_corpus \
@@ -40,8 +44,31 @@ PYTHONPATH=src python drivers/evolve.py \
 
 `evolve.py` records every source snapshot, candidate workspace, Codex result,
 test result and decision under the supplied experiment root. It never deletes
-a rejected candidate. `--local-only-api` is available for a fixed local
-vLLM-only probe and must be used when remote API cost should be avoided.
+a rejected candidate. The machine running this framework does not need a GPU:
+sampled video frames are sent to the selected evaluation model over an
+OpenAI-compatible endpoint. Select any compatible model using
+`--evaluation-model MODEL_ID` (legacy alias: `--frozen-target-model`) or
+`RSI_EVALUATION_MODEL`. On a CPU/no-GPU setup, a general API is `reference`;
+do not label it `target` just because it returns vision judgments. Set
+`--model-role target` only when the endpoint is backed by the exact model being
+optimized for downstream training (same model/checkpoint), such as your own
+GPU-hosted target service. Merely having a GPU is not sufficient either: if
+the served model is not the training target, it remains a `reference`.
+Configure the endpoint with `RSI_EVALUATION_MODEL_BASE_URL` and credential with
+`RSI_EVALUATION_MODEL_API_KEY`. When omitted, the regular API endpoint and key
+are reused. Keep model, role and endpoint fixed throughout a campaign.
+`--local-only-api` is optional for users who already have a local compatible
+service; it is not required on CPU-only hosts.
+
+The framework-owned `VideoRSICandidateEvaluator` does not load weights. Its
+optional `signal_provider` is an injected per-record callable, so deployments
+may use a remote VLM, a CPU-served model, a GPU service on another host, or no
+model judge. Its role defaults to `reference` when a provider is supplied; on a
+no-GPU setup, keep it `reference`. Use `target` only for a service that really
+serves the actual downstream model. Without an independent provider, model-dependent labels are not
+independent visual verification; deterministic schema, provenance and pool
+checks still run on CPU. A visual judge must be able to access the sampled
+frames or a resolvable media reference.
 
 ## Repository boundary
 

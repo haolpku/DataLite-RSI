@@ -5,6 +5,9 @@ description: Write or repair a data-processing pipeline for a DataLite-RSI evolu
 
 # Pipeline authoring
 
+When task metadata sets `pipeline_skill_profile` to `video-rsi-router`, apply
+the additional [VideoRSI router contract](references/video-rsi-router.md).
+
 Use this skill only for the `pipeline_builder` and `pipeline_repairer` roles. The
 diagnostic agent uses a separate read-only system prompt and must never load this
 skill. The framework owns compile, execution, observation, cache selection,

@@ -359,6 +359,13 @@ class RSIIterationController:
         logs: Sequence[str],
         examples: Sequence[str],
     ) -> str:
+        evaluation_assignment = next(
+            (item for item in self.config.model_policy.assignments if item.role == "evaluation_model"),
+            None,
+        )
+        evaluation_role_note = (
+            evaluation_assignment.notes if evaluation_assignment else "Evaluation role is caller-configured."
+        )
         return (
             "You are the coding agent for one Video Data RSI iteration.\n"
             f"Round: {round_id}\n"
@@ -371,8 +378,11 @@ class RSIIterationController:
             "surface supported by the per-operator evidence.\n"
             "You may propose and implement changes at these peer levels only: "
             "TaskSpec, task-specific PromptSpec, Operator, Pipeline graph.\n"
-            "Do not change the frozen target qwen3-vl-8b-instruct, the evaluation "
-            "policy, or accepted historical data.\n"
+            f"Evaluation-model assignment: {evaluation_role_note}\n"
+            "Do not change the campaign evaluation model, its target/reference role, "
+            "endpoint, evaluation policy, or accepted historical data. A reference "
+            "model may guide generic quality feedback but must never be reported as "
+            "the downstream training target. No local GPU or specific model family is assumed.\n"
             "The fixed candidate probe is local-only and uses the configured local "
             "OpenAI-compatible vLLM endpoint; do not add a dependency on the remote "
             "chat API for validation.\n"

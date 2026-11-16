@@ -61,6 +61,72 @@ class EvaluationTests(unittest.TestCase):
         self.assertTrue(evaluation["eligible_for_promotion"])
         self.assertTrue(evaluation["hard_gates"]["lineage_complete"])
 
+    def test_target_gate_accepts_any_single_configured_model(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "videos" / "v1").mkdir(parents=True)
+            (root / "run_manifest.json").write_text(json.dumps({
+                "run_id": "remote-cpu-run", "pipeline": {"operators": [
+                    {"name": "frozen_target_frontier_filter", "config": {"target_model": "org/vision-model-7b"}}
+                ]}
+            }), encoding="utf-8")
+            (root / "run_summary.json").write_text(json.dumps({
+                "run_id": "remote-cpu-run", "completed": 1, "failed": 0,
+                "accepted_frontier_novel_count": 1,
+            }), encoding="utf-8")
+            (root / "high_quality_pool.jsonl").write_text(
+                json.dumps({"content": {"producer": {"pipeline_fingerprint": "abc"}}}) + "\n",
+                encoding="utf-8",
+            )
+            (root / "videos" / "v1" / "result.json").write_text(json.dumps({
+                "frontier_results": [{
+                    "target_frontier": {"backend": "api:org/vision-model-7b"}
+                }]
+            }), encoding="utf-8")
+            evaluation = evaluate_run(root, EvaluationPolicy())
+        self.assertTrue(evaluation["hard_gates"]["target_model_frozen"])
+
+    def test_target_gate_rejects_model_change_within_campaign(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "videos" / "v1").mkdir(parents=True)
+            (root / "run_manifest.json").write_text(json.dumps({
+                "pipeline": {"operators": [
+                    {"name": "frozen_target_frontier_filter", "config": {"target_model": "model-a"}}
+                ]}
+            }), encoding="utf-8")
+            (root / "run_summary.json").write_text(json.dumps({"accepted_frontier_novel_count": 1}), encoding="utf-8")
+            (root / "high_quality_pool.jsonl").write_text("{}\n", encoding="utf-8")
+            (root / "videos" / "v1" / "result.json").write_text(json.dumps({
+                "frontier_results": [{"target_frontier": {"backend": "api:model-b"}}]
+            }), encoding="utf-8")
+            evaluation = evaluate_run(root, EvaluationPolicy())
+        self.assertFalse(evaluation["hard_gates"]["target_model_frozen"])
+
+    def test_reference_model_is_fixed_but_not_reported_as_training_target(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "videos" / "v1").mkdir(parents=True)
+            (root / "run_manifest.json").write_text(json.dumps({
+                "evaluation_policy": {
+                    "evaluation_model": "provider/general-vlm",
+                    "model_role": "reference",
+                },
+                "pipeline": {"operators": [
+                    {"name": "frozen_target_frontier_filter", "config": {"evaluation_model": "provider/general-vlm"}}
+                ]},
+            }), encoding="utf-8")
+            (root / "run_summary.json").write_text(json.dumps({"accepted_frontier_novel_count": 1}), encoding="utf-8")
+            (root / "high_quality_pool.jsonl").write_text("{}\n", encoding="utf-8")
+            (root / "videos" / "v1" / "result.json").write_text(json.dumps({
+                "frontier_results": [{"target_frontier": {"backend": "api:provider/general-vlm"}}]
+            }), encoding="utf-8")
+            evaluation = evaluate_run(root)
+        self.assertEqual("reference", evaluation["evaluation_model_role"])
+        self.assertTrue(evaluation["hard_gates"]["evaluation_model_fixed"])
+        self.assertNotIn("target_model_frozen", evaluation["hard_gates"])
+        self.assertNotIn("frozen_target_model", evaluation["policy"])
+
 
 if __name__ == "__main__":
     unittest.main()

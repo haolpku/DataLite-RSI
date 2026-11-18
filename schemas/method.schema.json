@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/haolpku/DataLite-RSI/schemas/method.schema.json",
-  "title": "DataLite-RSI method manifest",
+  "$id": "https://github.com/haolpku/DataFlow-RSI/schemas/method.schema.json",
+  "title": "DataFlow-RSI method manifest",
   "type": "object",
   "required": [
     "schema_version",

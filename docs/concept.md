@@ -1,20 +1,39 @@
-# Less is More for RSI
+# DataFlow-RSI: Bringing Recursive Self-Improvement to Data Production
 
-DataLite-RSI is an open research initiative inviting the community to explore
-**Less is More for Recursive Self-Improvement**. Our current experiments are
-initial explorations; new methods, tasks and evidence will shape the project.
+DataFlow-RSI turns task feedback into reusable data-production programs.
+The active framework evolves executable operators and the code that composes
+them over a fixed source corpus. Users supply output requirements, quality
+criteria, and the feedback sources appropriate to the task.
 
-One starting question is: can recursive feedback improve the
-**choice and construction of training data**, allowing a compact final dataset
-to produce useful model improvements?
+## The pipeline is the recursive state
 
-The recursive state can be a selection rule, instruction policy, processing
-program, or data corpus. Feedback from an earlier attempt changes a later data
-decision. Depending on the method, model training occurs inside the loop or after
-pipeline search. This is a collection of distinct mechanisms, not one shared
-algorithm or a single cross-domain leaderboard.
+1. A pipeline agent authors a candidate or revises a retained program.
+2. The framework executes it and evaluates the resulting dataset.
+3. Task feedback, execution diagnostics, and history guide the next revision.
+4. The selected program can produce further data using the retained strategy.
 
-## What “less” means here
+Revisions can change generation, verification, selection, and pipeline structure.
+The framework provides a common execution and evolution mechanism; individual
+tasks supply their own requirements and evaluation. Text review is built in,
+and visual tasks connect suitable operators and evaluation signals. Downstream
+training can provide additional feedback; it is optional.
+
+See the [framework](../rsi/framework/README.md),
+[feedback sources](feedback-sources.md), and
+[multimodal interfaces](dataflow-multimodal-extension.md) for implementation details.
+
+## DataLite-RSI: Data efficiency
+
+**DataLite-RSI is a research direction within DataFlow-RSI.** It asks when
+feedback can improve the choice and construction of training data enough to
+make a compact final dataset more useful: **Less is More for RSI**.
+
+The reference experiments study distinct mechanisms: selecting examples,
+evolving synthesis policies, refining programs, and revising a corpus. They
+inform the data-efficiency research direction; their scores are not a single
+cross-domain leaderboard or evidence that every method uses the active loop.
+
+### What “less” means here
 
 | Evidence type | Current case | What it supports |
 | --- | --- | --- |
@@ -38,6 +57,6 @@ reported protocol. Video results lack a matched-data non-recursive control.
 Some test subsets contribute feedback, and several methods have incomplete
 public artifacts. These boundaries are part of the research record.
 
-Start with the [homepage](https://haolpku.github.io/DataLite-RSI/), inspect the
+Start with the [homepage](https://haolpku.github.io/DataFlow-RSI/), inspect the
 [protocols](protocol.md), then follow [reproduction](reproduction.md) and
 [open evidence gaps](release-gaps.md).

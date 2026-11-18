@@ -1,63 +1,63 @@
 <div align="center">
 
-<a href="https://haolpku.github.io/DataLite-RSI/">
-  <img src="docs/assets/readme-banner.svg" alt="DataLite-RSI — Less is More for Recursive Self-Improvement" width="100%">
+<a href="https://haolpku.github.io/DataFlow-RSI/">
+  <img src="docs/assets/readme-banner.svg" alt="DataFlow-RSI — Bringing Recursive Self-Improvement to Data Production" width="100%">
 </a>
 
 <br>
 
-[![Project website](https://img.shields.io/badge/Explore-Project_Website-6264DC?style=flat-square)](https://haolpku.github.io/DataLite-RSI/) [![Repository checks](https://github.com/haolpku/DataLite-RSI/actions/workflows/validate-contributions.yml/badge.svg)](https://github.com/haolpku/DataLite-RSI/actions/workflows/validate-contributions.yml) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-D97757?style=flat-square)](LICENSE) [![Contributions welcome](https://img.shields.io/badge/Community-Contributions_welcome-298D8D?style=flat-square)](#join-the-effort)
+[![Project website](https://img.shields.io/badge/Explore-Project_Website-6264DC?style=flat-square)](https://haolpku.github.io/DataFlow-RSI/) [![Repository checks](https://github.com/haolpku/DataFlow-RSI/actions/workflows/validate-contributions.yml/badge.svg)](https://github.com/haolpku/DataFlow-RSI/actions/workflows/validate-contributions.yml) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-D97757?style=flat-square)](LICENSE) [![Contributions welcome](https://img.shields.io/badge/Community-Contributions_welcome-298D8D?style=flat-square)](#join-the-effort)
 
-**An open research initiative for Less is More in RSI.**
+**Bringing Recursive Self-Improvement to Data Production**
 
-How can we build more effective self-improving systems with less training data?<br>Join us to explore ideas, develop methods, and build the evidence together.
+Turn task feedback into reusable data-production programs.<br>
+Author, execute, evaluate, and revise data pipelines across tasks.
 
-**[Homepage](https://haolpku.github.io/DataLite-RSI/)** &nbsp; · &nbsp; **[Results](#reported-results)** &nbsp; · &nbsp; **[Methods](#methods-and-available-materials)** &nbsp; · &nbsp; **[Reproduce](docs/reproduction.md)** &nbsp; · &nbsp; **[Join the effort](#join-the-effort)**
+**[Get started](docs/getting-started.md)** &nbsp; · &nbsp; **[Framework](#pipeline-evolution)** &nbsp; · &nbsp; **[Results](#reported-results)** &nbsp; · &nbsp; **[DataLite-RSI](#datalite-rsi-data-efficient-self-improvement)** &nbsp; · &nbsp; **[Homepage](https://haolpku.github.io/DataFlow-RSI/)**
 
 </div>
 
 ---
 
-## The idea
+## Pipeline evolution
 
-The current framework entry is the
-[pipeline evolution framework](rsi/framework/README.md): its
-incumbent/challenger loop can process a fixed JSONL corpus containing text,
-image references, video references, or a mixture. Shared operator, pipeline,
-storage, checkpoint, and provenance contracts live in
-[`rsi/framework/`](rsi/framework/). Visual tasks still need a task-owned
-evaluator and operators; the existing Policy and Video code remains available
-as integration material, not a completed combined algorithm. See the
-[multimodal interface guide](docs/dataflow-multimodal-extension.md) and
-[the runtime parity audit](docs/dataflow-serving-parity.md).
+**DataFlow-RSI evolves the executable program that produces training data.**
+Provide a source corpus, the required output schema, quality criteria, and
+feedback sources. A pipeline agent writes or revises operators and their
+composition; the framework executes candidates, evaluates their outputs, and
+carries task feedback and execution evidence into the next revision.
 
-**Less is More for Recursive Self-Improvement is our research direction.** We aim
-to bring the community together around data-efficient RSI: better data decisions,
-stronger feedback loops, and rigorous evidence about when a smaller training set
-can be more useful.
+| Specify the task | Evolve the program | Retain reusable improvements |
+| :--- | :--- | :--- |
+| Source data, output requirements, evaluation criteria | Generation, verification, selection, and operator structure | Executable pipeline, feedback history, and generated data |
 
-The experiments in this repository are **initial explorations**. We welcome new
-methods, tasks, modalities, and findings that challenge or extend these early
-results. The project will grow with contributions from the community.
+The shared [framework](rsi/framework/README.md) provides operator and pipeline
+contracts, execution and repair, candidate selection, checkpoints, and provenance.
+Task-specific requirements and evaluators specialize the same evolution loop.
+Text review is built in; image and video tasks supply their own operators and
+evaluation signals. VideoRSI connects through a router skill and feedback adapter.
 
-One starting point is to use feedback
-from earlier attempts to improve what data is selected, how it is generated, and
-how it is refined. The recursive state can be a selection rule, a synthesis policy,
-a processing program, or the corpus itself.
+- **Define useful supervision:** [task setup](docs/getting-started.md) and [review criteria](docs/review-configuration.md).
+- **Connect feedback:** [named feedback sources](docs/feedback-sources.md), execution diagnostics, and optional downstream training.
+- **Reuse the resulting program:** inspect its operators, run it on further inputs, and trace the changes that produced each version.
 
-| Select / synthesize / refine | Evaluate & reflect | Update the next decision |
-| :---: | :---: | :---: |
-| Construct a compact training set | Learn from quality, failures and model response | Evolve the rule, policy or program |
+See the [concept](docs/concept.md), [multimodal interfaces](docs/dataflow-multimodal-extension.md),
+and [selection policy](docs/selection-policy.md) for the scope of the loop.
 
-Training takes place within the loop or after search, depending on the method.
-Read the [concept note](docs/concept.md) for the common framework and its limits.
+## DataLite-RSI: Data-efficient self-improvement
 
-> [!NOTE]
-> **“Less” refers to the final training-data budget.** Candidate scoring, synthesis,
-> training exposures, and evaluation can add substantial cost. The collection
-> includes mixed results; it does not establish universal data or compute savings.
+> [!TIP]
+> **Research highlight: DataLite-RSI.** Within DataFlow-RSI, we study when better
+> selection, synthesis, and pipeline decisions make compact training sets more
+> useful. **Less is More for RSI** is a research question explored by the
+> reference experiments below.
 
-## Initial explorations
+DataLite-RSI focuses on the final training-data budget. Search, generation,
+evaluation, and training exposures are reported separately; a smaller final set
+does not by itself establish lower total compute. Read the
+[DataLite-RSI concept](docs/concept.md#datalite-rsi-data-efficiency) for the evidence.
+
+### Reference experiments
 
 <table>
 <tr>
@@ -97,11 +97,12 @@ are not ranked together.
 
 ## Experimental results
 
-**[Explore interactive comparisons ↗](https://haolpku.github.io/DataLite-RSI/#rs-results)**
+**[Explore interactive comparisons ↗](https://haolpku.github.io/DataFlow-RSI/#rs-results)**
 
-Explore our initial experiments in data-efficient RSI. Each result links to its
-experiment record, with model settings and evaluation details. Math/video scores
-are percentages; image scores are normalized composites. See the
+These records cover distinct methods and experimental protocols; they are not
+a single cross-task leaderboard or a rerun of the current framework.
+Each result links to its model settings and evaluation details. Math/video
+scores are percentages; image scores are normalized composites. See the
 [protocol guide](docs/protocol.md) for comparators and aggregation rules.
 
 <details>
@@ -133,6 +134,7 @@ Have a method, a new task, or a comparison to add?
 
 | Method | What evolves | Available now |
 | --- | --- | --- |
+| [**DataFlow-RSI framework**](rsi/framework/README.md) | Executable operators and pipeline structure | Active runtime · task contracts · feedback interfaces · examples |
 | [OPSD-Data-Lite](rsi/methods/opsd-data-lite/) | Training subset | Description · config · math evaluation harness |
 | [Policy-Evolving Edit Synthesis](rsi/methods/policy-evolving-edit-synthesis/) | Instruction-generation policies | Core loop · rubric tests · environment definition |
 | [VideoRSI](rsi/methods/video-rsi/) | Video data pipeline | Description · config · Video-MME evaluation source |
@@ -144,11 +146,11 @@ The [reproduction guide](docs/reproduction.md#follow-an-original-experiment)
 lists what is available and what is missing for each method;
 [open evidence gaps](docs/release-gaps.md) track the remaining work.
 
-The active [DataFlow-centered framework](rsi/framework/README.md) is under
+The active [DataFlow-RSI framework](rsi/framework/README.md) is under
 `rsi/framework/`. It supports text and mixed media record pipelines through
 one evolution controller. The `rsi/methods/` trees are preserved as method
-source and experiment references; Policy and Video domain loops are not yet
-integrated into the active framework.
+source and experiment references. VideoRSI provides a router skill and feedback
+adapter; the Policy synthesis algorithm remains a separate research reference.
 
 ## Quick start
 
@@ -157,8 +159,8 @@ integrated into the active framework.
 Python 3.10+. Installing and checking needs no GPU and no model download.
 
 ```bash
-git clone https://github.com/haolpku/DataLite-RSI.git
-cd DataLite-RSI
+git clone https://github.com/haolpku/DataFlow-RSI.git
+cd DataFlow-RSI
 python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[review,dev]"
 python -c "import rsi.framework; print('ok')"
@@ -173,8 +175,10 @@ export DF_API_KEY=sk-...          # ReviewAgent
 export DF_AGENT_API_KEY=sk-...    # coding agent
 export DF_PIPELINE_API_KEY=sk-... # generated-pipeline serving
 
-datalite-rsi --task my-task.json --run-id my-first-run
+dataflow-rsi --task my-task.json --run-id my-first-run
 ```
+
+The original `datalite-rsi` command remains available as a compatibility alias.
 
 One coding-agent backend is installed separately, as a Node CLI — `codex`,
 `opencode`, or `claude`. All three are supported equally; `agent.backend` in the
@@ -243,7 +247,7 @@ to upstream implementations that are not yet public.
 <summary><strong>Repository map</strong></summary>
 
 ```text
-DataLite-RSI/
+DataFlow-RSI/
 ├── rsi/framework/  Active evolution runtime (the installable package)
 ├── rsi/methods/    Method source and experiment references
 ├── docs/         Getting started, concept, protocols, parity audit
@@ -263,12 +267,14 @@ DataLite-RSI/
 
 ## Join the effort
 
-We invite researchers, engineers, and practitioners to help shape **Less is More
-for RSI**. You do not need a finished method or a positive result to participate.
+We invite researchers, engineers, and practitioners to improve **recursive
+self-improvement for data production**. Bring a task, evaluator, pipeline,
+reproduction, or research question. DataLite-RSI contributions on data efficiency
+are welcome alongside work on pipeline quality, feedback, and generalization.
 
 | Bring your perspective | A useful starting point |
 | --- | --- |
-| **Ask a research question** | Where could better data decisions replace a larger training set? [Open an issue](https://github.com/haolpku/DataLite-RSI/issues). |
+| **Ask a research question** | How can feedback improve the program that produces useful supervision? [Open an issue](https://github.com/haolpku/DataFlow-RSI/issues). |
 | **Explore a new method or task** | Study selection, synthesis, refinement, or another feedback mechanism in a new setting. |
 | **Strengthen the evidence** | Reproduce a result, add matched-budget controls, measure total cost, or report a negative result. |
 | **Make experiments easier to compare** | Contribute evaluators, datasets, reproducible configurations, or clearer protocols. |
@@ -310,6 +316,6 @@ retain their own license notices.
 
 <div align="center">
 
-**Let’s explore Less is More for RSI together.**<br>[Explore DataLite-RSI ↗](https://haolpku.github.io/DataLite-RSI/)
+**Build better data-production programs through feedback.**<br>[Explore DataFlow-RSI ↗](https://haolpku.github.io/DataFlow-RSI/)
 
 </div>

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="400" viewBox="0 0 1280 400" role="img" aria-labelledby="title desc">
-  <title id="title">DataLite-RSI — Less is More for Recursive Self-Improvement</title>
-  <desc id="desc">An open research initiative inviting the community to explore data-efficient recursive self-improvement.</desc>
+  <title id="title">DataFlow-RSI — Bringing Recursive Self-Improvement to Data Production</title>
+  <desc id="desc">Evolve executable data pipelines through task feedback. DataLite-RSI is the project's data-efficiency research direction.</desc>
   <defs>
     <linearGradient id="base" x2="1" y2="1"><stop stop-color="#292b68"/><stop offset=".58" stop-color="#242b50"/><stop offset="1" stop-color="#153f4e"/></linearGradient>
     <radialGradient id="violet" cx="0" cy="0" r="1"><stop stop-color="#6268df" stop-opacity=".7"/><stop offset="1" stop-color="#6268df" stop-opacity="0"/></radialGradient>
@@ -14,17 +14,18 @@
   <rect width="1280" height="400" rx="20" fill="url(#pink)"/>
   <rect width="1280" height="400" rx="20" fill="url(#dots)"/>
   <g font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif">
-    <text x="64" y="65" fill="#d6dbfa" font-size="15" font-weight="600" letter-spacing="2.7">DATA-CENTRIC RECURSIVE SELF-IMPROVEMENT</text>
-    <text x="60" y="151" fill="#fff" font-size="76" font-weight="800" letter-spacing="-3">DataLite-RSI</text>
-    <text x="64" y="215" fill="url(#warm)" font-size="42" font-weight="700" letter-spacing="-1">Less is More.</text>
-    <text x="64" y="259" fill="#e1e5f5" font-size="21">An open research initiative. Built with the community.</text>
+    <text x="64" y="65" fill="#d6dbfa" font-size="15" font-weight="600" letter-spacing="2.7">EXECUTABLE PIPELINES · TASK FEEDBACK · REUSABLE PROGRAMS</text>
+    <text x="60" y="151" fill="#fff" font-size="76" font-weight="800" letter-spacing="-3">DataFlow-RSI</text>
+    <text x="64" y="207" fill="url(#warm)" font-size="28" font-weight="700" letter-spacing="-.5">Bringing Recursive Self-Improvement</text>
+    <text x="64" y="244" fill="url(#warm)" font-size="28" font-weight="700" letter-spacing="-.5">to Data Production</text>
+    <text x="64" y="279" fill="#e1e5f5" font-size="18">Turn task feedback into reusable data-production programs.</text>
     <g font-size="15" font-weight="500" fill="#e5e9fa">
-      <rect x="64" y="306" width="156" height="38" rx="19" fill="#ffffff0d" stroke="#ffffff36"/>
-      <text x="142" y="331" text-anchor="middle">Explore ideas</text>
-      <rect x="232" y="306" width="154" height="38" rx="19" fill="#ffffff0d" stroke="#ffffff36"/>
-      <text x="309" y="331" text-anchor="middle">Build methods</text>
-      <rect x="398" y="306" width="151" height="38" rx="19" fill="#ffffff0d" stroke="#ffffff36"/>
-      <text x="473" y="331" text-anchor="middle">Share evidence</text>
+      <rect x="64" y="312" width="156" height="38" rx="19" fill="#ffffff0d" stroke="#ffffff36"/>
+      <text x="142" y="337" text-anchor="middle">Define the task</text>
+      <rect x="232" y="312" width="154" height="38" rx="19" fill="#ffffff0d" stroke="#ffffff36"/>
+      <text x="309" y="337" text-anchor="middle">Evolve pipelines</text>
+      <rect x="398" y="312" width="151" height="38" rx="19" fill="#ffffff0d" stroke="#ffffff36"/>
+      <text x="473" y="337" text-anchor="middle">Reuse programs</text>
     </g>
     <g transform="translate(910 180)">
       <circle r="124" fill="none" stroke="#d1dbff" stroke-opacity=".16"/>
@@ -35,6 +36,6 @@
       <g fill="url(#accent)"><rect x="-39" y="-21" width="78" height="8" rx="4"/><rect x="-39" y="-4" width="57" height="8" rx="4"/><rect x="-39" y="13" width="34" height="8" rx="4"/></g>
       <circle cx="-120" cy="-31" r="5" fill="#b6adff"/><circle cx="95" cy="79" r="5" fill="#72d8e0"/>
     </g>
-    <text x="910" y="341" fill="#cbd6eb" font-size="14" letter-spacing="2" text-anchor="middle">COMPACT DATA · RECURSIVE FEEDBACK</text>
+    <text x="910" y="341" fill="#cbd6eb" font-size="14" letter-spacing="2" text-anchor="middle">AUTHOR · EXECUTE · EVALUATE · REVISE</text>
   </g>
 </svg>

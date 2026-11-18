@@ -50,7 +50,7 @@ def _normalize_message(message: str) -> str:
     recording and a later run. Replacing them keeps the comparison on the
     exception type and the part of the message that describes the failure.
     """
-    normalized = re.sub(r"[A-Za-z]:\\\\[^\s\"']+|[A-Za-z]:\\[^\s\"']+|/tmp/[^\s\"']+", "<path>", message)
+    normalized = re.sub(r"[A-Za-z]:\\\\[^\s\"']+|[A-Za-z]:\\[^\s\"']+|/(?:private/)?(?:tmp|var/folders)/[^\s\"']+", "<path>", message)
     normalized = normalized.replace("APILLMServing_request", "<serving>")
     normalized = normalized.replace("PipelineLLMServing", "<serving>")
     # Operator fixtures are defined inside these probes, so their repr carries

@@ -102,6 +102,24 @@ html {
   margin: 0 auto;
   padding: 0 clamp(22px, 5vw, 64px);
 }
+#rsi-academic .rs-highlight {
+  padding: 24px;
+  margin-bottom: 26px;
+  border: 1px solid var(--rs-line);
+  border-left: 4px solid var(--rs-teal);
+  border-radius: var(--rs-radius);
+  background: var(--rs-bg);
+}
+#rsi-academic .rs-highlight h3 {
+  margin: 5px 0 10px;
+  font-size: clamp(20px, 3vw, 26px);
+  line-height: 1.35;
+}
+#rsi-academic .rs-highlight p:not(.rs-overline) {
+  max-width: 850px;
+  color: var(--rs-soft);
+  margin-bottom: 12px;
+}
 #rsi-academic .rs-hero {
   position: relative;
   isolation: isolate;

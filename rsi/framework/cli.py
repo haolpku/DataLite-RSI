@@ -1,4 +1,4 @@
-"""Command-line entry for the DataFlow-centered framework."""
+"""Command-line entry for the DataFlow-RSI framework."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from .runtime.framework import run
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Run a DataFlow evolution task")
+    parser = argparse.ArgumentParser(description="Run a DataFlow-RSI pipeline evolution task")
     parser.add_argument("--task", required=True, help="JSON or YAML task config")
     parser.add_argument("--run-id")
     parser.add_argument("--no-resume", action="store_true")

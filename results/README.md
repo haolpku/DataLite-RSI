@@ -1,7 +1,7 @@
 # Result submissions
 
 Browse the [reported research results](../README.md#reported-results) or the
-[interactive homepage](https://haolpku.github.io/DataLite-RSI/#rs-results).
+[interactive homepage](https://haolpku.github.io/DataFlow-RSI/#rs-results).
 The research collection includes unverified submissions; the verified leaderboard
 remains a separate view. Read [protocols](../docs/protocol.md) before comparing scores.
 

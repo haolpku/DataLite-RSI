@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate DataLite-RSI contribution manifests without third-party packages."""
+"""Validate DataFlow-RSI contribution manifests without third-party packages."""
 
 from __future__ import annotations
 
@@ -371,7 +371,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         nargs="?",
         default=".",
         type=Path,
-        help="DataLite-RSI repository root (default: current directory)",
+        help="DataFlow-RSI repository root (default: current directory)",
     )
     return parser.parse_args(argv)
 
@@ -381,11 +381,11 @@ def main(argv: list[str] | None = None) -> int:
     root = args.root.resolve()
     errors = validate_repository(root)
     if errors:
-        print(f"DataLite-RSI validation failed with {len(errors)} error(s):")
+        print(f"DataFlow-RSI validation failed with {len(errors)} error(s):")
         for error in errors:
             print(f"- {error}")
         return 1
-    print("DataLite-RSI contribution manifests are valid.")
+    print("DataFlow-RSI contribution manifests are valid.")
     return 0
 
 

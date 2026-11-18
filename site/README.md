@@ -1,7 +1,11 @@
-# DataLite-RSI homepage
+# DataFlow-RSI homepage
+
+The main brand is **DataFlow-RSI: Bringing Recursive Self-Improvement to Data
+Production**. DataLite-RSI is a separate research highlight about data efficiency.
+Keep this hierarchy consistent across the hero, README banner, metadata, and footer.
 
 The production homepage lives in this repository and is hosted at
-<https://haolpku.github.io/DataLite-RSI/> using GitHub Pages.
+<https://haolpku.github.io/DataFlow-RSI/> using GitHub Pages.
 
 ## Edit and preview
 

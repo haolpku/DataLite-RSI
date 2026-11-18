@@ -1,15 +1,16 @@
-# Contributing to DataLite-RSI
+# Contributing to DataFlow-RSI
 
 Thank you for helping build reproducible research on recursive
 self-improvement. Contributions can be small and focused: a new benchmark,
 dataset registration, result submission, evaluator fix, or RSI method is useful
 on its own.
 
-This is an open research initiative around **Less is More for RSI**. The current
-experiments are initial explorations, and we invite the community to shape what
-comes next. Research questions, new tasks, reproductions, matched-budget controls,
+DataFlow-RSI develops shared infrastructure for **recursive self-improvement
+of data-production programs**. DataLite-RSI is the project's data-efficiency
+research direction, exploring when compact training sets become more useful.
+Research questions, new tasks, evaluators, reproductions, matched-budget controls,
 and negative findings are welcome alongside code. You can start with an
-[issue](https://github.com/haolpku/DataLite-RSI/issues) before having a complete
+[issue](https://github.com/haolpku/DataFlow-RSI/issues) before having a complete
 implementation or experiment.
 
 For a Chinese version, see [docs/CONTRIBUTING_zh.md](docs/CONTRIBUTING_zh.md).
@@ -109,7 +110,7 @@ Start from [`templates/method.json`](templates/method.json). Document:
 - the feedback signal and acceptance rule;
 - stopping conditions and resource budget;
 - whether human intervention is used at any iteration;
-- supported DataLite-RSI tracks and required external services;
+- supported DataFlow-RSI tracks and required external services;
 - safety constraints, rollback behavior, and known failure modes.
 
 Keep model-specific adapters separate from the core algorithm when possible.

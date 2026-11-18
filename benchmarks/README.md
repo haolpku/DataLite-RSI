@@ -1,4 +1,4 @@
-# DataLite-RSI benchmark contributions
+# DataFlow-RSI benchmark contributions
 
 Each benchmark lives in `benchmarks/<benchmark-id>/` and owns its task
 definition, evaluator, metric documentation, and deterministic tests. Data is
@@ -24,4 +24,4 @@ invalid outputs, contamination risks, and known limitations. Include tiny
 synthetic fixtures so CI can exercise the evaluator without the full dataset or
 a model API.
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md#1-benchmark) for DataLite-RSI review requirements.
+See [CONTRIBUTING.md](../CONTRIBUTING.md#1-benchmark) for DataFlow-RSI review requirements.

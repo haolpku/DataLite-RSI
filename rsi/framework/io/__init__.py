@@ -1,1 +1,1 @@
-"""Internal DataLite-RSI framework modules."""
+"""Internal DataFlow-RSI framework modules."""

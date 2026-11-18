@@ -1,6 +1,6 @@
-# DataLite-RSI 中文贡献指南
+# DataFlow-RSI 中文贡献指南
 
-DataLite-RSI 接受四类可以彼此独立提交的贡献：Benchmark、Dataset、实验结果和
+DataFlow-RSI 接受四类可以彼此独立提交的贡献：Benchmark、Dataset、实验结果和
 RSI 方法代码。完整规则以仓库根目录的
 [`CONTRIBUTING.md`](../CONTRIBUTING.md) 为准。
 

@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "datalite-rsi"
+name = "dataflow-rsi"
 version = "0.1.0"
-description = "Data-centric recursive self-improvement: an incumbent/challenger loop that evolves data-processing pipelines over a fixed corpus."
+description = "DataFlow-RSI: bringing recursive self-improvement to data production through executable pipeline evolution."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
@@ -56,16 +56,18 @@ dev = [
 # Every Python dependency a real evolution run can need. A coding-agent backend
 # still has to be installed separately; see the note above.
 all = [
-  "datalite-rsi[review,claude,parquet]",
+  "dataflow-rsi[review,claude,parquet]",
 ]
 
 [project.scripts]
+dataflow-rsi = "rsi.framework.cli:main"
+# Keep the original command as a compatibility alias.
 datalite-rsi = "rsi.framework.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/haolpku/DataLite-RSI"
-Documentation = "https://github.com/haolpku/DataLite-RSI/tree/main/docs"
-Issues = "https://github.com/haolpku/DataLite-RSI/issues"
+Homepage = "https://github.com/haolpku/DataFlow-RSI"
+Documentation = "https://github.com/haolpku/DataFlow-RSI/tree/main/docs"
+Issues = "https://github.com/haolpku/DataFlow-RSI/issues"
 
 [tool.setuptools.packages.find]
 # Only the active runtime is importable as a package. rsi/methods/ holds

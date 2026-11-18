@@ -1,4 +1,4 @@
-name: Validate DataLite-RSI contributions
+name: Validate DataFlow-RSI contributions
 
 on:
   push:

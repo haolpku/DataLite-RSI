@@ -1,6 +1,6 @@
 ---
 name: dataflow-evolver-pipeline
-description: Write or repair a data-processing pipeline for a DataLite-RSI evolution iteration.
+description: Write or repair a data-processing pipeline for a DataFlow-RSI evolution iteration.
 ---
 
 # Pipeline authoring

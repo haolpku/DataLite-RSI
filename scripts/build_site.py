@@ -12,7 +12,7 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-REPO = 'https://github.com/haolpku/DataLite-RSI'
+REPO = 'https://github.com/haolpku/DataFlow-RSI'
 START = '<!-- results:start -->'
 END = '<!-- results:end -->'
 
@@ -123,8 +123,9 @@ def build(root=ROOT, output=None, revision=None, check=False):
     data['revision'] = revision
     esc = lambda value: html.escape(str(value), quote=True)
     opsd = data['math']['opsd']
+    initial_math = data['math']['evolver']
     rows = ''
-    for label, value, kind in opsd['rows']:
+    for label, value, kind in initial_math['rows']:
         shown = f'{value:.2f}%'
         rows += f'<div class="rs-bar-row"><div class="rs-bar-label"><span>{esc(label)}</span><b>{shown}</b></div><div class="rs-bar-track" role="img" aria-label="{esc(label)}: {shown}"><div class="rs-bar-mark rs-{kind}" style="width:{value}%"></div></div></div>'
     all_rows = ''.join(f'<tr><td><a href="{data["base"]}results/submissions/{esc(i)}/result.json">{esc(n)}</a></td><td>{esc(m)}</td><td>{esc(v)}</td></tr>' for n,m,v,i in data['all'])
@@ -139,11 +140,13 @@ def build(root=ROOT, output=None, revision=None, check=False):
         'video_gain_range': f'+{min(gains):.2f} to +{max(gains):.2f} pp',
         'opsd_samples': f"{op_record['settings']['selected_samples'][-1]:,}",
         'image_pairs': f"{image_record['settings']['accepted_pairs']:,}",
-        'math_bars': rows, 'opsd_gain': opsd['gain'], 'opsd_protocol': esc(opsd['protocol']),
-        'opsd_source': data['base']+opsd['source'], 'all_rows': all_rows,
+        'math_bars': rows,
+        **{'math_'+k: esc(initial_math[k]) for k in ('model','metric','gain','explanation','context','protocol')},
+        'math_gain_label': esc(initial_math['label']),
+        'math_source': data['base']+initial_math['source'], 'all_rows': all_rows,
         'native_rows': ''.join('<tr>'+''.join(f'<td>{esc(v)}</td>' for v in row)+'</tr>' for row in native),
-        **{'method_'+k:esc(data['methods']['opsd'][k]) for k in ('title','description','feedback','budget','available')},
-        'method_source':data['base']+data['methods']['opsd']['path'],
+        **{'method_'+k:esc(data['methods']['framework'][k]) for k in ('title','description','feedback','budget','available')},
+        'method_source':data['base']+data['methods']['framework']['path'],
     }
     page = (root/'site/index.template.html').read_text(encoding='utf-8')
     for key,value in replacements.items():
@@ -155,11 +158,11 @@ def build(root=ROOT, output=None, revision=None, check=False):
     shutil.copytree(root/'site/assets', output/'assets', dirs_exist_ok=True)
     (output/'index.html').write_text(page,encoding='utf-8')
     payload = json.dumps(data,ensure_ascii=False,indent=2).replace('<','\\u003c')
-    (output/'data.js').write_text('window.DATALITE = '+payload+';\n',encoding='utf-8')
+    (output/'data.js').write_text('window.DATAFLOW = '+payload+';\n',encoding='utf-8')
     (output/'results.json').write_text(payload+'\n',encoding='utf-8')
     (output/'.nojekyll').touch()
-    (output/'robots.txt').write_text('User-agent: *\nAllow: /\nSitemap: https://haolpku.github.io/DataLite-RSI/sitemap.xml\n')
-    (output/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://haolpku.github.io/DataLite-RSI/</loc></url></urlset>\n')
+    (output/'robots.txt').write_text('User-agent: *\nAllow: /\nSitemap: https://haolpku.github.io/DataFlow-RSI/sitemap.xml\n')
+    (output/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://haolpku.github.io/DataFlow-RSI/</loc></url></urlset>\n')
     print(f'Built {output} from {len(items)} results at {revision[:7]}')
     return data
 

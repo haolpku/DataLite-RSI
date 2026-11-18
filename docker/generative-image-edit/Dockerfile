@@ -1,7 +1,7 @@
 FROM pytorch/pytorch:2.6.0-cuda12.4-cudnn9-runtime@sha256:77f17f843507062875ce8be2a6f76aa6aa3df7f9ef1e31d9d7432f4b0f563dee
 
-LABEL org.opencontainers.image.source="https://github.com/haolpku/DataLite-RSI"
-LABEL org.opencontainers.image.description="DataLite-RSI generative track: instruction-guided image editing, LoRA training and benchmark evaluation"
+LABEL org.opencontainers.image.source="https://github.com/haolpku/DataFlow-RSI"
+LABEL org.opencontainers.image.description="DataFlow-RSI generative reference: instruction-guided image editing, LoRA training and benchmark evaluation"
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \

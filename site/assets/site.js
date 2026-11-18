@@ -1,7 +1,7 @@
 (() => {
   const root = document.getElementById("rsi-academic");
-  const { base, math, methods, videos, images, all } = window.DATALITE;
-  const state = { track: "math", math: "opsd", method: "opsd" };
+  const { base, math, methods, videos, images, all } = window.DATAFLOW;
+  const state = { track: "math", math: "evolver", method: "framework" };
   const esc = (value) =>
     String(value).replace(
       /[&<>"']/g,

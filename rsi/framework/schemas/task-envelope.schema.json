@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "task-envelope.schema.json",
-  "title": "DataLite-RSI DataFlow TaskEnvelope 0.1",
+  "title": "DataFlow-RSI DataFlow TaskEnvelope 0.1",
   "type": "object",
   "additionalProperties": false,
   "required": [

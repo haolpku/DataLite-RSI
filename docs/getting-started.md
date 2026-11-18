@@ -16,8 +16,8 @@ the output, and a better passing candidate replaces the incumbent. Repeat.
 Python 3.10 or newer. No GPU is needed to install or to run the offline checks.
 
 ```bash
-git clone https://github.com/haolpku/DataLite-RSI.git
-cd DataLite-RSI
+git clone https://github.com/haolpku/DataFlow-RSI.git
+cd DataFlow-RSI
 python3 -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 python -m pip install --upgrade pip
@@ -45,7 +45,7 @@ Verify the install:
 
 ```bash
 python -c "import rsi.framework; print('ok')"
-datalite-rsi --help
+dataflow-rsi --help
 pytest -q                          # needs [dev]; expect ~145 passed
 ```
 
@@ -205,10 +205,11 @@ export DF_AGENT_API_KEY=sk-...       # coding agent
 export DF_PIPELINE_API_KEY=sk-...    # generated-pipeline serving
 export DF_AGENT_PYTHON="$(which python)"
 
-datalite-rsi --task my-task.json --run-id my-first-run
+dataflow-rsi --task my-task.json --run-id my-first-run
 ```
 
-Equivalent: `python -m rsi.framework --task my-task.json`. The command prints a
+Equivalent: `python -m rsi.framework --task my-task.json`. The original
+`datalite-rsi` command remains available as a compatibility alias. The command prints a
 one-line manifest and exits non-zero if the run failed.
 
 From Python, with your own evaluator:

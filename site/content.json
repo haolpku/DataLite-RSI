@@ -15,7 +15,7 @@
       "label": "Compared with DataFlow Math-3K's GPT-4o rewrite",
       "explanation": "DataFlow-Evolver improves over the Qwen2.5-7B base and the matched GPT-4o rewrite. DataFlow's expert-authored Math-3K remains a higher-scoring reference.",
       "context": "Math-3K is the 3,000-row Math subset of DataFlow-Instruct-10K, produced by DataFlow's human-authored DataFlow Math pipeline over MATH and GSM8K training data. This run evolves a pipeline over a fixed 14,181-row mixture of the official MATH and GSM8K training sets, decontaminated against downstream test files with normalized 13-gram matching. The GPT-4o reference reruns the official pipeline with the same pipeline LLM used by DataFlow-Evolver.",
-      "protocol": "The headline is the eight-set full-test mean. A fixed 10% diagnostic sample from each test file supplied in-loop feedback; because those examples are included in the final full-test set, the headline is not a fully untouched evaluation. Pipeline evolution took 3h 31m 57s of effective runtime across five iterations. Including checkpoint_000 baseline evaluation and checkpoint_002/004 SFT plus diagnostic evaluation, total effective runtime was 4h 30m 05s. The wall-clock span was approximately 6h 07m, including about 1h 37m of waiting and scheduling gaps; pipeline time is not converted to GPU-hours because its service GPU occupancy was not archived. Public release of the full upstream implementation and original run artifacts is in preparation; links will follow.",
+      "protocol": "The headline is the eight-set full-test mean. A fixed 10% diagnostic sample from each test file supplied in-loop feedback; because those examples are included in the final full-test set, the headline is not a fully untouched evaluation. Pipeline evolution took 3h 31m 57s of effective runtime across five iterations. Including checkpoint_000 baseline evaluation and checkpoint_002/004 SFT plus diagnostic evaluation, total effective runtime was 4h 30m 05s. The wall-clock span was approximately 6h 07m, including about 1h 37m of waiting and scheduling gaps; pipeline time is not converted to GPU-hours because its service GPU occupancy was not archived. The baseline source snapshot and current framework are available; original run artifacts and an independently verified full rerun remain pending.",
       "source": "results/submissions/dataflow-evolver-qwen25-7b-math-3k/result.json"
     },
     "self": {
@@ -29,6 +29,14 @@
     }
   },
   "methods": {
+    "framework": {
+      "title": "DataFlow-RSI",
+      "description": "Turn task feedback into reusable data-production programs. One controller authors, executes, evaluates, and revises operators and pipeline structure across tasks.",
+      "feedback": "Task criteria, execution diagnostics, and configurable named feedback sources. Downstream training is optional.",
+      "budget": "Task-defined source corpus, output requirements, and search budget.",
+      "available": "Active runtime, operator and storage contracts, checkpoints, provenance, task templates, and examples. Visual tasks connect suitable operators and evaluation signals.",
+      "path": "rsi/framework/README.md"
+    },
     "opsd": {
       "title": "OPSD-Data-Lite",
       "description": "Use the response to a short training round to choose a more useful subset for the next one.",
@@ -50,7 +58,7 @@
       "description": "Improve the pipeline that grounds video questions in temporal evidence, before final model training.",
       "feedback": "Grounding, schema validity, text-only solvability, frozen-target difficulty and deduplication.",
       "budget": "4,541 SFT examples after five described pipeline iterations.",
-      "available": "Method description, configuration and Video-MME evaluation source. Full pipeline and experiment artifacts pending.",
+      "available": "Reference pipeline source, configuration, and Video-MME evaluation code. The active framework provides a router skill and feedback adapter; original experiment artifacts remain pending.",
       "path": "rsi/methods/video-rsi/README.md"
     },
     "evolver": {
@@ -58,7 +66,7 @@
       "description": "A coding agent proposes new data-processing programs; an independent review selects the incumbent.",
       "feedback": "Dataset review and embedding diagnostics, plus periodic downstream failure analysis.",
       "budget": "3,000 SFT rows from a fixed 14,181-row source corpus.",
-      "available": "Reference configuration, detailed experiment report and grading harness. Public release of the full upstream implementation and original run artifacts is in preparation.",
+      "available": "Baseline source snapshot, reference configuration, experiment report, and grading harness. The active framework is under rsi/framework; original run artifacts remain pending.",
       "path": "rsi/methods/dataflow-evolver/README.md"
     },
     "self": {

@@ -1,4 +1,4 @@
-# Pipeline evolution framework
+# DataFlow-RSI pipeline evolution framework
 
 `rsi.framework.run(task_config, resources=...)` is the active application entry;
 the CLI is `python -m rsi.framework --task <task.json>`.

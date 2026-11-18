@@ -1,7 +1,7 @@
-# DataLite-RSI dataset registry
+# DataFlow-RSI dataset registry
 
 This directory contains metadata and immutable references, not large dataset
-files. The current DataLite-RSI dataset repository is still named
+files. The current DataFlow-RSI dataset repository is still named
 [`lhpku20010120/Lite-RSI`](https://huggingface.co/datasets/lhpku20010120/Lite-RSI).
 
 To register a dataset:
